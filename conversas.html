@@ -8,7 +8,6 @@
 </head>
 <body class="bg-gray-50">
     
-    <!-- Navbar -->
     <nav class="bg-white shadow-sm border-b border-gray-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
@@ -27,16 +26,13 @@
         </div>
     </nav>
 
-    <!-- Main -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
-        <!-- Header -->
         <div class="mb-8">
             <h2 class="text-3xl font-bold text-gray-900">Conversas Ativas</h2>
             <p class="text-gray-600 mt-1">Gerencie as conversas com clientes</p>
         </div>
 
-        <!-- Stats Cards -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -45,9 +41,7 @@
                         <p class="text-gray-500 text-sm font-medium">Total de Conversas</p>
                         <p class="text-3xl font-bold text-gray-900 mt-2" id="totalConversas">-</p>
                     </div>
-                    <div class="bg-blue-100 p-3 rounded-lg">
-                        <span class="text-3xl">💬</span>
-                    </div>
+                    <div class="bg-blue-100 p-3 rounded-lg"><span class="text-3xl">💬</span></div>
                 </div>
             </div>
 
@@ -57,9 +51,7 @@
                         <p class="text-gray-500 text-sm font-medium">Bot Atendendo</p>
                         <p class="text-3xl font-bold text-green-600 mt-2" id="conversasBot">-</p>
                     </div>
-                    <div class="bg-green-100 p-3 rounded-lg">
-                        <span class="text-3xl">🤖</span>
-                    </div>
+                    <div class="bg-green-100 p-3 rounded-lg"><span class="text-3xl">🤖</span></div>
                 </div>
             </div>
 
@@ -69,24 +61,19 @@
                         <p class="text-gray-500 text-sm font-medium">Atendimento Manual</p>
                         <p class="text-3xl font-bold text-orange-600 mt-2" id="conversasManual">-</p>
                     </div>
-                    <div class="bg-orange-100 p-3 rounded-lg">
-                        <span class="text-3xl">👤</span>
-                    </div>
+                    <div class="bg-orange-100 p-3 rounded-lg"><span class="text-3xl">👤</span></div>
                 </div>
             </div>
 
         </div>
 
-        <!-- Loading -->
         <div id="loading" class="text-center py-12">
             <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-indigo-600 border-t-transparent"></div>
             <p class="text-gray-600 mt-4">Carregando conversas...</p>
         </div>
 
-        <!-- Lista de Conversas -->
         <div id="conversasContainer" class="hidden space-y-4"></div>
 
-        <!-- Empty State -->
         <div id="emptyState" class="hidden text-center py-12 bg-white rounded-xl shadow-sm border border-gray-200">
             <span class="text-6xl">💬</span>
             <h3 class="text-xl font-semibold text-gray-900 mt-4">Nenhuma conversa ativa</h3>
@@ -95,7 +82,6 @@
 
     </main>
 
-    <!-- Scripts -->
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/conversas.js"></script>
