@@ -141,7 +141,8 @@ const API = {
             method: 'POST',
             body: JSON.stringify(data)
         });
-    }
+    },
+
     async getPedidos(empresaId, status = null) {
         let query = `?empresa_id=${empresaId}`;
         if (status) query += `&status=${status}`;
