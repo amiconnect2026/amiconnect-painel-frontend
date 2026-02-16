@@ -120,5 +120,26 @@ const API = {
             method: 'PATCH',
             body: JSON.stringify({ empresa_id: empresaId })
         });
+    },
+
+    async getAlertas() {
+        return await apiRequest('/alertas');
+    },
+
+    async getAlertasNaoLidos() {
+        return await apiRequest('/alertas/nao-lidos');
+    },
+
+    async marcarAlertaLido(id) {
+        return await apiRequest(`/alertas/${id}/marcar-lido`, {
+            method: 'PATCH'
+        });
+    },
+
+    async criarAlerta(data) {
+        return await apiRequest('/alertas', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
     }
 };

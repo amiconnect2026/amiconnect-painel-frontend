@@ -8,7 +8,6 @@
 </head>
 <body class="bg-gray-50">
     
-    <!-- Navbar -->
     <nav class="bg-white shadow-sm border-b border-gray-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
@@ -21,18 +20,18 @@
                     <a href="dashboard.html" class="text-gray-600 hover:text-indigo-600 transition">Dashboard</a>
                     <a href="cardapio.html" class="text-indigo-600 font-medium">Cardápio</a>
                     <a href="conversas.html" class="text-gray-600 hover:text-indigo-600 transition">Conversas</a>
-                    <button onclick="logout()" class="text-red-600 hover:text-red-700 font-medium transition">
-                        Sair
+                    <button onclick="mostrarAlertas()" class="relative text-gray-600 hover:text-indigo-600 transition">
+                        <span class="text-2xl">🔔</span>
+                        <span id="alertasBadge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">0</span>
                     </button>
+                    <button onclick="logout()" class="text-red-600 hover:text-red-700 font-medium transition">Sair</button>
                 </div>
             </div>
         </div>
     </nav>
 
-    <!-- Main -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
-        <!-- Header -->
         <div class="flex justify-between items-center mb-8">
             <div>
                 <h2 class="text-3xl font-bold text-gray-900">Gerenciar Cardápio</h2>
@@ -43,18 +42,13 @@
             </button>
         </div>
 
-        <!-- Loading -->
         <div id="loading" class="text-center py-12">
             <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-indigo-600 border-t-transparent"></div>
             <p class="text-gray-600 mt-4">Carregando produtos...</p>
         </div>
 
-        <!-- Produtos por Categoria -->
-        <div id="produtosContainer" class="space-y-8 hidden">
-            <!-- Será preenchido via JavaScript -->
-        </div>
+        <div id="produtosContainer" class="space-y-8 hidden"></div>
 
-        <!-- Empty State -->
         <div id="emptyState" class="hidden text-center py-12">
             <span class="text-6xl">📭</span>
             <h3 class="text-xl font-semibold text-gray-900 mt-4">Nenhum produto cadastrado</h3>
@@ -63,7 +57,6 @@
 
     </main>
 
-    <!-- Modal Adicionar/Editar Produto -->
     <div id="produtoModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div class="p-6 border-b border-gray-200">
@@ -73,19 +66,16 @@
             <form id="produtoForm" class="p-6 space-y-4">
                 <input type="hidden" id="produtoId">
                 
-                <!-- Nome -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Nome do Produto</label>
                     <input type="text" id="produtoNome" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none">
                 </div>
 
-                <!-- Descrição -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Descrição</label>
                     <textarea id="produtoDescricao" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"></textarea>
                 </div>
 
-                <!-- Preço e Categoria -->
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Preço (R$)</label>
@@ -99,13 +89,11 @@
                     </div>
                 </div>
 
-                <!-- Disponível -->
                 <div class="flex items-center gap-3">
                     <input type="checkbox" id="produtoDisponivel" checked class="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
                     <label for="produtoDisponivel" class="text-sm font-medium text-gray-700">Produto disponível</label>
                 </div>
 
-                <!-- Botões -->
                 <div class="flex gap-3 pt-4">
                     <button type="button" onclick="closeModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 rounded-lg transition">
                         Cancelar
@@ -118,10 +106,21 @@
         </div>
     </div>
 
-    <!-- Scripts -->
+    <div id="alertasModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+            <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+                <h3 class="text-2xl font-bold text-gray-900">🔔 Notificações</h3>
+                <button onclick="fecharAlertas()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+            <div id="alertasLista" class="flex-1 overflow-y-auto"></div>
+        </div>
+    </div>
+
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
+    <script src="js/alertas.js"></script>
     <script src="js/cardapio.js"></script>
+    <script>iniciarAlertas();</script>
 
 </body>
 </html>
