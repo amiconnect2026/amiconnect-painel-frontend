@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Conversas - AmiConnect</title>
+    <title>Pedidos - AmiConnect</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-50">
@@ -19,8 +19,8 @@
                 <div class="flex items-center gap-4">
                     <a href="dashboard.html" class="text-gray-600 hover:text-indigo-600 transition">Dashboard</a>
                     <a href="cardapio.html" class="text-gray-600 hover:text-indigo-600 transition">Cardápio</a>
-                    <a href="conversas.html" class="text-indigo-600 font-medium">Conversas</a>
-                    <a href="pedidos.html" class="text-gray-600 hover:text-indigo-600 transition">Pedidos</a>
+                    <a href="conversas.html" class="text-gray-600 hover:text-indigo-600 transition">Conversas</a>
+                    <a href="pedidos.html" class="text-indigo-600 font-medium">Pedidos</a>
                     <button onclick="mostrarAlertas()" class="relative text-gray-600 hover:text-indigo-600 transition">
                         <span class="text-2xl">🔔</span>
                         <span id="alertasBadge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">0</span>
@@ -34,58 +34,54 @@
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
         <div class="mb-8">
-            <h2 class="text-3xl font-bold text-gray-900">Conversas Ativas</h2>
-            <p class="text-gray-600 mt-1">Gerencie as conversas com clientes</p>
+            <h2 class="text-3xl font-bold text-gray-900">Pedidos</h2>
+            <p class="text-gray-600 mt-1">Gerencie os pedidos dos clientes</p>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-gray-500 text-sm font-medium">Total de Conversas</p>
-                        <p class="text-3xl font-bold text-gray-900 mt-2" id="totalConversas">-</p>
-                    </div>
-                    <div class="bg-blue-100 p-3 rounded-lg"><span class="text-3xl">💬</span></div>
-                </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
+            <div class="flex gap-3">
+                <button onclick="filtrarStatus('todos')" id="btn-todos" class="px-4 py-2 rounded-lg font-medium bg-indigo-100 text-indigo-700">
+                    Todos
+                </button>
+                <button onclick="filtrarStatus('confirmado')" id="btn-confirmado" class="px-4 py-2 rounded-lg font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">
+                    Confirmado
+                </button>
+                <button onclick="filtrarStatus('preparando')" id="btn-preparando" class="px-4 py-2 rounded-lg font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">
+                    Preparando
+                </button>
+                <button onclick="filtrarStatus('saiu_entrega')" id="btn-saiu_entrega" class="px-4 py-2 rounded-lg font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">
+                    Saiu p/ Entrega
+                </button>
+                <button onclick="filtrarStatus('entregue')" id="btn-entregue" class="px-4 py-2 rounded-lg font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">
+                    Entregue
+                </button>
             </div>
-
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-gray-500 text-sm font-medium">Bot Atendendo</p>
-                        <p class="text-3xl font-bold text-green-600 mt-2" id="conversasBot">-</p>
-                    </div>
-                    <div class="bg-green-100 p-3 rounded-lg"><span class="text-3xl">🤖</span></div>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-gray-500 text-sm font-medium">Atendimento Manual</p>
-                        <p class="text-3xl font-bold text-orange-600 mt-2" id="conversasManual">-</p>
-                    </div>
-                    <div class="bg-orange-100 p-3 rounded-lg"><span class="text-3xl">👤</span></div>
-                </div>
-            </div>
-
         </div>
 
         <div id="loading" class="text-center py-12">
             <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-indigo-600 border-t-transparent"></div>
-            <p class="text-gray-600 mt-4">Carregando conversas...</p>
+            <p class="text-gray-600 mt-4">Carregando pedidos...</p>
         </div>
 
-        <div id="conversasContainer" class="hidden space-y-4"></div>
+        <div id="pedidosContainer" class="hidden space-y-4"></div>
 
         <div id="emptyState" class="hidden text-center py-12 bg-white rounded-xl shadow-sm border border-gray-200">
-            <span class="text-6xl">💬</span>
-            <h3 class="text-xl font-semibold text-gray-900 mt-4">Nenhuma conversa ativa</h3>
-            <p class="text-gray-600 mt-2">Quando clientes mandarem mensagem, aparecerá aqui!</p>
+            <span class="text-6xl">📋</span>
+            <h3 class="text-xl font-semibold text-gray-900 mt-4">Nenhum pedido encontrado</h3>
+            <p class="text-gray-600 mt-2">Quando clientes fizerem pedidos, aparecerão aqui!</p>
         </div>
 
     </main>
+
+    <div id="pedidoModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+                <h3 class="text-2xl font-bold text-gray-900">Detalhes do Pedido</h3>
+                <button onclick="fecharModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+            <div id="pedidoDetalhes" class="p-6"></div>
+        </div>
+    </div>
 
     <div id="alertasModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
@@ -100,7 +96,7 @@
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/alertas.js"></script>
-    <script src="js/conversas.js"></script>
+    <script src="js/pedidos.js"></script>
     <script>iniciarAlertas();</script>
 
 </body>

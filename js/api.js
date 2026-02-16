@@ -142,4 +142,20 @@ const API = {
             body: JSON.stringify(data)
         });
     }
+    async getPedidos(empresaId, status = null) {
+        let query = `?empresa_id=${empresaId}`;
+        if (status) query += `&status=${status}`;
+        return await apiRequest(`/pedidos${query}`);
+    },
+
+    async getPedido(id, empresaId) {
+        return await apiRequest(`/pedidos/${id}?empresa_id=${empresaId}`);
+    },
+
+    async marcarPedidoImpresso(id, empresaId) {
+        return await apiRequest(`/pedidos/${id}/imprimir`, {
+            method: 'PATCH',
+            body: JSON.stringify({ empresa_id: empresaId })
+        });
+    }
 };
