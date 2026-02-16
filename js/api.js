@@ -108,4 +108,23 @@ const API = {
             method: 'DELETE'
         });
     }
+// Conversas
+  async getConversas(empresaId = null) {
+    const query = empresaId ? `?empresa_id=${empresaId}` : '';
+    return await apiRequest(`/conversas${query}`);
+  },
+
+  async assumirConversa(telefone, empresaId) {
+    return await apiRequest(`/conversas/${telefone}/assumir`, {
+      method: 'PATCH',
+      body: JSON.stringify({ empresa_id: empresaId })
+    });
+  },
+
+  async liberarConversa(telefone, empresaId) {
+    return await apiRequest(`/conversas/${telefone}/liberar`, {
+      method: 'PATCH',
+      body: JSON.stringify({ empresa_id: empresaId })
+    });
+  }
 };
