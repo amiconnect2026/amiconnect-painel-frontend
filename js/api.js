@@ -1,7 +1,5 @@
-// Configuração da API
 const API_URL = 'https://painel.amiconnect.com.br/api';
 
-// Helper para fazer requisições
 async function apiRequest(endpoint, options = {}) {
     const token = localStorage.getItem('token');
     
@@ -29,9 +27,7 @@ async function apiRequest(endpoint, options = {}) {
     }
 }
 
-// Funções da API
 const API = {
-    // Autenticação
     async login(email, password) {
         return await apiRequest('/auth/login', {
             method: 'POST',
@@ -47,7 +43,6 @@ const API = {
         return await apiRequest('/auth/logout', { method: 'POST' });
     },
 
-    // Produtos
     async getProdutos(empresaId = null) {
         const query = empresaId ? `?empresa_id=${empresaId}` : '';
         return await apiRequest(`/produtos${query}`);
@@ -83,7 +78,6 @@ const API = {
         });
     },
 
-    // Categorias
     async getCategorias(empresaId = null) {
         const query = empresaId ? `?empresa_id=${empresaId}` : '';
         return await apiRequest(`/categorias${query}`);
@@ -107,8 +101,8 @@ const API = {
         return await apiRequest(`/categorias/${id}`, {
             method: 'DELETE'
         });
-    }
-   // Conversas
+    },
+
     async getConversas(empresaId = null) {
         const query = empresaId ? `?empresa_id=${empresaId}` : '';
         return await apiRequest(`/conversas${query}`);
@@ -119,12 +113,12 @@ const API = {
             method: 'PATCH',
             body: JSON.stringify({ empresa_id: empresaId })
         });
-  },
+    },
 
-  async liberarConversa(telefone, empresaId) {
-    return await apiRequest(`/conversas/${telefone}/liberar`, {
-      method: 'PATCH',
-      body: JSON.stringify({ empresa_id: empresaId })
-    });
-  }
+    async liberarConversa(telefone, empresaId) {
+        return await apiRequest(`/conversas/${telefone}/liberar`, {
+            method: 'PATCH',
+            body: JSON.stringify({ empresa_id: empresaId })
+        });
+    }
 };
