@@ -88,7 +88,7 @@ async function verDetalhes(id) {
         const empresaId = user.role === 'admin' ? 1 : user.empresa_id;
         const response = await API.getPedido(id, empresaId);
         const pedido = response.pedido;
-        const itens = JSON.parse(pedido.itens);
+        const itens = pedido.itens;
         
         const detalhes = document.getElementById('pedidoDetalhes');
         detalhes.innerHTML = `
