@@ -38,9 +38,14 @@
                 <h2 class="text-3xl font-bold text-gray-900">Gerenciar Cardápio</h2>
                 <p class="text-gray-600 mt-1">Adicione, edite ou remova produtos</p>
             </div>
-            <button onclick="openAddModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-lg transition">
-                + Adicionar Produto
-            </button>
+            <div class="flex gap-3">
+                <button onclick="verCardapioPublico()" class="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg transition">
+                    👁️ Ver Cardápio Público
+                </button>
+                <button onclick="openAddModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-lg transition">
+                    + Adicionar Produto
+                </button>
+            </div>
         </div>
 
         <div id="loading" class="text-center py-12">
@@ -55,9 +60,9 @@
             <h3 class="text-xl font-semibold text-gray-900 mt-4">Nenhum produto cadastrado</h3>
             <p class="text-gray-600 mt-2">Clique em "Adicionar Produto" para começar</p>
         </div>
-
     </main>
 
+    <!-- Modal de produto -->
     <div id="produtoModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div class="p-6 border-b border-gray-200">
@@ -67,6 +72,33 @@
             <form id="produtoForm" class="p-6 space-y-4">
                 <input type="hidden" id="produtoId">
                 
+                <!-- Upload de imagem -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Foto do Produto</label>
+                    <div 
+                        class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-indigo-400 transition"
+                        onclick="document.getElementById('imagemInput').click()"
+                    >
+                        <!-- Placeholder -->
+                        <div id="imagemPlaceholder">
+                            <span class="text-4xl">📷</span>
+                            <p class="text-gray-500 text-sm mt-2">Clique para adicionar uma foto</p>
+                            <p class="text-gray-400 text-xs mt-1">JPG, PNG até 5MB</p>
+                        </div>
+
+                        <!-- Preview -->
+                        <div id="imagemPreviewContainer" class="hidden relative">
+                            <img id="imagemPreview" src="" alt="Preview" class="max-h-48 mx-auto rounded-lg object-cover">
+                            <button 
+                                type="button"
+                                onclick="event.stopPropagation(); removerImagem()"
+                                class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-7 h-7 flex items-center justify-center hover:bg-red-600 transition text-sm font-bold"
+                            >✕</button>
+                        </div>
+                    </div>
+                    <input type="file" id="imagemInput" accept="image/*" class="hidden" onchange="previewImagem(this)">
+                </div>
+
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Nome do Produto</label>
                     <input type="text" id="produtoNome" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none">
@@ -107,6 +139,7 @@
         </div>
     </div>
 
+    <!-- Modal de alertas -->
     <div id="alertasModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
             <div class="p-6 border-b border-gray-200 flex justify-between items-center">
@@ -121,7 +154,13 @@
     <script src="js/auth.js"></script>
     <script src="js/alertas.js"></script>
     <script src="js/cardapio.js"></script>
-    <script>iniciarAlertas();</script>
+    <script>
+        iniciarAlertas();
 
+        function verCardapioPublico() {
+            const empresaId = user.role === 'admin' ? 1 : user.empresa_id;
+            window.open(`cardapio-publico.html?id=${empresaId}`, '_blank');
+        }
+    </script>
 </body>
 </html>

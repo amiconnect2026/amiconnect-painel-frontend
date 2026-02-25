@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cardápio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .categoria-tab.ativa {
+            border-bottom: 3px solid #4f46e5;
+            color: #4f46e5;
+            font-weight: 700;
+        }
+        .produto-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .produto-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+    <!-- Loading -->
+    <div id="loading" class="fixed inset-0 bg-white flex items-center justify-center z-50">
+        <div class="text-center">
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-indigo-600 border-t-transparent"></div>
+            <p class="text-gray-600 mt-4">Carregando cardápio...</p>
+        </div>
+    </div>
+
+    <!-- Erro -->
+    <div id="erro" class="hidden fixed inset-0 bg-white flex items-center justify-center z-50">
+        <div class="text-center">
+            <span class="text-6xl">😕</span>
+            <h2 class="text-2xl font-bold text-gray-900 mt-4">Cardápio não encontrado</h2>
+            <p class="text-gray-600 mt-2">Verifique o link e tente novamente</p>
+        </div>
+    </div>
+
+    <!-- Conteúdo -->
+    <div id="conteudo" class="hidden">
+
+        <!-- Header do restaurante -->
+        <div class="bg-indigo-600 text-white">
+            <div class="max-w-3xl mx-auto px-4 py-8">
+                <div class="flex items-center gap-4">
+                    <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center text-3xl shadow-lg">
+                        🍽️
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold" id="nomeRestaurante">Carregando...</h1>
+                        <p class="text-indigo-200 text-sm mt-1" id="horarioFuncionamento"></p>
+                    </div>
+                </div>
+
+                <!-- Infos de entrega -->
+                <div class="flex gap-6 mt-6 text-sm">
+                    <div class="flex items-center gap-2">
+                        <span>🛵</span>
+                        <span>Taxa: <strong id="taxaEntrega">R$ 0,00</strong></span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span>🛍️</span>
+                        <span>Mínimo: <strong id="pedidoMinimo">R$ 0,00</strong></span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span>⏱️</span>
+                        <span>Tempo: <strong id="tempoEntrega">-- min</strong></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs de categorias -->
+        <div class="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
+            <div class="max-w-3xl mx-auto px-4">
+                <div id="categoriaTabs" class="flex gap-6 overflow-x-auto py-3 scrollbar-hide">
+                </div>
+            </div>
+        </div>
+
+        <!-- Produtos -->
+        <div class="max-w-3xl mx-auto px-4 py-6">
+            <div id="produtosContainer" class="space-y-8"></div>
+
+            <!-- Empty state -->
+            <div id="emptyState" class="hidden text-center py-16">
+                <span class="text-6xl">📭</span>
+                <h3 class="text-xl font-semibold text-gray-900 mt-4">Nenhum produto disponível</h3>
+                <p class="text-gray-600 mt-2">O cardápio está sendo atualizado</p>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center py-8 text-gray-400 text-sm border-t border-gray-200 mt-4">
+            <p>Cardápio digital por <strong class="text-indigo-500">AmiConnect</strong> 🤖</p>
+            <p class="mt-1">Para fazer seu pedido, envie uma mensagem no WhatsApp</p>
+        </div>
+
+    </div>
+
+    <script>
+        // Pegar empresa_id da URL: /cardapio-publico.html?id=4
+        const params = new URLSearchParams(window.location.search);
+        const empresaId = params.get('id');
+
+        if (!empresaId) {
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('erro').classList.remove('hidden');
+        } else {
+            carregarCardapio();
+        }
+
+        async function carregarCardapio() {
+            try {
+                const response = await fetch(`https://painel.amiconnect.com.br/api/produtos/publico/${empresaId}`);
+                const data = await response.json();
+
+                if (!response.ok) throw new Error('Empresa não encontrada');
+
+                const { empresa, produtos } = data;
+
+                // Preencher dados da empresa
+                document.title = `Cardápio - ${empresa.nome}`;
+                document.getElementById('nomeRestaurante').textContent = empresa.nome;
+                document.getElementById('horarioFuncionamento').textContent = `⏰ ${empresa.horario_funcionamento}`;
+                document.getElementById('taxaEntrega').textContent = `R$ ${parseFloat(empresa.taxa_entrega).toFixed(2)}`;
+                document.getElementById('pedidoMinimo').textContent = `R$ ${parseFloat(empresa.pedido_minimo).toFixed(2)}`;
+                document.getElementById('tempoEntrega').textContent = `${empresa.tempo_entrega_min}-${empresa.tempo_entrega_max} min`;
+
+                // Filtrar só disponíveis
+                const produtosDisponiveis = produtos.filter(p => p.disponivel);
+
+                if (produtosDisponiveis.length === 0) {
+                    document.getElementById('loading').classList.add('hidden');
+                    document.getElementById('conteudo').classList.remove('hidden');
+                    document.getElementById('emptyState').classList.remove('hidden');
+                    return;
+                }
+
+                // Agrupar por categoria
+                const porCategoria = {};
+                produtosDisponiveis.forEach(p => {
+                    const cat = p.categoria_nome || 'Outros';
+                    if (!porCategoria[cat]) porCategoria[cat] = [];
+                    porCategoria[cat].push(p);
+                });
+
+                // Renderizar tabs de categorias
+                const tabs = document.getElementById('categoriaTabs');
+                Object.keys(porCategoria).forEach((cat, index) => {
+                    const tab = document.createElement('button');
+                    tab.className = `categoria-tab whitespace-nowrap pb-2 text-gray-600 hover:text-indigo-600 transition font-medium ${index === 0 ? 'ativa' : ''}`;
+                    tab.textContent = cat;
+                    tab.onclick = () => {
+                        document.querySelectorAll('.categoria-tab').forEach(t => t.classList.remove('ativa'));
+                        tab.classList.add('ativa');
+                        document.getElementById(`cat-${cat.replace(/\s/g, '-')}`).scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    };
+                    tabs.appendChild(tab);
+                });
+
+                // Renderizar produtos
+                const container = document.getElementById('produtosContainer');
+                Object.keys(porCategoria).forEach(cat => {
+                    const prods = porCategoria[cat];
+                    const section = document.createElement('div');
+                    section.id = `cat-${cat.replace(/\s/g, '-')}`;
+                    section.className = 'fade-in';
+                    section.innerHTML = `
+                        <h2 class="text-xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">${cat}</h2>
+                        <div class="grid grid-cols-1 gap-4">
+                            ${prods.map(p => `
+                                <div class="produto-card bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex">
+                                    <div class="flex-1 p-4">
+                                        <h3 class="font-bold text-gray-900 text-lg">${p.nome}</h3>
+                                        ${p.descricao ? `<p class="text-gray-500 text-sm mt-1 leading-relaxed">${p.descricao}</p>` : ''}
+                                        <p class="text-indigo-600 font-bold text-lg mt-3">R$ ${parseFloat(p.preco).toFixed(2)}</p>
+                                    </div>
+                                    ${p.imagem_url ? `
+                                        <div class="w-32 h-32 flex-shrink-0">
+                                            <img src="${p.imagem_url}" alt="${p.nome}" class="w-full h-full object-cover">
+                                        </div>
+                                    ` : `
+                                        <div class="w-32 h-32 flex-shrink-0 bg-gray-100 flex items-center justify-center text-4xl">
+                                            🍽️
+                                        </div>
+                                    `}
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                    container.appendChild(section);
+                });
+
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('conteudo').classList.remove('hidden');
+
+            } catch (error) {
+                console.error('Erro:', error);
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('erro').classList.remove('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
