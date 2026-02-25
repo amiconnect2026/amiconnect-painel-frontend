@@ -8,19 +8,64 @@ document.getElementById('userName').textContent = user.nome;
 
 const isAdmin = user.role === 'admin';
 
-if (isAdmin) {
-    document.getElementById('btnAdicionarProduto').classList.remove('hidden');
-}
+// Empresa selecionada atualmente
+let empresaSelecionadaId = isAdmin 
+    ? (parseInt(localStorage.getItem('adminEmpresaId')) || null)
+    : user.empresa_id;
 
 let categorias = [];
 let produtos = [];
 let editingProductId = null;
 let selectedImageFile = null;
 
+// Inicializar
 async function init() {
+    if (isAdmin) {
+        document.getElementById('btnAdicionarProduto').classList.remove('hidden');
+        await carregarSeletorEmpresas();
+    }
+
+    if (empresaSelecionadaId) {
+        await carregarProdutos(empresaSelecionadaId);
+    } else {
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('selecioneEmpresa').classList.remove('hidden');
+    }
+}
+
+// Carregar seletor de empresas (apenas admin)
+async function carregarSeletorEmpresas() {
     try {
-        const empresaId = isAdmin ? 1 : user.empresa_id;
-        
+        const res = await apiRequest('/empresas');
+        const empresas = res.empresas || [];
+
+        const seletor = document.getElementById('seletorEmpresa');
+        seletor.classList.remove('hidden');
+
+        const select = document.getElementById('selectEmpresa');
+        select.innerHTML = '<option value="">Selecione um restaurante...</option>';
+        empresas.forEach(e => {
+            select.innerHTML += `<option value="${e.id}" ${e.id == empresaSelecionadaId ? 'selected' : ''}>${e.nome}</option>`;
+        });
+
+        select.addEventListener('change', async (ev) => {
+            const id = parseInt(ev.target.value);
+            if (!id) return;
+            localStorage.setItem('adminEmpresaId', id);
+            empresaSelecionadaId = id;
+            document.getElementById('selecioneEmpresa').classList.add('hidden');
+            document.getElementById('produtosContainer').classList.add('hidden');
+            document.getElementById('loading').classList.remove('hidden');
+            await carregarProdutos(id);
+        });
+    } catch (error) {
+        console.error('Erro ao carregar empresas:', error);
+    }
+}
+
+// Carregar produtos da empresa
+async function carregarProdutos(empresaId) {
+    try {
         const [categoriasRes, produtosRes] = await Promise.all([
             API.getCategorias(empresaId),
             API.getProdutos(empresaId)
@@ -42,6 +87,7 @@ async function init() {
     }
 }
 
+// Renderizar produtos por categoria
 function renderProdutos() {
     const container = document.getElementById('produtosContainer');
     const loading = document.getElementById('loading');
@@ -132,6 +178,10 @@ function removerImagem() {
 
 function openAddModal() {
     if (!isAdmin) return;
+    if (!empresaSelecionadaId) {
+        alert('Selecione um restaurante primeiro!');
+        return;
+    }
     editingProductId = null;
     selectedImageFile = null;
     document.getElementById('modalTitle').textContent = 'Adicionar Produto';
@@ -205,10 +255,8 @@ document.getElementById('produtoForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!isAdmin) return;
 
-    const empresaId = isAdmin ? 1 : user.empresa_id;
-
     const formData = new FormData();
-    formData.append('empresa_id', empresaId);
+    formData.append('empresa_id', empresaSelecionadaId);
     formData.append('categoria_id', document.getElementById('produtoCategoria').value);
     formData.append('nome', document.getElementById('produtoNome').value);
     formData.append('descricao', document.getElementById('produtoDescricao').value);
@@ -230,9 +278,7 @@ document.getElementById('produtoForm').addEventListener('submit', async (e) => {
         }
 
         closeModal();
-        const produtosRes = await API.getProdutos(empresaId);
-        produtos = produtosRes.produtos;
-        renderProdutos();
+        await carregarProdutos(empresaSelecionadaId);
     } catch (error) {
         alert('Erro ao salvar produto: ' + error.message);
     }
