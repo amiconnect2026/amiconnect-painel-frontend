@@ -4,19 +4,22 @@ if (!user) {
     window.location.href = 'index.html';
 }
 
-// Mostrar nome do usuário
 document.getElementById('userName').textContent = user.nome;
 
-// Variáveis globais
+const isAdmin = user.role === 'admin';
+
+if (isAdmin) {
+    document.getElementById('btnAdicionarProduto').classList.remove('hidden');
+}
+
 let categorias = [];
 let produtos = [];
 let editingProductId = null;
 let selectedImageFile = null;
 
-// Carregar dados iniciais
 async function init() {
     try {
-        const empresaId = user.role === 'admin' ? 1 : user.empresa_id;
+        const empresaId = isAdmin ? 1 : user.empresa_id;
         
         const [categoriasRes, produtosRes] = await Promise.all([
             API.getCategorias(empresaId),
@@ -26,7 +29,6 @@ async function init() {
         categorias = categoriasRes.categorias;
         produtos = produtosRes.produtos;
 
-        // Preencher select de categorias no modal
         const selectCategoria = document.getElementById('produtoCategoria');
         selectCategoria.innerHTML = '<option value="">Selecione...</option>';
         categorias.forEach(cat => {
@@ -40,7 +42,6 @@ async function init() {
     }
 }
 
-// Renderizar produtos por categoria
 function renderProdutos() {
     const container = document.getElementById('produtosContainer');
     const loading = document.getElementById('loading');
@@ -57,7 +58,6 @@ function renderProdutos() {
     emptyState.classList.add('hidden');
     container.classList.remove('hidden');
 
-    // Agrupar produtos por categoria
     const produtosPorCategoria = {};
     produtos.forEach(produto => {
         const categoriaNome = produto.categoria_nome || 'Sem categoria';
@@ -77,14 +77,12 @@ function renderProdutos() {
                 <div class="space-y-3">
                     ${prods.map(p => `
                         <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-indigo-300 transition gap-4">
-                            <!-- Imagem do produto -->
                             <div class="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
                                 ${p.imagem_url 
                                     ? `<img src="${p.imagem_url}" alt="${p.nome}" class="w-full h-full object-cover">`
                                     : `<div class="w-full h-full flex items-center justify-center text-2xl">🍽️</div>`
                                 }
                             </div>
-
                             <div class="flex-1">
                                 <div class="flex items-center gap-3">
                                     <h4 class="font-semibold text-gray-900">${p.nome}</h4>
@@ -92,7 +90,6 @@ function renderProdutos() {
                                 </div>
                                 ${p.descricao ? `<p class="text-sm text-gray-600 mt-1">${p.descricao}</p>` : ''}
                             </div>
-
                             <div class="flex items-center gap-2">
                                 <button 
                                     onclick="toggleDisponivel(${p.id})" 
@@ -100,8 +97,10 @@ function renderProdutos() {
                                 >
                                     ${p.disponivel ? '✅ Disponível' : '❌ Indisponível'}
                                 </button>
-                                <button onclick="editProduto(${p.id})" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Editar">✏️</button>
-                                <button onclick="deleteProduto(${p.id}, '${p.nome}')" class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition" title="Deletar">🗑️</button>
+                                ${isAdmin ? `
+                                    <button onclick="editProduto(${p.id})" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Editar">✏️</button>
+                                    <button onclick="deleteProduto(${p.id}, '${p.nome}')" class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition" title="Deletar">🗑️</button>
+                                ` : ''}
                             </div>
                         </div>
                     `).join('')}
@@ -111,13 +110,10 @@ function renderProdutos() {
     });
 }
 
-// Preview da imagem selecionada
 function previewImagem(input) {
     const file = input.files[0];
     if (!file) return;
-
     selectedImageFile = file;
-
     const reader = new FileReader();
     reader.onload = (e) => {
         document.getElementById('imagemPreview').src = e.target.result;
@@ -127,7 +123,6 @@ function previewImagem(input) {
     reader.readAsDataURL(file);
 }
 
-// Remover imagem selecionada
 function removerImagem() {
     selectedImageFile = null;
     document.getElementById('imagemInput').value = '';
@@ -135,8 +130,8 @@ function removerImagem() {
     document.getElementById('imagemPlaceholder').classList.remove('hidden');
 }
 
-// Abrir modal para adicionar
 function openAddModal() {
+    if (!isAdmin) return;
     editingProductId = null;
     selectedImageFile = null;
     document.getElementById('modalTitle').textContent = 'Adicionar Produto';
@@ -148,8 +143,8 @@ function openAddModal() {
     document.getElementById('produtoModal').classList.remove('hidden');
 }
 
-// Editar produto
 function editProduto(id) {
+    if (!isAdmin) return;
     const produto = produtos.find(p => p.id === id);
     if (!produto) return;
 
@@ -164,7 +159,6 @@ function editProduto(id) {
     document.getElementById('produtoCategoria').value = produto.categoria_id;
     document.getElementById('produtoDisponivel').checked = produto.disponivel;
 
-    // Mostrar imagem atual se existir
     if (produto.imagem_url) {
         document.getElementById('imagemPreview').src = produto.imagem_url;
         document.getElementById('imagemPreviewContainer').classList.remove('hidden');
@@ -177,14 +171,12 @@ function editProduto(id) {
     document.getElementById('produtoModal').classList.remove('hidden');
 }
 
-// Fechar modal
 function closeModal() {
     document.getElementById('produtoModal').classList.add('hidden');
     editingProductId = null;
     selectedImageFile = null;
 }
 
-// Toggle disponível
 async function toggleDisponivel(id) {
     try {
         await API.toggleProduto(id);
@@ -196,8 +188,8 @@ async function toggleDisponivel(id) {
     }
 }
 
-// Deletar produto
 async function deleteProduto(id, nome) {
+    if (!isAdmin) return;
     if (!confirm(`Tem certeza que deseja deletar "${nome}"?`)) return;
     try {
         await API.deleteProduto(id);
@@ -209,13 +201,12 @@ async function deleteProduto(id, nome) {
     }
 }
 
-// Submit do formulário
 document.getElementById('produtoForm').addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (!isAdmin) return;
 
-    const empresaId = user.role === 'admin' ? 1 : user.empresa_id;
+    const empresaId = isAdmin ? 1 : user.empresa_id;
 
-    // Usar FormData para suportar upload de imagem
     const formData = new FormData();
     formData.append('empresa_id', empresaId);
     formData.append('categoria_id', document.getElementById('produtoCategoria').value);
@@ -224,7 +215,6 @@ document.getElementById('produtoForm').addEventListener('submit', async (e) => {
     formData.append('preco', document.getElementById('produtoPreco').value);
     formData.append('disponivel', document.getElementById('produtoDisponivel').checked);
 
-    // Adicionar imagem se selecionada
     if (selectedImageFile) {
         formData.append('imagem', selectedImageFile);
     }
@@ -240,7 +230,6 @@ document.getElementById('produtoForm').addEventListener('submit', async (e) => {
         }
 
         closeModal();
-        // Recarregar produtos para pegar imagem atualizada
         const produtosRes = await API.getProdutos(empresaId);
         produtos = produtosRes.produtos;
         renderProdutos();
@@ -249,5 +238,4 @@ document.getElementById('produtoForm').addEventListener('submit', async (e) => {
     }
 });
 
-// Inicializar
 init();

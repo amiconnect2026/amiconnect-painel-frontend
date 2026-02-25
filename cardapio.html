@@ -7,7 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-50">
-    
     <nav class="bg-white shadow-sm border-b border-gray-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
@@ -32,17 +31,16 @@
     </nav>
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
         <div class="flex justify-between items-center mb-8">
             <div>
                 <h2 class="text-3xl font-bold text-gray-900">Gerenciar Cardápio</h2>
-                <p class="text-gray-600 mt-1">Adicione, edite ou remova produtos</p>
+                <p class="text-gray-600 mt-1">Ative ou desative produtos do cardápio</p>
             </div>
             <div class="flex gap-3">
                 <button onclick="verCardapioPublico()" class="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg transition">
                     👁️ Ver Cardápio Público
                 </button>
-                <button onclick="openAddModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-lg transition">
+                <button id="btnAdicionarProduto" onclick="openAddModal()" class="hidden bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-lg transition">
                     + Adicionar Produto
                 </button>
             </div>
@@ -52,13 +50,11 @@
             <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-indigo-600 border-t-transparent"></div>
             <p class="text-gray-600 mt-4">Carregando produtos...</p>
         </div>
-
         <div id="produtosContainer" class="space-y-8 hidden"></div>
-
         <div id="emptyState" class="hidden text-center py-12">
             <span class="text-6xl">📭</span>
             <h3 class="text-xl font-semibold text-gray-900 mt-4">Nenhum produto cadastrado</h3>
-            <p class="text-gray-600 mt-2">Clique em "Adicionar Produto" para começar</p>
+            <p class="text-gray-600 mt-2">Entre em contato com o suporte para cadastrar produtos</p>
         </div>
     </main>
 
@@ -68,47 +64,31 @@
             <div class="p-6 border-b border-gray-200">
                 <h3 class="text-2xl font-bold text-gray-900" id="modalTitle">Adicionar Produto</h3>
             </div>
-            
             <form id="produtoForm" class="p-6 space-y-4">
                 <input type="hidden" id="produtoId">
-                
-                <!-- Upload de imagem -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Foto do Produto</label>
-                    <div 
-                        class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-indigo-400 transition"
-                        onclick="document.getElementById('imagemInput').click()"
-                    >
-                        <!-- Placeholder -->
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-indigo-400 transition" onclick="document.getElementById('imagemInput').click()">
                         <div id="imagemPlaceholder">
                             <span class="text-4xl">📷</span>
                             <p class="text-gray-500 text-sm mt-2">Clique para adicionar uma foto</p>
                             <p class="text-gray-400 text-xs mt-1">JPG, PNG até 5MB</p>
                         </div>
-
-                        <!-- Preview -->
                         <div id="imagemPreviewContainer" class="hidden relative">
                             <img id="imagemPreview" src="" alt="Preview" class="max-h-48 mx-auto rounded-lg object-cover">
-                            <button 
-                                type="button"
-                                onclick="event.stopPropagation(); removerImagem()"
-                                class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-7 h-7 flex items-center justify-center hover:bg-red-600 transition text-sm font-bold"
-                            >✕</button>
+                            <button type="button" onclick="event.stopPropagation(); removerImagem()" class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-7 h-7 flex items-center justify-center hover:bg-red-600 transition text-sm font-bold">✕</button>
                         </div>
                     </div>
                     <input type="file" id="imagemInput" accept="image/*" class="hidden" onchange="previewImagem(this)">
                 </div>
-
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Nome do Produto</label>
                     <input type="text" id="produtoNome" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none">
                 </div>
-
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Descrição</label>
                     <textarea id="produtoDescricao" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"></textarea>
                 </div>
-
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Preço (R$)</label>
@@ -121,19 +101,13 @@
                         </select>
                     </div>
                 </div>
-
                 <div class="flex items-center gap-3">
                     <input type="checkbox" id="produtoDisponivel" checked class="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
                     <label for="produtoDisponivel" class="text-sm font-medium text-gray-700">Produto disponível</label>
                 </div>
-
                 <div class="flex gap-3 pt-4">
-                    <button type="button" onclick="closeModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 rounded-lg transition">
-                        Cancelar
-                    </button>
-                    <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg transition">
-                        Salvar
-                    </button>
+                    <button type="button" onclick="closeModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 rounded-lg transition">Cancelar</button>
+                    <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg transition">Salvar</button>
                 </div>
             </form>
         </div>
@@ -156,7 +130,6 @@
     <script src="js/cardapio.js"></script>
     <script>
         iniciarAlertas();
-
         function verCardapioPublico() {
             const empresaId = user.role === 'admin' ? 1 : user.empresa_id;
             window.open(`cardapio-publico.html?id=${empresaId}`, '_blank');
