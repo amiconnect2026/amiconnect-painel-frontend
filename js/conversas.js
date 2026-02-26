@@ -162,7 +162,7 @@ function fecharChat() {
 async function carregarMensagens() {
     if (!chatTelefone) return;
     try {
-        const query = user.role === 'admin' ? `?empresa_id=${chatEmpresaId}` : '';
+        const query = user.role === 'admin' ? `?empresa_id=${chatEmpresaId}&t=${Date.now()}` : `?t=${Date.now()}`;
         const response = await apiRequest(`/conversas/mensagens/${chatTelefone}${query}`);
         renderMensagens(response.mensagens || []);
     } catch (error) {
