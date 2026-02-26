@@ -56,12 +56,13 @@ function renderConversas() {
                             <span class="text-xl">👤</span>
                         </div>
                         <div>
-                            <h3 class="font-semibold text-gray-900">${formatPhone(conv.cliente_telefone)}</h3>
-                            <p class="text-sm text-gray-500">${conv.cliente_telefone}</p>
+                            <h3 class="font-semibold text-gray-900">${conv.cliente_nome || formatPhone(conv.cliente_telefone)}</h3>
+                            <p class="text-sm text-gray-500">${formatPhone(conv.cliente_telefone)}</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-4 mt-3 text-xs text-gray-500">
                         <span>🕐 ${formatDate(conv.ultima_msg_em)}</span>
+                        ${conv.ultima_msg_texto ? `<span class="truncate max-w-xs">💬 ${conv.ultima_msg_texto}</span>` : ''}
                         ${conv.atendente_nome ? `<span>👤 ${conv.atendente_nome}</span>` : ''}
                     </div>
                 </div>
@@ -138,8 +139,9 @@ async function abrirChat(telefone) {
         ? (parseInt(localStorage.getItem('adminEmpresaId')) || 1)
         : user.empresa_id;
 
-    document.getElementById('chatClienteNome').textContent = formatPhone(telefone);
-    document.getElementById('chatClienteTelefone').textContent = telefone;
+    const conv = conversas.find(c => c.cliente_telefone === telefone);
+    document.getElementById('chatClienteNome').textContent = conv?.cliente_nome || formatPhone(telefone);
+    document.getElementById('chatClienteTelefone').textContent = formatPhone(telefone);
     document.getElementById('chatModal').classList.remove('hidden');
 
     await carregarMensagens();
@@ -172,13 +174,12 @@ function renderMensagens(mensagens) {
     const container = document.getElementById('chatMensagens');
     
     if (mensagens.length === 0) {
-        container.innerHTML = '<div class="text-center text-gray-400 text-sm">Nenhuma mensagem ainda</div>';
+        container.innerHTML = '<div class="text-center text-gray-400 text-sm py-8">Nenhuma mensagem ainda</div>';
         return;
     }
 
     container.innerHTML = mensagens.map(msg => {
         const isUser = msg.role === 'user';
-        const isAtendente = msg.role === 'assistant' || msg.role === 'atendente';
         const hora = new Date(msg.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
         if (isUser) {
@@ -194,7 +195,7 @@ function renderMensagens(mensagens) {
             return `
                 <div class="flex justify-end">
                     <div class="max-w-xs lg:max-w-md">
-                        <div class="${isAtendente ? 'msg-atendente' : 'msg-atendente'} px-4 py-2">${msg.content}</div>
+                        <div class="msg-atendente px-4 py-2">${msg.content}</div>
                         <p class="text-xs text-gray-400 mt-1 mr-2 text-right">${hora}</p>
                     </div>
                 </div>
@@ -202,7 +203,6 @@ function renderMensagens(mensagens) {
         }
     }).join('');
 
-    // Scroll para o final
     container.scrollTop = container.scrollHeight;
 }
 
