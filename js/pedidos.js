@@ -10,7 +10,7 @@ let filtroAtual = 'todos';
 
 async function loadPedidos() {
     try {
-        const empresaId = user.role === 'admin' ? 1 : user.empresa_id;
+        const empresaId = user.role === 'admin' ? (parseInt(localStorage.getItem('adminEmpresaId')) || user.empresa_id) : user.empresa_id;
         const response = await API.getPedidos(empresaId, filtroAtual !== 'todos' ? filtroAtual : null);
         
         pedidos = response.pedidos || [];
@@ -85,7 +85,7 @@ function filtrarStatus(status) {
 
 async function verDetalhes(id) {
     try {
-        const empresaId = user.role === 'admin' ? 1 : user.empresa_id;
+        const empresaId = user.role === 'admin' ? (parseInt(localStorage.getItem('adminEmpresaId')) || user.empresa_id) : user.empresa_id;
         const response = await API.getPedido(id, empresaId);
         const pedido = response.pedido;
         const itens = pedido.itens;
@@ -194,7 +194,7 @@ function fecharModal() {
 
 async function imprimirPedido(id) {
     try {
-        const empresaId = user.role === 'admin' ? 1 : user.empresa_id;
+        const empresaId = user.role === 'admin' ? (parseInt(localStorage.getItem('adminEmpresaId')) || user.empresa_id) : user.empresa_id;
         const response = await API.getPedido(id, empresaId);
         const pedido = response.pedido;
 
