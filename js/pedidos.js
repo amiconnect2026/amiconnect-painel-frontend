@@ -195,15 +195,65 @@ function fecharModal() {
 async function imprimirPedido(id) {
     try {
         const empresaId = user.role === 'admin' ? 1 : user.empresa_id;
+        const response = await API.getPedido(id, empresaId);
+        const pedido = response.pedido;
+
+        const itensHtml = pedido.itens.map(item => `
+            <tr>
+                <td>${item.quantidade}x ${item.nome}</td>
+                <td style="text-align:right">R$ ${(item.quantidade * item.preco).toFixed(2)}</td>
+            </tr>
+        `).join('');
+
+        const janela = window.open('', '_blank', 'width=400,height=600');
+        janela.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>Pedido #${pedido.id}</title>
+                <style>
+                    body { font-family: monospace; font-size: 13px; padding: 16px; max-width: 300px; margin: 0 auto; }
+                    h2 { text-align: center; font-size: 16px; margin: 4px 0; }
+                    p { margin: 2px 0; }
+                    table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+                    td { padding: 2px 0; }
+                    .linha { border-top: 1px dashed #000; margin: 8px 0; }
+                    .total { font-weight: bold; font-size: 15px; }
+                    .centro { text-align: center; }
+                </style>
+            </head>
+            <body>
+                <h2>PEDIDO #${pedido.id}</h2>
+                <p class="centro">${formatDate(pedido.created_at)}</p>
+                <div class="linha"></div>
+                <p><b>Cliente:</b> ${pedido.cliente_nome || '-'}</p>
+                <p><b>Tel:</b> ${formatPhone(pedido.cliente_telefone)}</p>
+                <p><b>End:</b> ${pedido.cliente_endereco || '-'}</p>
+                <div class="linha"></div>
+                <table>${itensHtml}</table>
+                <div class="linha"></div>
+                <table>
+                    <tr><td>Subtotal</td><td style="text-align:right">R$ ${parseFloat(pedido.subtotal).toFixed(2)}</td></tr>
+                    <tr><td>Entrega</td><td style="text-align:right">R$ ${parseFloat(pedido.taxa_entrega).toFixed(2)}</td></tr>
+                    <tr class="total"><td>TOTAL</td><td style="text-align:right">R$ ${parseFloat(pedido.total).toFixed(2)}</td></tr>
+                </table>
+                <div class="linha"></div>
+                <p><b>Pagamento:</b> ${pedido.forma_pagamento || '-'}</p>
+                ${pedido.troco_para ? `<p><b>Troco para:</b> R$ ${parseFloat(pedido.troco_para).toFixed(2)}</p>` : ''}
+                ${pedido.observacoes ? `<p><b>Obs:</b> ${pedido.observacoes}</p>` : ''}
+                <script>window.onload = function(){ window.print(); window.close(); }<\/script>
+            </body>
+            </html>
+        `);
+        janela.document.close();
+
         await API.marcarPedidoImpresso(id, empresaId);
-        
-        alert('✅ Pedido marcado como impresso!\n\n(Integração com impressora será configurada depois)');
-        
         fecharModal();
         loadPedidos();
-        
+
     } catch (error) {
-        alert('Erro ao marcar como impresso: ' + error.message);
+        alert('Erro ao imprimir: ' + error.message);
     }
 }
 
