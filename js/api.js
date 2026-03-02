@@ -134,6 +134,18 @@ const API = {
     async getPedido(id, empresaId) {
         return await apiRequest(`/pedidos/${id}?empresa_id=${empresaId}`);
     },
+    async atualizarStatusPedido(id, status, empresaId) {
+        return await apiRequest(`/pedidos/${id}/status`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status, empresa_id: empresaId })
+        });
+    },
+    async atualizarStatusPedido(id, status, empresaId) {
+        return await apiRequest(`/pedidos/${id}/status`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status, empresa_id: empresaId })
+        });
+    },
     async marcarPedidoImpresso(id, empresaId) {
         return await apiRequest(`/pedidos/${id}/imprimir`, {
             method: 'PATCH',
