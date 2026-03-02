@@ -12,8 +12,14 @@ function getEmpresaId() {
 
 async function loadPedidos() {
     try {
-        const response = await API.getPedidos(getEmpresaId(), filtroAtual !== 'todos' ? filtroAtual : null);
+        let status = null;
+        if (filtroAtual === 'novos') status = 'pendente';
+        if (filtroAtual === 'finalizados') status = 'entregue';
+        const response = await API.getPedidos(getEmpresaId(), status);
         pedidos = response.pedidos || [];
+        if (filtroAtual === 'novos') {
+            pedidos = pedidos.filter(p => !p.impresso);
+        }
         renderPedidos();
     } catch (error) {
         console.error('Erro ao carregar pedidos:', error);
@@ -42,12 +48,12 @@ function renderPedidos() {
                         <span class="px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(pedido.status)}">
                             ${getStatusLabel(pedido.status)}
                         </span>
-                        ${!pedido.impresso ? '<span class="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm font-medium">⚠️ Não impresso</span>' : ''}
+                        ${!pedido.impresso ? '<span class="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm font-medium">Nao impresso</span>' : ''}
                     </div>
                     <div class="grid grid-cols-2 gap-4 mt-3">
                         <div>
                             <p class="text-sm text-gray-500">Cliente</p>
-                            <p class="font-semibold text-gray-900">${pedido.cliente_nome || 'Não informado'}</p>
+                            <p class="font-semibold text-gray-900">${pedido.cliente_nome || 'Nao informado'}</p>
                             <p class="text-sm text-gray-600">${formatPhone(pedido.cliente_telefone)}</p>
                         </div>
                         <div>
@@ -56,8 +62,8 @@ function renderPedidos() {
                         </div>
                     </div>
                     <div class="mt-3">
-                        <p class="text-sm text-gray-500">Endereço</p>
-                        <p class="text-sm text-gray-900">${(pedido.cliente_endereco || 'Não informado').split('📍')[0].trim()}</p>
+                        <p class="text-sm text-gray-500">Endereco</p>
+                        <p class="text-sm text-gray-900">${(pedido.cliente_endereco || 'Nao informado').split('📍')[0].trim()}</p>
                     </div>
                     <p class="text-xs text-gray-400 mt-3">🕐 ${formatDate(pedido.created_at)}</p>
                 </div>
@@ -98,23 +104,26 @@ async function verDetalhes(id) {
                     </span>
                 </div>
 
-                <div class="flex gap-2 flex-wrap">
-                    <button onclick="mudarStatus(${pedido.id}, 'pendente')" class="px-3 py-1 rounded-lg text-sm font-medium bg-yellow-100 text-yellow-700 hover:bg-yellow-200">Pendente</button>
-                    <button onclick="mudarStatus(${pedido.id}, 'preparando')" class="px-3 py-1 rounded-lg text-sm font-medium bg-orange-100 text-orange-700 hover:bg-orange-200">Preparando</button>
-                    <button onclick="mudarStatus(${pedido.id}, 'saiu_entrega')" class="px-3 py-1 rounded-lg text-sm font-medium bg-purple-100 text-purple-700 hover:bg-purple-200">Saiu p/ Entrega</button>
-                    <button onclick="mudarStatus(${pedido.id}, 'entregue')" class="px-3 py-1 rounded-lg text-sm font-medium bg-green-100 text-green-700 hover:bg-green-200">Entregue</button>
-                    <button onclick="mudarStatus(${pedido.id}, 'cancelado')" class="px-3 py-1 rounded-lg text-sm font-medium bg-red-100 text-red-700 hover:bg-red-200">Cancelado</button>
+                <div>
+                    <p class="text-sm font-medium text-gray-500 mb-2">Alterar Status</p>
+                    <div class="flex gap-2 flex-wrap">
+                        <button onclick="mudarStatus(${pedido.id}, 'pendente')" class="px-3 py-1 rounded-lg text-sm font-medium bg-yellow-100 text-yellow-700 hover:bg-yellow-200">Pendente</button>
+                        <button onclick="mudarStatus(${pedido.id}, 'preparando')" class="px-3 py-1 rounded-lg text-sm font-medium bg-orange-100 text-orange-700 hover:bg-orange-200">Preparando</button>
+                        <button onclick="mudarStatus(${pedido.id}, 'saiu_entrega')" class="px-3 py-1 rounded-lg text-sm font-medium bg-purple-100 text-purple-700 hover:bg-purple-200">Saiu p/ Entrega</button>
+                        <button onclick="mudarStatus(${pedido.id}, 'entregue')" class="px-3 py-1 rounded-lg text-sm font-medium bg-green-100 text-green-700 hover:bg-green-200">Entregue</button>
+                        <button onclick="mudarStatus(${pedido.id}, 'cancelado')" class="px-3 py-1 rounded-lg text-sm font-medium bg-red-100 text-red-700 hover:bg-red-200">Cancelado</button>
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <p class="text-sm font-medium text-gray-500">Cliente</p>
-                        <p class="text-lg font-semibold text-gray-900">${pedido.cliente_nome || 'Não informado'}</p>
+                        <p class="text-lg font-semibold text-gray-900">${pedido.cliente_nome || 'Nao informado'}</p>
                         <p class="text-gray-600">${formatPhone(pedido.cliente_telefone)}</p>
                     </div>
                     <div>
-                        <p class="text-sm font-medium text-gray-500">Endereço</p>
-                        <p class="text-gray-900">${enderecoTexto || 'Não informado'}</p>
+                        <p class="text-sm font-medium text-gray-500">Endereco</p>
+                        <p class="text-gray-900">${enderecoTexto || 'Nao informado'}</p>
                         ${localizacaoLink ? `<a href="${localizacaoLink}" target="_blank" class="text-indigo-600 text-sm">📍 Ver no mapa</a>` : ''}
                     </div>
                 </div>
@@ -156,7 +165,7 @@ async function verDetalhes(id) {
 
                 ${pedido.observacoes ? `
                     <div>
-                        <p class="text-sm font-medium text-gray-500">Observações</p>
+                        <p class="text-sm font-medium text-gray-500">Observacoes</p>
                         <p class="text-gray-900">${pedido.observacoes}</p>
                     </div>
                 ` : ''}
