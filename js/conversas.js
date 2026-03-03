@@ -1,60 +1,64 @@
 const user = checkAuth();
-if (!user) {
-    window.location.href = 'index.html';
-}
-
+if (!user) { window.location.href = 'index.html'; }
 document.getElementById('userName').textContent = user.nome;
-
 let conversas = [];
 let intervalId = null;
 let chatTelefone = null;
 let chatEmpresaId = null;
 let chatIntervalId = null;
+let empresaIdAtual = user.role === 'admin' ? (parseInt(localStorage.getItem('adminEmpresaId')) || null) : user.empresa_id;
 
-// ==========================================
-// CARREGAR CONVERSAS
-// ==========================================
+async function carregarSeletorEmpresas() {
+    if (user.role !== 'admin') { if (empresaIdAtual) loadConversas(); return; }
+    try {
+        const res = await apiRequest('/empresas');
+        const empresas = res.empresas || [];
+        const seletor = document.getElementById('seletorEmpresa');
+        seletor.classList.remove('hidden');
+        const select = document.getElementById('selectEmpresa');
+        select.innerHTML = '<option value="">Selecione um restaurante...</option>';
+        empresas.forEach(e => {
+            select.innerHTML += `<option value="${e.id}" ${e.id == empresaIdAtual ? 'selected' : ''}>${e.nome}</option>`;
+        });
+        select.addEventListener('change', (ev) => {
+            const id = parseInt(ev.target.value);
+            if (!id) return;
+            localStorage.setItem('adminEmpresaId', id);
+            empresaIdAtual = id;
+            loadConversas();
+        });
+        if (empresaIdAtual) loadConversas();
+    } catch(e) { console.error(e); }
+}
+
 async function loadConversas() {
     try {
-        const empresaId = user.role === 'admin' 
-            ? (parseInt(localStorage.getItem('adminEmpresaId')) || null)
-            : user.empresa_id;
-
-        if (!empresaId) return;
-
-        const response = await API.getConversas(empresaId);
+        if (!empresaIdAtual) return;
+        const response = await API.getConversas(empresaIdAtual);
         conversas = response.conversas || [];
         renderConversas();
         updateStats();
-    } catch (error) {
-        console.error('Erro ao carregar conversas:', error);
-    }
+    } catch (error) { console.error('Erro:', error); }
 }
 
 function renderConversas() {
     const container = document.getElementById('conversasContainer');
     const loading = document.getElementById('loading');
     const emptyState = document.getElementById('emptyState');
-
     loading.classList.add('hidden');
-
     if (conversas.length === 0) {
         emptyState.classList.remove('hidden');
         container.classList.add('hidden');
         return;
     }
-
     emptyState.classList.add('hidden');
     container.classList.remove('hidden');
-
     container.innerHTML = conversas.map(conv => `
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div class="flex items-center justify-between">
                 <div class="flex-1">
                     <div class="flex items-center gap-3 mb-2">
-                        <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
-                            <span class="text-xl">👤</span>
-                        </div>
+                        <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center"><span class="text-xl">👤</span></div>
                         <div>
                             <h3 class="font-semibold text-gray-900">${conv.cliente_nome || formatPhone(conv.cliente_telefone)}</h3>
                             <p class="text-sm text-gray-500">${formatPhone(conv.cliente_telefone)}</p>
@@ -71,16 +75,10 @@ function renderConversas() {
                         ${conv.modo === 'bot' ? '🤖 Bot' : '👤 Manual'}
                     </div>
                     ${conv.modo === 'bot' ? `
-                        <button onclick="assumirConversa('${conv.cliente_telefone}')" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition">
-                            Assumir
-                        </button>
+                        <button onclick="assumirConversa('${conv.cliente_telefone}')" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition">Assumir</button>
                     ` : `
-                        <button onclick="abrirChat('${conv.cliente_telefone}')" class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition">
-                            💬 Abrir Chat
-                        </button>
-                        <button onclick="liberarConversa('${conv.cliente_telefone}')" class="px-6 py-2 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg transition">
-                            Liberar pro Bot
-                        </button>
+                        <button onclick="abrirChat('${conv.cliente_telefone}')" class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition">💬 Abrir Chat</button>
+                        <button onclick="liberarConversa('${conv.cliente_telefone}')" class="px-6 py-2 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg transition">Liberar pro Bot</button>
                     `}
                 </div>
             </div>
@@ -94,33 +92,20 @@ function updateStats() {
     document.getElementById('conversasManual').textContent = conversas.filter(c => c.modo === 'manual').length;
 }
 
-// ==========================================
-// ASSUMIR / LIBERAR
-// ==========================================
 async function assumirConversa(telefone) {
     try {
-        const empresaId = user.role === 'admin'
-            ? (parseInt(localStorage.getItem('adminEmpresaId')) || 1)
-            : user.empresa_id;
-        await API.assumirConversa(telefone, empresaId);
+        await API.assumirConversa(telefone, empresaIdAtual);
         await loadConversas();
         abrirChat(telefone);
-    } catch (error) {
-        alert('❌ Erro: ' + error.message);
-    }
+    } catch (error) { alert('Erro: ' + error.message); }
 }
 
 async function liberarConversa(telefone) {
     if (!confirm('Liberar para o bot?')) return;
     try {
-        const empresaId = user.role === 'admin'
-            ? (parseInt(localStorage.getItem('adminEmpresaId')) || 1)
-            : user.empresa_id;
-        await API.liberarConversa(telefone, empresaId);
+        await API.liberarConversa(telefone, empresaIdAtual);
         await loadConversas();
-    } catch (error) {
-        alert('❌ Erro: ' + error.message);
-    }
+    } catch (error) { alert('Erro: ' + error.message); }
 }
 
 async function liberarParaBot() {
@@ -130,79 +115,46 @@ async function liberarParaBot() {
     fecharChat();
 }
 
-// ==========================================
-// CHAT AO VIVO
-// ==========================================
 async function abrirChat(telefone) {
     chatTelefone = telefone;
-    chatEmpresaId = user.role === 'admin'
-        ? (parseInt(localStorage.getItem('adminEmpresaId')) || 1)
-        : user.empresa_id;
-
+    chatEmpresaId = empresaIdAtual;
     const conv = conversas.find(c => c.cliente_telefone === telefone);
     document.getElementById('chatClienteNome').textContent = conv?.cliente_nome || formatPhone(telefone);
     document.getElementById('chatClienteTelefone').textContent = formatPhone(telefone);
     document.getElementById('chatModal').classList.remove('hidden');
-
     await carregarMensagens();
-
-    // Auto refresh a cada 5 segundos
     chatIntervalId = setInterval(carregarMensagens, 5000);
 }
 
 function fecharChat() {
     document.getElementById('chatModal').classList.add('hidden');
     chatTelefone = null;
-    if (chatIntervalId) {
-        clearInterval(chatIntervalId);
-        chatIntervalId = null;
-    }
+    if (chatIntervalId) { clearInterval(chatIntervalId); chatIntervalId = null; }
 }
 
 async function carregarMensagens() {
     if (!chatTelefone) return;
     try {
-        const query = user.role === 'admin' ? `?empresa_id=${chatEmpresaId}&t=${Date.now()}` : `?t=${Date.now()}`;
-        const response = await apiRequest(`/conversas/mensagens/${chatTelefone}${query}`);
+        const response = await apiRequest(`/conversas/mensagens/${chatTelefone}?empresa_id=${chatEmpresaId}&t=${Date.now()}`);
         renderMensagens(response.mensagens || []);
-    } catch (error) {
-        console.error('Erro ao carregar mensagens:', error);
-    }
+    } catch (error) { console.error('Erro:', error); }
 }
 
 function renderMensagens(mensagens) {
     const container = document.getElementById('chatMensagens');
-    
     if (mensagens.length === 0) {
         container.innerHTML = '<div class="text-center text-gray-400 text-sm py-8">Nenhuma mensagem ainda</div>';
         return;
     }
-
     container.innerHTML = mensagens.map(msg => {
         const isUser = msg.role === 'user';
         const hora = new Date(msg.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-
         if (isUser) {
-            return `
-                <div class="flex justify-start">
-                    <div class="max-w-xs lg:max-w-md">
-                        <div class="msg-bot px-4 py-2 text-gray-800">${msg.content}</div>
-                        <p class="text-xs text-gray-400 mt-1 ml-2">${hora}</p>
-                    </div>
-                </div>
-            `;
+            return `<div class="flex justify-start"><div class="max-w-xs lg:max-w-md"><div class="msg-bot px-4 py-2 text-gray-800">${msg.content}</div><p class="text-xs text-gray-400 mt-1 ml-2">${hora}</p></div></div>`;
         } else {
-            return `
-                <div class="flex justify-end">
-                    <div class="max-w-xs lg:max-w-md">
-                        <div class="msg-atendente px-4 py-2">${msg.content}</div>
-                        <p class="text-xs text-gray-400 mt-1 mr-2 text-right">${hora}</p>
-                    </div>
-                </div>
-            `;
+            return `<div class="flex justify-end"><div class="max-w-xs lg:max-w-md"><div class="msg-atendente px-4 py-2">${msg.content}</div><p class="text-xs text-gray-400 mt-1 mr-2 text-right">${hora}</p></div></div>`;
         }
     }).join('');
-
     container.scrollTop = container.scrollHeight;
 }
 
@@ -210,17 +162,12 @@ async function enviarMensagem() {
     const input = document.getElementById('chatInput');
     const mensagem = input.value.trim();
     if (!mensagem || !chatTelefone) return;
-
     input.value = '';
     input.disabled = true;
-
     try {
         await apiRequest(`/conversas/mensagens/${chatTelefone}`, {
             method: 'POST',
-            body: JSON.stringify({
-                mensagem,
-                empresa_id: chatEmpresaId
-            })
+            body: JSON.stringify({ mensagem, empresa_id: chatEmpresaId })
         });
         await carregarMensagens();
     } catch (error) {
@@ -232,44 +179,26 @@ async function enviarMensagem() {
     }
 }
 
-// ==========================================
-// UTILITÁRIOS
-// ==========================================
 function formatPhone(phone) {
     if (!phone) return 'Cliente';
     const cleaned = phone.replace(/\D/g, '');
-    if (cleaned.length >= 11) {
-        const ddd = cleaned.slice(-11, -9);
-        const part1 = cleaned.slice(-9, -4);
-        const part2 = cleaned.slice(-4);
-        return `(${ddd}) ${part1}-${part2}`;
-    }
+    if (cleaned.length >= 11) return `(${cleaned.slice(-11,-9)}) ${cleaned.slice(-9,-4)}-${cleaned.slice(-4)}`;
     return phone;
 }
 
 function formatDate(dateString) {
     if (!dateString) return '';
     const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now - date;
-    const diffMins = Math.floor(diffMs / 60000);
+    const diffMins = Math.floor((new Date() - date) / 60000);
     if (diffMins < 1) return 'Agora';
-    if (diffMins < 60) return `${diffMins} min atrás`;
+    if (diffMins < 60) return `${diffMins} min atras`;
     const diffHours = Math.floor(diffMins / 60);
-    if (diffHours < 24) return `${diffHours}h atrás`;
+    if (diffHours < 24) return `${diffHours}h atras`;
     return date.toLocaleDateString('pt-BR');
 }
 
-function startAutoRefresh() {
-    intervalId = setInterval(loadConversas, 10000);
-}
-
-// ==========================================
-// INICIALIZAR
-// ==========================================
-loadConversas();
-startAutoRefresh();
-
+carregarSeletorEmpresas();
+setInterval(loadConversas, 10000);
 window.addEventListener('beforeunload', () => {
     if (intervalId) clearInterval(intervalId);
     if (chatIntervalId) clearInterval(chatIntervalId);

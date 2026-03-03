@@ -3,17 +3,45 @@ if (!user) { window.location.href = 'index.html'; }
 document.getElementById('userName').textContent = user.nome;
 let pedidos = [];
 let filtroAtual = 'todos';
+let empresaIdAtual = user.role === 'admin' ? (parseInt(localStorage.getItem('adminEmpresaId')) || null) : user.empresa_id;
 
 function getEmpresaId() {
-    return user.role === 'admin' ? (parseInt(localStorage.getItem('adminEmpresaId')) || user.empresa_id) : user.empresa_id;
+    return empresaIdAtual;
+}
+
+async function carregarSeletorEmpresas() {
+    if (user.role !== 'admin') {
+        if (empresaIdAtual) loadPedidos();
+        return;
+    }
+    try {
+        const res = await apiRequest('/empresas');
+        const empresas = res.empresas || [];
+        const seletor = document.getElementById('seletorEmpresa');
+        seletor.classList.remove('hidden');
+        const select = document.getElementById('selectEmpresa');
+        select.innerHTML = '<option value="">Selecione um restaurante...</option>';
+        empresas.forEach(e => {
+            select.innerHTML += `<option value="${e.id}" ${e.id == empresaIdAtual ? 'selected' : ''}>${e.nome}</option>`;
+        });
+        select.addEventListener('change', (ev) => {
+            const id = parseInt(ev.target.value);
+            if (!id) return;
+            localStorage.setItem('adminEmpresaId', id);
+            empresaIdAtual = id;
+            loadPedidos();
+        });
+        if (empresaIdAtual) loadPedidos();
+    } catch(e) { console.error(e); }
 }
 
 async function loadPedidos() {
+    if (!empresaIdAtual) return;
     try {
         let status = null;
         if (filtroAtual === 'novos') status = 'pendente';
         if (filtroAtual === 'finalizados') status = 'entregue';
-        const response = await API.getPedidos(getEmpresaId(), status);
+        const response = await API.getPedidos(empresaIdAtual, status);
         pedidos = response.pedidos || [];
         if (filtroAtual === 'novos') pedidos = pedidos.filter(p => !p.impresso);
         renderPedidos();
@@ -178,9 +206,7 @@ function getStatusLabel(status) {
 function formatPhone(phone) {
     if (!phone) return '';
     const cleaned = phone.replace(/\D/g, '');
-    if (cleaned.length >= 11) {
-        return '(' + cleaned.slice(-11, -9) + ') ' + cleaned.slice(-9, -4) + '-' + cleaned.slice(-4);
-    }
+    if (cleaned.length >= 11) return '(' + cleaned.slice(-11,-9) + ') ' + cleaned.slice(-9,-4) + '-' + cleaned.slice(-4);
     return phone;
 }
 
@@ -188,5 +214,5 @@ function formatDate(dateString) {
     return new Date(dateString).toLocaleString('pt-BR');
 }
 
-loadPedidos();
+carregarSeletorEmpresas();
 setInterval(loadPedidos, 30000);

@@ -34,6 +34,10 @@
             <h2 class="text-3xl font-bold text-gray-900">Pedidos</h2>
             <p class="text-gray-600 mt-1">Gerencie os pedidos dos clientes</p>
         </div>
+        <div id="seletorEmpresa" class="hidden bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">🏪 Gerenciando restaurante:</label>
+            <select id="selectEmpresa" class="w-full md:w-96 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"><option value="">Selecione um restaurante...</option></select>
+        </div>
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
             <div class="flex gap-3">
                 <button onclick="filtrarStatus('todos')" id="btn-todos" class="px-4 py-2 rounded-lg font-medium bg-indigo-100 text-indigo-700">Todos</button>
