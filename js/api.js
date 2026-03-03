@@ -126,6 +126,15 @@ const API = {
             body: JSON.stringify(data)
         });
     },
+    async getEmpresa(id) {
+        return await apiRequest(`/empresas/${id}`);
+    },
+    async atualizarEmpresa(id, dados) {
+        return await apiRequest(`/empresas/${id}`, {
+            method: 'PATCH',
+            body: JSON.stringify(dados)
+        });
+    },
     async getPedidos(empresaId, status = null) {
         let query = `?empresa_id=${empresaId}`;
         if (status) query += `&status=${status}`;

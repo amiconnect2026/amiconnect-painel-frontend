@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuracoes - AmiConnect</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <nav class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center gap-3">
+                    <h1 class="text-2xl font-bold text-indigo-600"><div style="display:flex;align-items:center;gap:8px;"><img src="img/icon.png" alt="AmiConnect" style="height:40px;"><span style="font-size:1.3rem;font-weight:700;"><span style="color:#1e3a5f;">Ami</span><span style="color:#5cb85c;">Connect</span></span></div></h1>
+                    <span class="text-gray-400">|</span>
+                    <span class="text-gray-600" id="userName">Carregando...</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <a href="dashboard.html" class="text-gray-600 hover:text-indigo-600 transition">Dashboard</a>
+                    <a href="cardapio.html" class="text-gray-600 hover:text-indigo-600 transition">Cardapio</a>
+                    <a href="conversas.html" class="text-gray-600 hover:text-indigo-600 transition">Conversas</a>
+                    <a href="pedidos.html" class="text-gray-600 hover:text-indigo-600 transition">Pedidos</a>
+                    <a href="configuracoes.html" class="text-indigo-600 font-medium">Configuracoes</a>
+                    <button onclick="mostrarAlertas()" class="relative text-gray-600 hover:text-indigo-600 transition">
+                        <span class="text-2xl">🔔</span>
+                        <span id="alertasBadge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">0</span>
+                    </button>
+                    <button onclick="logout()" class="text-red-600 hover:text-red-700 font-medium transition">Sair</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="mb-8">
+            <h2 class="text-3xl font-bold text-gray-900">Configuracoes</h2>
+            <p class="text-gray-600 mt-1">Ajuste as informacoes do seu restaurante</p>
+        </div>
+
+        <div id="loading" class="text-center py-12">
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-indigo-600 border-t-transparent"></div>
+            <p class="text-gray-600 mt-4">Carregando...</p>
+        </div>
+
+        <div id="formContainer" class="hidden space-y-6">
+
+            <!-- Entrega -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-bold text-gray-900 mb-4">🛵 Entrega</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Tempo minimo (minutos)</label>
+                        <input type="number" id="tempo_entrega_min" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" min="0">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Tempo maximo (minutos)</label>
+                        <input type="number" id="tempo_entrega_max" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" min="0">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Taxa de entrega (R$)</label>
+                        <input type="number" id="taxa_entrega" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" min="0" step="0.50">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Pedido minimo (R$)</label>
+                        <input type="number" id="pedido_minimo" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" min="0" step="0.50">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pagamento -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-bold text-gray-900 mb-4">💳 Formas de Pagamento</h3>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Formas aceitas</label>
+                    <input type="text" id="formas_pagamento" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Ex: Dinheiro, PIX e Cartao de credito/debito">
+                    <p class="text-xs text-gray-500 mt-1">Separe as formas por virgula</p>
+                </div>
+            </div>
+
+            <!-- Salvar -->
+            <div class="flex gap-3">
+                <button onclick="salvarConfiguracoes()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg transition">
+                    Salvar Configuracoes
+                </button>
+            </div>
+
+            <div id="mensagem" class="hidden text-center py-3 rounded-lg font-medium"></div>
+        </div>
+    </main>
+
+    <div id="alertasModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+            <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+                <h3 class="text-2xl font-bold text-gray-900">🔔 Notificacoes</h3>
+                <button onclick="fecharAlertas()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+            <div id="alertasLista" class="flex-1 overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/alertas.js"></script>
+    <script src="js/configuracoes.js"></script>
+    <script>iniciarAlertas();</script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="js/socket.js"></script>
+</body>
+</html>
