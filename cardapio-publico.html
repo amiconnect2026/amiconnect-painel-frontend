@@ -111,7 +111,7 @@
     <script>
         // Pegar empresa_id da URL: /cardapio-publico.html?id=4
         const params = new URLSearchParams(window.location.search);
-        const empresaId = params.get('id');
+        const empresaId = params.get('empresa') || params.get('id');
 
         if (!empresaId) {
             document.getElementById('loading').classList.add('hidden');
