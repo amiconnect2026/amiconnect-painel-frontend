@@ -9,7 +9,7 @@ async function iniciarAlertas() {
     intervalAlertas = setInterval(async () => {
         await carregarAlertas();
         atualizarBadge();
-    }, 15000);
+    }, 5000);
 }
 
 async function carregarAlertas() {
