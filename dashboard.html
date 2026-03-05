@@ -22,6 +22,10 @@
                     <a href="conversas.html" class="text-gray-600 hover:text-indigo-600 transition">Conversas</a>
                     <a href="configuracoes.html" class="text-gray-600 hover:text-indigo-600 transition">Minha Loja</a>
                     <a href="pedidos.html" class="text-gray-600 hover:text-indigo-600 transition">Pedidos</a>
+                    <button onclick="toggleBotPausa()" id="btnPausa" title="Pausar/Reativar bot" class="relative flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold transition-all bg-green-100 text-green-700 hover:bg-green-200">
+                        <span id="btnPausaIcon" class="w-2 h-2 rounded-full bg-green-500 inline-block"></span>
+                        <span id="btnPausaTexto">Bot ativo</span>
+                    </button>
                     <button onclick="window.location.href='pedidos.html'" class="relative text-gray-600 hover:text-indigo-600 transition" title="Pedidos pendentes">
                         <span class="text-2xl">🧾</span>
                         <span id="pedidosBadge" class="hidden absolute -top-1 -right-1 bg-orange-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">0</span>
@@ -116,6 +120,7 @@
     </div>
 
     <script src="js/api.js"></script>
+    <script src="js/pausa.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/alertas.js"></script>
     <script>
