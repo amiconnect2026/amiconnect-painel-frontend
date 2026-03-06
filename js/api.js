@@ -149,6 +149,26 @@ const API = {
             body: JSON.stringify({ status, empresa_id: empresaId })
         });
     },
+    async getBairros(empresaId) {
+        return await apiRequest(`/bairros?empresa_id=${empresaId}`);
+    },
+    async criarBairro(data) {
+        return await apiRequest('/bairros', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    },
+    async atualizarBairro(id, data) {
+        return await apiRequest(`/bairros/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+    },
+    async deletarBairro(id, empresaId) {
+        return await apiRequest(`/bairros/${id}?empresa_id=${empresaId}`, {
+            method: 'DELETE'
+        });
+    },
     async marcarPedidoImpresso(id, empresaId) {
         return await apiRequest(`/pedidos/${id}/imprimir`, {
             method: 'PATCH',
