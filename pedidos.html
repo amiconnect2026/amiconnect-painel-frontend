@@ -39,9 +39,14 @@
         </div>
     </nav>
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div class="mb-8">
-            <h2 class="text-3xl font-bold text-gray-900">Pedidos</h2>
-            <p class="text-gray-600 mt-1">Gerencie os pedidos dos clientes</p>
+        <div class="mb-8 flex justify-between items-center">
+            <div>
+                <h2 class="text-3xl font-bold text-gray-900">Pedidos</h2>
+                <p class="text-gray-600 mt-1">Gerencie os pedidos dos clientes</p>
+            </div>
+            <button onclick="abrirPedidoManual()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-5 py-3 rounded-xl flex items-center gap-2 transition shadow-sm">
+                <span class="text-xl">+</span> Novo Pedido Manual
+            </button>
         </div>
         <div id="seletorEmpresa" class="hidden bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
             <label class="block text-sm font-medium text-gray-700 mb-2">🏪 Gerenciando restaurante:</label>
@@ -83,6 +88,67 @@
             <div id="alertasLista" class="flex-1 overflow-y-auto"></div>
         </div>
     </div>
+    <!-- Modal Pedido Manual -->
+    <div id="pedidoManualModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+                <h3 class="text-2xl font-bold text-gray-900">📝 Novo Pedido Manual</h3>
+                <button onclick="fecharPedidoManual()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nome do Cliente</label>
+                        <input type="text" id="pm_nome" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Nome completo">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Telefone</label>
+                        <input type="text" id="pm_telefone" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="55419999999">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Endereço</label>
+                    <input type="text" id="pm_endereco" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Rua, número, bairro">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Itens do Pedido</label>
+                    <div class="flex gap-2 mb-2">
+                        <select id="pm_produto_select" class="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="">Selecione um produto...</option>
+                        </select>
+                        <input type="number" id="pm_quantidade" value="1" min="1" class="w-20 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <button onclick="adicionarItemManual()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-lg transition">+</button>
+                    </div>
+                    <div id="pm_itens" class="space-y-2 bg-gray-50 rounded-lg p-3 min-h-[60px]">
+                        <p class="text-gray-400 text-sm text-center" id="pm_itens_vazio">Nenhum item adicionado</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Forma de Pagamento</label>
+                        <input type="text" id="pm_pagamento" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Dinheiro, PIX, Cartão...">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Troco para (R$)</label>
+                        <input type="number" id="pm_troco" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="0.00" step="0.01">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Observações</label>
+                    <textarea id="pm_obs" rows="2" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" placeholder="Observações gerais..."></textarea>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-4 space-y-1 text-sm">
+                    <div class="flex justify-between"><span class="text-gray-600">Subtotal</span><span id="pm_subtotal" class="font-semibold">R$ 0,00</span></div>
+                    <div class="flex justify-between"><span class="text-gray-600">Taxa de entrega</span><span id="pm_taxa" class="font-semibold">R$ 0,00</span></div>
+                    <div class="flex justify-between text-base font-bold border-t pt-2 mt-2"><span>Total</span><span id="pm_total" class="text-green-600">R$ 0,00</span></div>
+                </div>
+                <button onclick="salvarPedidoManual()" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-xl transition text-lg">
+                    ✅ Salvar Pedido
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="js/api.js"></script>
     <script src="js/pausa.js"></script>
     <script src="js/auth.js"></script>
