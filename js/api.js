@@ -93,6 +93,12 @@ const API = {
             method: 'DELETE'
         });
     },
+    async reordenarCategorias(ordens) {
+        return await apiRequest('/categorias/reordenar', {
+            method: 'PATCH',
+            body: JSON.stringify({ ordens })
+        });
+    },
     async getConversas(empresaId = null) {
         const query = empresaId ? `?empresa_id=${empresaId}` : '';
         return await apiRequest(`/conversas${query}`);

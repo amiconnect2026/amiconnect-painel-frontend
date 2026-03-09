@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerenciar Cardápio - AmiConnect</title>
+    <title>Categorias - AmiConnect</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-50">
@@ -17,8 +17,8 @@
                 </div>
                 <div class="flex items-center gap-4">
                     <a href="dashboard.html" class="text-gray-600 hover:text-indigo-600 transition">Início</a>
-                    <a href="cardapio.html" class="text-indigo-600 font-medium">Cardápio</a>
-                    <a href="categorias.html" class="text-gray-600 hover:text-indigo-600 transition">Categorias</a>
+                    <a href="cardapio.html" class="text-gray-600 hover:text-indigo-600 transition">Cardápio</a>
+                    <a href="categorias.html" class="text-indigo-600 font-medium">Categorias</a>
                     <a href="conversas.html" class="text-gray-600 hover:text-indigo-600 transition">Conversas</a>
                     <a href="configuracoes.html" class="text-gray-600 hover:text-indigo-600 transition">Minha Loja</a>
                     <a href="pedidos.html" class="text-gray-600 hover:text-indigo-600 transition">Pedidos</a>
@@ -40,7 +40,7 @@
         </div>
     </nav>
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         <!-- Seletor de empresa (apenas admin) -->
         <div id="seletorEmpresa" class="hidden bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
@@ -52,86 +52,52 @@
 
         <div class="flex justify-between items-center mb-8">
             <div>
-                <h2 class="text-3xl font-bold text-gray-900">Gerenciar Cardápio</h2>
-                <p class="text-gray-600 mt-1">Ative ou desative produtos do cardápio</p>
+                <h2 class="text-3xl font-bold text-gray-900">Categorias</h2>
+                <p class="text-gray-600 mt-1">Organize as categorias do cardápio</p>
             </div>
-            <div class="flex gap-3">
-                <button onclick="verCardapioPublico()" class="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg transition">
-                    👁️ Ver Cardápio Público
-                </button>
-                <button id="btnAdicionarProduto" onclick="openAddModal()" class="hidden bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-lg transition">
-                    + Adicionar Produto
-                </button>
-            </div>
+            <button id="btnAdicionarCategoria" onclick="openAddModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-lg transition">
+                + Adicionar Categoria
+            </button>
         </div>
 
         <!-- Selecione empresa primeiro -->
         <div id="selecioneEmpresa" class="hidden text-center py-16">
             <span class="text-6xl">🏪</span>
             <h3 class="text-xl font-semibold text-gray-900 mt-4">Selecione um restaurante</h3>
-            <p class="text-gray-600 mt-2">Escolha um restaurante no seletor acima para gerenciar o cardápio</p>
+            <p class="text-gray-600 mt-2">Escolha um restaurante no seletor acima para gerenciar as categorias</p>
         </div>
 
         <div id="loading" class="text-center py-12">
             <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-indigo-600 border-t-transparent"></div>
-            <p class="text-gray-600 mt-4">Carregando produtos...</p>
+            <p class="text-gray-600 mt-4">Carregando categorias...</p>
         </div>
 
-        <div id="produtosContainer" class="space-y-8 hidden"></div>
+        <div id="categoriasContainer" class="space-y-3 hidden"></div>
 
         <div id="emptyState" class="hidden text-center py-12">
-            <span class="text-6xl">📭</span>
-            <h3 class="text-xl font-semibold text-gray-900 mt-4">Nenhum produto cadastrado</h3>
-            <p class="text-gray-600 mt-2">Clique em "Adicionar Produto" para começar</p>
+            <span class="text-6xl">📂</span>
+            <h3 class="text-xl font-semibold text-gray-900 mt-4">Nenhuma categoria cadastrada</h3>
+            <p class="text-gray-600 mt-2">Clique em "Adicionar Categoria" para começar</p>
         </div>
+
+        <!-- Dica de reordenação -->
+        <p id="dicaOrdem" class="hidden text-sm text-gray-500 text-center mt-4">
+            Use as setas ↑ ↓ para reordenar as categorias
+        </p>
     </main>
 
-    <!-- Modal de produto -->
-    <div id="produtoModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+    <!-- Modal de categoria -->
+    <div id="categoriaModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
             <div class="p-6 border-b border-gray-200">
-                <h3 class="text-2xl font-bold text-gray-900" id="modalTitle">Adicionar Produto</h3>
+                <h3 class="text-2xl font-bold text-gray-900" id="modalTitle">Adicionar Categoria</h3>
             </div>
-            <form id="produtoForm" class="p-6 space-y-4">
-                <input type="hidden" id="produtoId">
+            <form id="categoriaForm" class="p-6 space-y-4">
+                <input type="hidden" id="categoriaId">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Foto do Produto</label>
-                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-indigo-400 transition" onclick="document.getElementById('imagemInput').click()">
-                        <div id="imagemPlaceholder">
-                            <span class="text-4xl">📷</span>
-                            <p class="text-gray-500 text-sm mt-2">Clique para adicionar uma foto</p>
-                            <p class="text-gray-400 text-xs mt-1">JPG, PNG até 5MB</p>
-                        </div>
-                        <div id="imagemPreviewContainer" class="hidden relative">
-                            <img id="imagemPreview" src="" alt="Preview" class="max-h-48 mx-auto rounded-lg object-cover">
-                            <button type="button" onclick="event.stopPropagation(); removerImagem()" class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-7 h-7 flex items-center justify-center hover:bg-red-600 transition text-sm font-bold">✕</button>
-                        </div>
-                    </div>
-                    <input type="file" id="imagemInput" accept="image/*" class="hidden" onchange="previewImagem(this)">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Nome do Produto</label>
-                    <input type="text" id="produtoNome" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Descrição</label>
-                    <textarea id="produtoDescricao" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"></textarea>
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Preço (R$)</label>
-                        <input type="number" id="produtoPreco" step="0.01" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Categoria</label>
-                        <select id="produtoCategoria" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none">
-                            <option value="">Selecione...</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="flex items-center gap-3">
-                    <input type="checkbox" id="produtoDisponivel" checked class="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
-                    <label for="produtoDisponivel" class="text-sm font-medium text-gray-700">Produto disponível</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nome da Categoria</label>
+                    <input type="text" id="categoriaNome" required placeholder="Ex: Lanches, Bebidas, Sobremesas..."
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none">
                 </div>
                 <div class="flex gap-3 pt-4">
                     <button type="button" onclick="closeModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 rounded-lg transition">Cancelar</button>
@@ -156,14 +122,11 @@
     <script src="js/pausa.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/alertas.js"></script>
-    <script src="js/cardapio.js"></script>
+    <script src="js/categorias.js"></script>
     <script>
         iniciarAlertas();
-        function verCardapioPublico() {
-            window.open(`cardapio-publico.html?id=${empresaSelecionadaId}`, '_blank');
-        }
     </script>
-<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-<script src="js/socket.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="js/socket.js"></script>
 </body>
 </html>
