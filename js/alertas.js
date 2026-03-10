@@ -2,10 +2,15 @@ let alertasNaoLidos = 0;
 let todosAlertas = [];
 let intervalAlertas = null;
 
+function getEmpresaIdAtual() {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    return user.role === 'admin' ? (parseInt(localStorage.getItem('adminEmpresaId')) || null) : user.empresa_id;
+}
+
 async function iniciarAlertas() {
     await carregarAlertas();
     atualizarBadge();
-    
+
     intervalAlertas = setInterval(async () => {
         await carregarAlertas();
         atualizarBadge();
@@ -14,14 +19,15 @@ async function iniciarAlertas() {
 
 async function carregarAlertas() {
     try {
+        const empresaId = getEmpresaIdAtual();
         const [alertasRes, naoLidosRes] = await Promise.all([
-            API.getAlertas(),
-            API.getAlertasNaoLidos()
+            API.getAlertas(empresaId),
+            API.getAlertasNaoLidos(empresaId)
         ]);
-        
+
         todosAlertas = alertasRes.alertas || [];
         alertasNaoLidos = naoLidosRes.total || 0;
-        
+
     } catch (error) {
         console.error('Erro ao carregar alertas:', error);
     }
@@ -51,7 +57,13 @@ function mostrarAlertas() {
             </div>
         `;
     } else {
-        lista.innerHTML = todosAlertas.map(alerta => `
+        const btnMarcarTodos = alertasNaoLidos > 0
+            ? `<div class="px-4 py-2 border-b border-gray-200 flex justify-end">
+                <button onclick="marcarTodosComoLido()" class="text-sm text-blue-600 hover:text-blue-800 font-medium">Marcar todos como lido</button>
+               </div>`
+            : '';
+
+        lista.innerHTML = btnMarcarTodos + todosAlertas.map(alerta => `
             <div class="p-4 border-b border-gray-200 hover:bg-gray-50 cursor-pointer ${!alerta.lido ? 'bg-blue-50' : ''}" 
                  onclick="marcarComoLido(${alerta.id}, '${alerta.link || ''}')">
                 <div class="flex items-start gap-3">
@@ -77,17 +89,37 @@ function fecharAlertas() {
 async function marcarComoLido(id, link) {
     try {
         await API.marcarAlertaLido(id);
-        await carregarAlertas();
+
+        const alerta = todosAlertas.find(a => a.id === id);
+        if (alerta) alerta.lido = true;
+        alertasNaoLidos = todosAlertas.filter(a => !a.lido).length;
+
+        mostrarAlertas();
         atualizarBadge();
-        
-        fecharAlertas();
-        
+
         if (link) {
+            fecharAlertas();
             window.location.href = link;
         }
-        
+
     } catch (error) {
         console.error('Erro ao marcar alerta:', error);
+    }
+}
+
+async function marcarTodosComoLido() {
+    try {
+        const naoLidos = todosAlertas.filter(a => !a.lido);
+        await Promise.all(naoLidos.map(a => API.marcarAlertaLido(a.id)));
+
+        todosAlertas.forEach(a => a.lido = true);
+        alertasNaoLidos = 0;
+
+        mostrarAlertas();
+        atualizarBadge();
+
+    } catch (error) {
+        console.error('Erro ao marcar todos alertas como lido:', error);
     }
 }
 

@@ -115,11 +115,13 @@ const API = {
             body: JSON.stringify({ empresa_id: empresaId })
         });
     },
-    async getAlertas() {
-        return await apiRequest('/alertas');
+    async getAlertas(empresaId = null) {
+        const query = empresaId ? `?empresa_id=${empresaId}` : '';
+        return await apiRequest(`/alertas${query}`);
     },
-    async getAlertasNaoLidos() {
-        return await apiRequest('/alertas/nao-lidos');
+    async getAlertasNaoLidos(empresaId = null) {
+        const query = empresaId ? `?empresa_id=${empresaId}` : '';
+        return await apiRequest(`/alertas/nao-lidos${query}`);
     },
     async marcarAlertaLido(id) {
         return await apiRequest(`/alertas/${id}/marcar-lido`, {
