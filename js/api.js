@@ -177,5 +177,11 @@ const API = {
     },
     async getRelatorioClientes(empresaId, periodo) {
         return await apiRequest(`/relatorios/clientes?empresa_id=${empresaId}&periodo=${periodo}`);
+    },
+    async loginGerente(empresa_slug, senha_gerente) {
+        return await apiRequest('/auth/gerente', {
+            method: 'POST',
+            body: JSON.stringify({ empresa_slug, senha_gerente })
+        });
     }
 };
