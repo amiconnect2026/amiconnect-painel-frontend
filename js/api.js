@@ -162,5 +162,20 @@ const API = {
             method: 'PATCH',
             body: JSON.stringify({ empresa_id: empresaId })
         });
+    },
+    async getRelatorioFaturamento(empresaId, periodo) {
+        return await apiRequest(`/relatorios/faturamento?empresa_id=${empresaId}&periodo=${periodo}`);
+    },
+    async getRelatorioItens(empresaId, periodo) {
+        return await apiRequest(`/relatorios/itens?empresa_id=${empresaId}&periodo=${periodo}`);
+    },
+    async getRelatorioHorarioPico(empresaId, periodo) {
+        return await apiRequest(`/relatorios/horario-pico?empresa_id=${empresaId}&periodo=${periodo}`);
+    },
+    async getRelatorioFormasPagamento(empresaId, periodo) {
+        return await apiRequest(`/relatorios/formas-pagamento?empresa_id=${empresaId}&periodo=${periodo}`);
+    },
+    async getRelatorioClientes(empresaId, periodo) {
+        return await apiRequest(`/relatorios/clientes?empresa_id=${empresaId}&periodo=${periodo}`);
     }
 };
