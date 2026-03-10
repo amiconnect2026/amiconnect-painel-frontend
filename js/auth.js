@@ -22,6 +22,10 @@ function checkAuth() {
 function logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    sessionStorage.removeItem('user');
+    Object.keys(sessionStorage)
+        .filter(k => k.startsWith('relatorios_auth_exp_'))
+        .forEach(k => sessionStorage.removeItem(k));
     window.location.href = 'index.html';
 }
 
@@ -48,6 +52,7 @@ if (window.location.pathname.endsWith('index.html') || window.location.pathname 
             // Salvar token e usuário
             localStorage.setItem('token', response.token);
             localStorage.setItem('user', JSON.stringify(response.user));
+            sessionStorage.setItem('user', JSON.stringify(response.user));
 
             // Redirecionar
             window.location.href = 'dashboard.html';

@@ -8,7 +8,7 @@ function getEmpresaIdAtual() {
 }
 
 function initRelatorios() {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const user = JSON.parse(sessionStorage.getItem('user') || '{}');
 
     if (user.role === 'admin') {
         carregarRelatorios(periodoAtual);
