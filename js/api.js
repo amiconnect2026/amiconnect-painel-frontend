@@ -183,5 +183,11 @@ const API = {
             method: 'POST',
             body: JSON.stringify({ empresa_slug, senha_gerente })
         });
+    },
+    async verificarSenhaGerente(empresa_id, senha) {
+        return await apiRequest('/auth/verificar-senha-gerente', {
+            method: 'POST',
+            body: JSON.stringify({ empresa_id, senha })
+        });
     }
 };

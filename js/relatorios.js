@@ -1,8 +1,62 @@
 let periodoAtual = 'mensal';
 
+const SENHA_SESSION_PREFIX = 'relatorios_auth_exp_';
+
 function getEmpresaIdAtual() {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     return user.role === 'admin' ? (parseInt(localStorage.getItem('adminEmpresaId')) || null) : user.empresa_id;
+}
+
+function initRelatorios() {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+    if (user.role === 'admin') {
+        carregarRelatorios(periodoAtual);
+        return;
+    }
+
+    const empresaId = getEmpresaIdAtual();
+    const expiry = parseInt(sessionStorage.getItem(`${SENHA_SESSION_PREFIX}${empresaId}`) || '0');
+
+    if (Date.now() < expiry) {
+        carregarRelatorios(periodoAtual);
+        return;
+    }
+
+    document.getElementById('senhaGerenteModal').classList.remove('hidden');
+}
+
+async function submeterSenhaGerente(event) {
+    event.preventDefault();
+    const senha  = document.getElementById('senhaGerenteInput').value;
+    const errEl  = document.getElementById('senhaGerenteErro');
+    const btn    = document.getElementById('btnSenhaGerente');
+    const empresaId = getEmpresaIdAtual();
+
+    errEl.classList.add('hidden');
+    btn.disabled = true;
+    btn.textContent = 'Verificando...';
+
+    try {
+        await API.verificarSenhaGerente(empresaId, senha);
+
+        sessionStorage.setItem(
+            `${SENHA_SESSION_PREFIX}${empresaId}`,
+            String(Date.now() + 8 * 60 * 60 * 1000)
+        );
+
+        document.getElementById('senhaGerenteModal').classList.add('hidden');
+        carregarRelatorios(periodoAtual);
+
+    } catch (error) {
+        errEl.classList.remove('hidden');
+        btn.disabled = false;
+        btn.textContent = 'Entrar';
+    }
+}
+
+function cancelarSenhaGerente() {
+    window.location.href = 'dashboard.html';
 }
 
 function formatCurrency(value) {

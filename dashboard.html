@@ -19,7 +19,7 @@
                 <div class="flex items-center gap-4">
                     <a href="dashboard.html" class="text-indigo-600 font-medium">Início</a>
                     <a href="cardapio.html" class="text-gray-600 hover:text-indigo-600 transition">Cardápio</a>
-                    <a href="categorias.html" class="text-gray-600 hover:text-indigo-600 transition">Categorias</a>
+                    <a id="navCategorias" href="categorias.html" class="text-gray-600 hover:text-indigo-600 transition">Categorias</a>
                     <a href="conversas.html" class="text-gray-600 hover:text-indigo-600 transition">Conversas</a>
                     <a href="configuracoes.html" class="text-gray-600 hover:text-indigo-600 transition">Minha Loja</a>
                     <a href="pedidos.html" class="text-gray-600 hover:text-indigo-600 transition">Pedidos</a>
@@ -129,6 +129,7 @@
         const user = checkAuth();
         if (!user) window.location.href = 'index.html';
         document.getElementById('userName').textContent = user.nome;
+        if (user.role !== 'admin') document.getElementById('navCategorias').remove();
 
         async function loadStats() {
             try {
