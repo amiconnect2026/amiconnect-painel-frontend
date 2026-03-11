@@ -156,7 +156,8 @@ function launchWhatsAppSignup() {
         response_type: 'code',
         override_default_response_type: true,
         extras: {
-            version: 'v3'
+            version: 'v3',
+            featureType: 'whatsapp_business_app_onboarding'
         }
     });
 }
