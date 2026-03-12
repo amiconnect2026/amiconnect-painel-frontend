@@ -47,7 +47,7 @@
                 <h2 class="text-3xl font-bold text-gray-900">Pedidos</h2>
                 <p class="text-gray-600 mt-1">Gerencie os pedidos dos clientes</p>
             </div>
-            <button onclick="abrirPedidoManual()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-5 py-3 rounded-xl flex items-center gap-2 transition shadow-sm">
+            <button id="btnPedidoManual" onclick="abrirPedidoManual()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-5 py-3 rounded-xl flex items-center gap-2 transition shadow-sm">
                 <span class="text-xl">+</span> Novo Pedido Manual
             </button>
         </div>
@@ -55,24 +55,45 @@
             <label class="block text-sm font-medium text-gray-700 mb-2">🏪 Gerenciando restaurante:</label>
             <select id="selectEmpresa" class="w-full md:w-96 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"><option value="">Selecione um restaurante...</option></select>
         </div>
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
-            <div class="flex gap-3">
-                <button onclick="filtrarStatus('todos')" id="btn-todos" class="px-4 py-2 rounded-lg font-medium bg-indigo-100 text-indigo-700">Todos</button>
-                <button onclick="filtrarStatus('novos')" id="btn-novos" class="px-4 py-2 rounded-lg font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">Novos</button>
-                <button onclick="filtrarStatus('finalizados')" id="btn-finalizados" class="px-4 py-2 rounded-lg font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">Finalizados</button>
+        <!-- Tabs -->
+        <div class="flex gap-1 bg-white rounded-xl shadow-sm border border-gray-200 p-1 mb-6 w-fit">
+            <button onclick="switchTab('ativos')" id="tab-ativos" class="px-5 py-2 rounded-lg font-semibold text-sm bg-indigo-600 text-white transition">Ativos</button>
+            <button onclick="switchTab('arquivados')" id="tab-arquivados" class="px-5 py-2 rounded-lg font-semibold text-sm text-gray-600 hover:bg-gray-100 transition">Arquivados 📦</button>
+        </div>
+
+        <!-- Seção Ativos -->
+        <div id="secaoAtivos">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
+                <div class="flex gap-3">
+                    <button onclick="filtrarStatus('todos')" id="btn-todos" class="px-4 py-2 rounded-lg font-medium bg-indigo-100 text-indigo-700">Todos</button>
+                    <button onclick="filtrarStatus('novos')" id="btn-novos" class="px-4 py-2 rounded-lg font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">Novos</button>
+                    <button onclick="filtrarStatus('finalizados')" id="btn-finalizados" class="px-4 py-2 rounded-lg font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">Finalizados</button>
+                </div>
+            </div>
+            <div id="loading" class="text-center py-12">
+                <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-indigo-600 border-t-transparent"></div>
+                <p class="text-gray-600 mt-4">Carregando pedidos...</p>
+            </div>
+            <div id="pedidosContainer" class="hidden space-y-4"></div>
+            <div id="emptyState" class="hidden text-center py-12 bg-white rounded-xl shadow-sm border border-gray-200">
+                <span class="text-6xl">📋</span>
+                <h3 class="text-xl font-semibold text-gray-900 mt-4">Nenhum pedido encontrado</h3>
+                <p class="text-gray-600 mt-2">Quando clientes fizerem pedidos, aparecerão aqui!</p>
             </div>
         </div>
-        <div id="loading" class="text-center py-12">
-            <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-indigo-600 border-t-transparent"></div>
-            <p class="text-gray-600 mt-4">Carregando pedidos...</p>
-        </div>
-        <div id="pedidosContainer" class="hidden space-y-4"></div>
-        <div id="emptyState" class="hidden text-center py-12 bg-white rounded-xl shadow-sm border border-gray-200">
-            <span class="text-6xl">📋</span>
-            <h3 class="text-xl font-semibold text-gray-900 mt-4">Nenhum pedido encontrado</h3>
-            <p class="text-gray-600 mt-2">Quando clientes fizerem pedidos, aparecerão aqui!</p>
+
+        <!-- Seção Arquivados -->
+        <div id="secaoArquivados" class="hidden">
+            <div id="arquivadosContainer"></div>
         </div>
     </main>
+
+    <!-- Floating bar multi-select -->
+    <div id="barraSelecao" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4 z-40">
+        <span id="countSelecionados" class="font-semibold text-sm">0 pedidos selecionados</span>
+        <button onclick="arquivarSelecionados()" class="bg-orange-500 hover:bg-orange-600 px-4 py-2 rounded-lg font-semibold text-sm transition">📦 Arquivar selecionados</button>
+        <button onclick="limparSelecao()" class="text-gray-400 hover:text-white transition text-xl leading-none">&times;</button>
+    </div>
     <div id="pedidoModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
             <div class="p-6 border-b border-gray-200 flex justify-between items-center">

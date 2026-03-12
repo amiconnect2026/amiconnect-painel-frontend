@@ -3,6 +3,8 @@ if (!user) { window.location.href = 'index.html'; }
 document.getElementById('userName').textContent = user.nome;
 let pedidos = [];
 let filtroAtual = 'todos';
+let tabAtual = 'ativos';
+let pedidosSelecionados = new Set();
 let empresaIdAtual = user.role === 'admin' ? (parseInt(localStorage.getItem('adminEmpresaId')) || null) : user.empresa_id;
 
 function getEmpresaId() {
@@ -29,7 +31,7 @@ async function carregarSeletorEmpresas() {
             if (!id) return;
             localStorage.setItem('adminEmpresaId', id);
             empresaIdAtual = id;
-            loadPedidos();
+            tabAtual === 'ativos' ? loadPedidos() : loadPedidosArquivados();
         });
         if (empresaIdAtual) loadPedidos();
     } catch(e) { console.error(e); }
@@ -38,10 +40,10 @@ async function carregarSeletorEmpresas() {
 async function loadPedidos() {
     if (!empresaIdAtual) return;
     try {
-        let status = null;
-        if (filtroAtual === 'novos') status = 'pendente';
-        if (filtroAtual === 'finalizados') status = 'entregue';
-        const response = await API.getPedidos(empresaIdAtual, status);
+        let url = `/pedidos?empresa_id=${empresaIdAtual}&arquivado=false&limit=100`;
+        if (filtroAtual === 'novos') url += '&status=pendente';
+        if (filtroAtual === 'finalizados') url += '&status=entregue';
+        const response = await apiRequest(url);
         pedidos = response.pedidos || [];
         if (filtroAtual === 'novos') pedidos = pedidos.filter(p => !p.impresso);
         renderPedidos();
@@ -60,31 +62,42 @@ function renderPedidos() {
     }
     emptyState.classList.add('hidden');
     container.classList.remove('hidden');
-    container.innerHTML = pedidos.map(pedido => `
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:border-indigo-300 transition cursor-pointer" onclick="verDetalhes(${pedido.id})">
-            <div class="flex items-center gap-3 mb-2">
-                <span class="text-2xl font-bold text-indigo-600">#${pedido.id}</span>
-                <span class="px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(pedido.status)}">${getStatusLabel(pedido.status)}</span>
-                ${!pedido.impresso ? '<span class="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm font-medium">Nao impresso</span>' : ''}
-            </div>
-            <div class="grid grid-cols-2 gap-4 mt-3">
-                <div>
-                    <p class="text-sm text-gray-500">Cliente</p>
-                    <p class="font-semibold text-gray-900">${pedido.cliente_nome || '-'}</p>
-                    <p class="text-sm text-gray-600">${formatPhone(pedido.cliente_telefone)}</p>
+    container.innerHTML = pedidos.map(pedido => {
+        const selecionado = pedidosSelecionados.has(pedido.id);
+        const podeArquivar = pedido.status === 'entregue' || pedido.status === 'cancelado';
+        return `
+        <div class="bg-white rounded-xl shadow-sm border-2 transition ${selecionado ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200 hover:border-indigo-300'}">
+            <div class="flex items-start gap-3 p-6">
+                <input type="checkbox" class="mt-1 w-4 h-4 flex-shrink-0 cursor-pointer accent-indigo-600" ${selecionado ? 'checked' : ''} onchange="toggleSelecao(${pedido.id})">
+                <div class="flex-1 cursor-pointer min-w-0" onclick="verDetalhes(${pedido.id})">
+                    <div class="flex items-center gap-3 mb-2 flex-wrap">
+                        <span class="text-2xl font-bold text-indigo-600">#${pedido.id}</span>
+                        <span class="px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(pedido.status)}">${getStatusLabel(pedido.status)}</span>
+                        ${!pedido.impresso ? '<span class="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm font-medium">Não impresso</span>' : ''}
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 mt-3">
+                        <div>
+                            <p class="text-sm text-gray-500">Cliente</p>
+                            <p class="font-semibold text-gray-900">${pedido.cliente_nome || '-'}</p>
+                            <p class="text-sm text-gray-600">${formatPhone(pedido.cliente_telefone)}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Total</p>
+                            <p class="text-2xl font-bold text-green-600">R$ ${parseFloat(pedido.total).toFixed(2)}</p>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <p class="text-sm text-gray-500">Endereço</p>
+                        <p class="text-sm text-gray-900">${(pedido.cliente_endereco || '-').split('📍')[0].trim()}</p>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-3">🕐 ${formatDate(pedido.created_at)}</p>
                 </div>
-                <div>
-                    <p class="text-sm text-gray-500">Total</p>
-                    <p class="text-2xl font-bold text-green-600">R$ ${parseFloat(pedido.total).toFixed(2)}</p>
-                </div>
+                ${podeArquivar
+                    ? `<button onclick="arquivarPedido(${pedido.id})" class="flex-shrink-0 p-2 text-gray-400 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition text-lg" title="Arquivar pedido">📦</button>`
+                    : '<div class="w-9 flex-shrink-0"></div>'}
             </div>
-            <div class="mt-3">
-                <p class="text-sm text-gray-500">Endereco</p>
-                <p class="text-sm text-gray-900">${(pedido.cliente_endereco || '-').split('📍')[0].trim()}</p>
-            </div>
-            <p class="text-xs text-gray-400 mt-3">🕐 ${formatDate(pedido.created_at)}</p>
-        </div>
-    `).join('');
+        </div>`;
+    }).join('');
 }
 
 function filtrarStatus(status) {
@@ -94,6 +107,143 @@ function filtrarStatus(status) {
     });
     document.getElementById('btn-' + status).className = 'px-4 py-2 rounded-lg font-medium bg-indigo-100 text-indigo-700';
     loadPedidos();
+}
+
+function switchTab(tab) {
+    tabAtual = tab;
+    const isAtivos = tab === 'ativos';
+    document.getElementById('tab-ativos').className = isAtivos
+        ? 'px-5 py-2 rounded-lg font-semibold text-sm bg-indigo-600 text-white transition'
+        : 'px-5 py-2 rounded-lg font-semibold text-sm text-gray-600 hover:bg-gray-100 transition';
+    document.getElementById('tab-arquivados').className = !isAtivos
+        ? 'px-5 py-2 rounded-lg font-semibold text-sm bg-indigo-600 text-white transition'
+        : 'px-5 py-2 rounded-lg font-semibold text-sm text-gray-600 hover:bg-gray-100 transition';
+    document.getElementById('secaoAtivos').classList.toggle('hidden', !isAtivos);
+    document.getElementById('secaoArquivados').classList.toggle('hidden', isAtivos);
+    document.getElementById('btnPedidoManual').classList.toggle('hidden', !isAtivos);
+    if (isAtivos) {
+        loadPedidos();
+    } else {
+        limparSelecao();
+        loadPedidosArquivados();
+    }
+}
+
+function toggleSelecao(id) {
+    if (pedidosSelecionados.has(id)) {
+        pedidosSelecionados.delete(id);
+    } else {
+        pedidosSelecionados.add(id);
+    }
+    atualizarBarraSelecionados();
+    renderPedidos();
+}
+
+function atualizarBarraSelecionados() {
+    const barra = document.getElementById('barraSelecao');
+    const count = pedidosSelecionados.size;
+    if (count > 0) {
+        document.getElementById('countSelecionados').textContent = `${count} pedido${count > 1 ? 's' : ''} selecionado${count > 1 ? 's' : ''}`;
+        barra.classList.remove('hidden');
+    } else {
+        barra.classList.add('hidden');
+    }
+}
+
+function limparSelecao() {
+    pedidosSelecionados.clear();
+    atualizarBarraSelecionados();
+}
+
+async function arquivarPedido(id) {
+    try {
+        await apiRequest(`/pedidos/${id}/arquivar`, {
+            method: 'PATCH',
+            body: JSON.stringify({ empresa_id: empresaIdAtual })
+        });
+        pedidosSelecionados.delete(id);
+        atualizarBarraSelecionados();
+        await loadPedidos();
+    } catch (error) { alert('Erro ao arquivar: ' + error.message); }
+}
+
+async function arquivarSelecionados() {
+    if (pedidosSelecionados.size === 0) return;
+    const ids = [...pedidosSelecionados];
+    try {
+        await Promise.all(ids.map(id => apiRequest(`/pedidos/${id}/arquivar`, {
+            method: 'PATCH',
+            body: JSON.stringify({ empresa_id: empresaIdAtual })
+        })));
+        limparSelecao();
+        await loadPedidos();
+    } catch (error) { alert('Erro ao arquivar: ' + error.message); }
+}
+
+async function loadPedidosArquivados() {
+    if (!empresaIdAtual) return;
+    const container = document.getElementById('arquivadosContainer');
+    container.innerHTML = '<div class="text-center py-12"><div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-indigo-600 border-t-transparent"></div><p class="text-gray-600 mt-4">Carregando...</p></div>';
+    try {
+        const response = await apiRequest(`/pedidos?empresa_id=${empresaIdAtual}&arquivado=true&limit=200`);
+        renderPedidosArquivados(response.pedidos || []);
+    } catch (error) { console.error('Erro:', error); }
+}
+
+function renderPedidosArquivados(lista) {
+    const container = document.getElementById('arquivadosContainer');
+    if (lista.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-200">
+                <span class="text-6xl">📦</span>
+                <h3 class="text-xl font-semibold text-gray-900 mt-4">Nenhum pedido arquivado</h3>
+                <p class="text-gray-600 mt-2">Pedidos entregues ou cancelados arquivados aparecerão aqui.</p>
+            </div>`;
+        return;
+    }
+    const grupos = {};
+    lista.forEach(p => {
+        const chave = new Date(p.created_at).toISOString().split('T')[0];
+        if (!grupos[chave]) grupos[chave] = [];
+        grupos[chave].push(p);
+    });
+    const chaves = Object.keys(grupos).sort((a, b) => b.localeCompare(a));
+    container.innerHTML = chaves.map(chave => {
+        const label = formatarDataGrupo(chave);
+        const cards = grupos[chave].map(pedido => `
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:border-indigo-300 transition cursor-pointer opacity-80" onclick="verDetalhes(${pedido.id})">
+                <div class="flex items-center gap-3 mb-2 flex-wrap">
+                    <span class="text-xl font-bold text-gray-500">#${pedido.id}</span>
+                    <span class="px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(pedido.status)}">${getStatusLabel(pedido.status)}</span>
+                    <span class="px-2 py-0.5 bg-orange-100 text-orange-600 rounded-full text-xs font-medium">📦 Arquivado</span>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mt-3">
+                    <div>
+                        <p class="text-sm text-gray-500">Cliente</p>
+                        <p class="font-semibold text-gray-900">${pedido.cliente_nome || '-'}</p>
+                        <p class="text-sm text-gray-600">${formatPhone(pedido.cliente_telefone)}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Total</p>
+                        <p class="text-xl font-bold text-green-600">R$ ${parseFloat(pedido.total).toFixed(2)}</p>
+                    </div>
+                </div>
+                <p class="text-xs text-gray-400 mt-3">🕐 ${formatDate(pedido.created_at)}</p>
+            </div>
+        `).join('');
+        return `
+            <div class="mb-8">
+                <p class="text-sm font-semibold text-gray-500 mb-3 px-1">${label}</p>
+                <div class="space-y-3">${cards}</div>
+            </div>`;
+    }).join('');
+}
+
+function formatarDataGrupo(dataStr) {
+    const d = new Date(dataStr + 'T12:00:00');
+    const semana = d.toLocaleDateString('pt-BR', { weekday: 'long' });
+    const data = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    return semana.charAt(0).toUpperCase() + semana.slice(1) + ', ' + data;
 }
 
 async function verDetalhes(id) {
@@ -215,7 +365,7 @@ function formatDate(dateString) {
 }
 
 carregarSeletorEmpresas();
-setInterval(loadPedidos, 30000);
+setInterval(() => { if (tabAtual === 'ativos') loadPedidos(); }, 30000);
 
 // ===== PEDIDO MANUAL =====
 let itensManuais = [];
