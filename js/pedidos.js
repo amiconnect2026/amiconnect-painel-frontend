@@ -62,43 +62,63 @@ function renderPedidos() {
     }
     emptyState.classList.add('hidden');
     container.classList.remove('hidden');
-    container.innerHTML = pedidos.map(pedido => {
-        const selecionado = pedidosSelecionados.has(pedido.id);
-        const podeArquivar = pedido.impresso || pedido.status === 'cancelado';
-        return `
-        <div class="bg-white rounded-xl shadow-sm border-2 transition ${selecionado ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200 hover:border-indigo-300'}">
-            <div class="flex items-start gap-3 p-6">
-                ${podeArquivar ? `<input type="checkbox" class="mt-1 w-4 h-4 flex-shrink-0 cursor-pointer accent-indigo-600" ${selecionado ? 'checked' : ''} onchange="toggleSelecao(${pedido.id})">` : '<div class="w-4 flex-shrink-0 mt-1"></div>'}
-                <div class="flex-1 cursor-pointer min-w-0" onclick="verDetalhes(${pedido.id})">
-                    <div class="flex items-center gap-3 mb-2 flex-wrap">
-                        <span class="text-2xl font-bold text-indigo-600">#${pedido.id}</span>
-                        <span class="px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(pedido.status)}">${getStatusLabel(pedido.status)}</span>
-                        ${pedido.impresso
-                            ? '<span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">✓ Impresso</span>'
-                            : '<span class="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm font-medium">Não impresso</span>'}
-                    </div>
-                    <div class="grid grid-cols-2 gap-4 mt-3">
-                        <div>
-                            <p class="text-sm text-gray-500">Cliente</p>
-                            <p class="font-semibold text-gray-900">${pedido.cliente_nome || '-'}</p>
-                            <p class="text-sm text-gray-600">${formatPhone(pedido.cliente_telefone)}</p>
+
+    const grupos = {};
+    pedidos.forEach(p => {
+        const chave = new Date(p.created_at).toISOString().split('T')[0];
+        if (!grupos[chave]) grupos[chave] = [];
+        grupos[chave].push(p);
+    });
+    const chaves = Object.keys(grupos).sort((a, b) => b.localeCompare(a));
+
+    container.innerHTML = chaves.map(chave => {
+        const label = formatarDataGrupo(chave);
+        const cards = grupos[chave].map(pedido => {
+            const selecionado = pedidosSelecionados.has(pedido.id);
+            const podeArquivar = pedido.impresso || pedido.status === 'cancelado';
+            return `
+            <div class="bg-white rounded-xl shadow-sm border-2 transition ${selecionado ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200 hover:border-indigo-300'}">
+                <div class="flex items-start gap-3 p-6">
+                    ${podeArquivar ? `<input type="checkbox" class="mt-1 w-4 h-4 flex-shrink-0 cursor-pointer accent-indigo-600" ${selecionado ? 'checked' : ''} onchange="toggleSelecao(${pedido.id})">` : '<div class="w-4 flex-shrink-0 mt-1"></div>'}
+                    <div class="flex-1 cursor-pointer min-w-0" onclick="verDetalhes(${pedido.id})">
+                        <div class="flex items-center gap-3 mb-2 flex-wrap">
+                            <span class="text-2xl font-bold text-indigo-600">#${pedido.id}</span>
+                            <span class="px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(pedido.status)}">${getStatusLabel(pedido.status)}</span>
+                            ${pedido.impresso
+                                ? '<span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">✓ Impresso</span>'
+                                : '<span class="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm font-medium">Não impresso</span>'}
                         </div>
-                        <div>
-                            <p class="text-sm text-gray-500">Total</p>
-                            <p class="text-2xl font-bold text-green-600">R$ ${parseFloat(pedido.total).toFixed(2)}</p>
+                        <div class="grid grid-cols-2 gap-4 mt-3">
+                            <div>
+                                <p class="text-sm text-gray-500">Cliente</p>
+                                <p class="font-semibold text-gray-900">${pedido.cliente_nome || '-'}</p>
+                                <p class="text-sm text-gray-600">${formatPhone(pedido.cliente_telefone)}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">Total</p>
+                                <p class="text-2xl font-bold text-green-600">R$ ${parseFloat(pedido.total).toFixed(2)}</p>
+                            </div>
                         </div>
+                        <div class="mt-3">
+                            <p class="text-sm text-gray-500">Endereço</p>
+                            <p class="text-sm text-gray-900">${(pedido.cliente_endereco || '-').split('📍')[0].trim()}</p>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-3">🕐 ${formatDate(pedido.created_at)}</p>
                     </div>
-                    <div class="mt-3">
-                        <p class="text-sm text-gray-500">Endereço</p>
-                        <p class="text-sm text-gray-900">${(pedido.cliente_endereco || '-').split('📍')[0].trim()}</p>
-                    </div>
-                    <p class="text-xs text-gray-400 mt-3">🕐 ${formatDate(pedido.created_at)}</p>
+                    ${podeArquivar
+                        ? `<button onclick="confirmarArquivar(${pedido.id})" class="flex-shrink-0 text-sm text-gray-400 hover:text-orange-600 transition whitespace-nowrap pt-1">☐ Arquivar pedido</button>`
+                        : '<div class="flex-shrink-0 w-28"></div>'}
                 </div>
-                ${podeArquivar
-                    ? `<button onclick="confirmarArquivar(${pedido.id})" class="flex-shrink-0 text-sm text-gray-400 hover:text-orange-600 transition whitespace-nowrap pt-1">☐ Arquivar pedido</button>`
-                    : '<div class="flex-shrink-0 w-28"></div>'}
-            </div>
-        </div>`;
+            </div>`;
+        }).join('');
+        return `
+            <div class="mb-6">
+                <div class="flex items-center gap-3 mb-3">
+                    <span class="text-sm font-bold text-gray-600">📅 ${label}</span>
+                    <hr class="flex-1 border-gray-300">
+                </div>
+                <div class="space-y-4">${cards}</div>
+            </div>`;
     }).join('');
 }
 
