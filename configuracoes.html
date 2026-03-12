@@ -23,7 +23,7 @@
                     <a href="pedidos.html" class="text-gray-600 hover:text-indigo-600 transition">Pedidos</a>
                     <a href="relatorios.html" class="text-gray-600 hover:text-indigo-600 transition">Relatórios</a>
                     <a href="configuracoes.html" class="text-indigo-600 font-medium">Minha Loja</a>
-                    <a id="navEmpresas" href="empresas.html" class="text-gray-600 hover:text-indigo-600 transition">Empresas</a>
+                    <a id="navEmpresas" href="empresas.html" class="hidden text-gray-600 hover:text-indigo-600 transition">Empresas</a>
                     <button onclick="toggleBotPausa()" id="btnPausa" title="Pausar/Reativar bot" class="relative flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold transition-all bg-green-100 text-green-700 hover:bg-green-200">
                         <span id="btnPausaIcon" class="w-2 h-2 rounded-full bg-green-500 inline-block"></span>
                         <span id="btnPausaTexto">Bot ativo</span>
@@ -187,7 +187,7 @@
         (function() {
             const u = JSON.parse(localStorage.getItem('user') || '{}');
             if (u.role !== 'admin') { const el = document.getElementById('navCategorias'); if (el) el.remove(); }
-            if (u.role !== 'admin') { const el = document.getElementById('navEmpresas'); if (el) el.remove(); }
+            if (u.role === 'admin') { const el = document.getElementById('navEmpresas'); if (el) el.classList.remove('hidden'); }
             if (u.role === 'admin') { document.getElementById('secaoWhatsApp').classList.remove('hidden'); }
         })();
     </script>
