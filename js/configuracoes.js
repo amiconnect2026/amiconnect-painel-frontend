@@ -112,26 +112,6 @@ window.fbAsyncInit = function() {
     fjs.parentNode.insertBefore(js, fjs);
 }(document, 'script', 'facebook-jssdk'));
 
-// Captura eventos do Embedded Signup
-let waPhoneNumberId = null;
-let waWabaId = null;
-
-window.addEventListener('message', (event) => {
-    if (event.origin !== 'https://www.facebook.com' && event.origin !== 'https://web.facebook.com') return;
-
-    try {
-        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-        if (data.type !== 'WA_EMBEDDED_SIGNUP') return;
-
-        if (data.event === 'FINISH') {
-            waPhoneNumberId = data.data?.phone_number_id || null;
-            waWabaId = data.data?.waba_id || null;
-        }
-    } catch (e) {
-        // evento não era JSON válido
-    }
-});
-
 // Callback do FB.login
 function fbLoginCallback(response) {
     if (response.authResponse?.code) {
@@ -139,9 +119,7 @@ function fbLoginCallback(response) {
             method: 'POST',
             body: JSON.stringify({
                 empresa_id: empresaIdAtual,
-                code: response.authResponse.code,
-                phone_number_id: waPhoneNumberId,
-                waba_id: waWabaId
+                code: response.authResponse.code
             })
         })
         .then(() => checkStatusWhatsApp())
