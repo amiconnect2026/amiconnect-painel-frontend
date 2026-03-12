@@ -64,16 +64,18 @@ function renderPedidos() {
     container.classList.remove('hidden');
     container.innerHTML = pedidos.map(pedido => {
         const selecionado = pedidosSelecionados.has(pedido.id);
-        const podeArquivar = pedido.status === 'entregue' || pedido.status === 'cancelado';
+        const podeArquivar = pedido.impresso || pedido.status === 'cancelado';
         return `
         <div class="bg-white rounded-xl shadow-sm border-2 transition ${selecionado ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200 hover:border-indigo-300'}">
             <div class="flex items-start gap-3 p-6">
-                <input type="checkbox" class="mt-1 w-4 h-4 flex-shrink-0 cursor-pointer accent-indigo-600" ${selecionado ? 'checked' : ''} onchange="toggleSelecao(${pedido.id})">
+                ${podeArquivar ? `<input type="checkbox" class="mt-1 w-4 h-4 flex-shrink-0 cursor-pointer accent-indigo-600" ${selecionado ? 'checked' : ''} onchange="toggleSelecao(${pedido.id})">` : '<div class="w-4 flex-shrink-0 mt-1"></div>'}
                 <div class="flex-1 cursor-pointer min-w-0" onclick="verDetalhes(${pedido.id})">
                     <div class="flex items-center gap-3 mb-2 flex-wrap">
                         <span class="text-2xl font-bold text-indigo-600">#${pedido.id}</span>
                         <span class="px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(pedido.status)}">${getStatusLabel(pedido.status)}</span>
-                        ${!pedido.impresso ? '<span class="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm font-medium">Não impresso</span>' : ''}
+                        ${pedido.impresso
+                            ? '<span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">✓ Impresso</span>'
+                            : '<span class="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm font-medium">Não impresso</span>'}
                     </div>
                     <div class="grid grid-cols-2 gap-4 mt-3">
                         <div>
@@ -93,8 +95,8 @@ function renderPedidos() {
                     <p class="text-xs text-gray-400 mt-3">🕐 ${formatDate(pedido.created_at)}</p>
                 </div>
                 ${podeArquivar
-                    ? `<button onclick="arquivarPedido(${pedido.id})" class="flex-shrink-0 p-2 text-gray-400 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition text-lg" title="Arquivar pedido">📦</button>`
-                    : '<div class="w-9 flex-shrink-0"></div>'}
+                    ? `<button onclick="confirmarArquivar(${pedido.id})" class="flex-shrink-0 text-sm text-gray-400 hover:text-orange-600 transition whitespace-nowrap pt-1">☐ Arquivar pedido</button>`
+                    : '<div class="flex-shrink-0 w-28"></div>'}
             </div>
         </div>`;
     }).join('');
@@ -155,6 +157,11 @@ function limparSelecao() {
     atualizarBarraSelecionados();
 }
 
+function confirmarArquivar(id) {
+    if (!confirm('Tem certeza que deseja arquivar este pedido?')) return;
+    arquivarPedido(id);
+}
+
 async function arquivarPedido(id) {
     try {
         await apiRequest(`/pedidos/${id}/arquivar`, {
@@ -210,31 +217,29 @@ function renderPedidosArquivados(lista) {
     const chaves = Object.keys(grupos).sort((a, b) => b.localeCompare(a));
     container.innerHTML = chaves.map(chave => {
         const label = formatarDataGrupo(chave);
-        const cards = grupos[chave].map(pedido => `
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:border-indigo-300 transition cursor-pointer opacity-80" onclick="verDetalhes(${pedido.id})">
-                <div class="flex items-center gap-3 mb-2 flex-wrap">
-                    <span class="text-xl font-bold text-gray-500">#${pedido.id}</span>
-                    <span class="px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(pedido.status)}">${getStatusLabel(pedido.status)}</span>
-                    <span class="px-2 py-0.5 bg-orange-100 text-orange-600 rounded-full text-xs font-medium">📦 Arquivado</span>
-                </div>
-                <div class="grid grid-cols-2 gap-4 mt-3">
-                    <div>
-                        <p class="text-sm text-gray-500">Cliente</p>
-                        <p class="font-semibold text-gray-900">${pedido.cliente_nome || '-'}</p>
-                        <p class="text-sm text-gray-600">${formatPhone(pedido.cliente_telefone)}</p>
-                    </div>
-                    <div>
-                        <p class="text-sm text-gray-500">Total</p>
-                        <p class="text-xl font-bold text-green-600">R$ ${parseFloat(pedido.total).toFixed(2)}</p>
-                    </div>
-                </div>
-                <p class="text-xs text-gray-400 mt-3">🕐 ${formatDate(pedido.created_at)}</p>
-            </div>
-        `).join('');
+        const rows = grupos[chave].map(pedido => {
+            const imprimidoBadge = pedido.impresso
+                ? '<span class="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">✓ Impresso</span>'
+                : '<span class="px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">Não impresso</span>';
+            return `
+            <div class="bg-white border border-gray-200 rounded-lg px-4 py-2 flex items-center gap-3 hover:border-indigo-300 transition cursor-pointer" onclick="verDetalhes(${pedido.id})">
+                <span class="text-gray-500 font-bold text-sm w-10 flex-shrink-0">#${pedido.id}</span>
+                <span class="px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(pedido.status)} flex-shrink-0">${getStatusLabel(pedido.status)}</span>
+                ${imprimidoBadge}
+                <span class="text-gray-800 text-sm font-medium flex-1 truncate">${pedido.cliente_nome || '-'}</span>
+                <span class="text-gray-500 text-sm flex-shrink-0">•</span>
+                <span class="text-green-600 font-semibold text-sm flex-shrink-0">R$ ${parseFloat(pedido.total).toFixed(2)}</span>
+                <span class="text-gray-500 text-sm flex-shrink-0">•</span>
+                <span class="text-gray-400 text-xs flex-shrink-0">${formatDate(pedido.created_at)}</span>
+            </div>`;
+        }).join('');
         return `
-            <div class="mb-8">
-                <p class="text-sm font-semibold text-gray-500 mb-3 px-1">${label}</p>
-                <div class="space-y-3">${cards}</div>
+            <div class="mb-6">
+                <div class="flex items-center gap-3 mb-2">
+                    <span class="text-sm font-semibold text-gray-600">📅 ${label}</span>
+                    <hr class="flex-1 border-gray-200">
+                </div>
+                <div class="space-y-1">${rows}</div>
             </div>`;
     }).join('');
 }
@@ -267,7 +272,7 @@ async function verDetalhes(id) {
                     <p class="text-sm font-medium text-gray-500 mb-2">Alterar Status</p>
                     <div class="flex gap-2 flex-wrap">
                         <button onclick="mudarStatus(${pedido.id}, 'pendente')" class="px-3 py-1 rounded-lg text-sm font-medium bg-yellow-100 text-yellow-700 hover:bg-yellow-200">Pendente</button>
-                        <button onclick="mudarStatus(${pedido.id}, 'confirmado')" class="px-3 py-1 rounded-lg text-sm font-medium bg-blue-100 text-blue-700 hover:bg-blue-200">Confirmado/Impresso</button>
+                        <button onclick="mudarStatus(${pedido.id}, 'confirmado')" class="px-3 py-1 rounded-lg text-sm font-medium bg-blue-100 text-blue-700 hover:bg-blue-200">Confirmado</button>
                         <button onclick="mudarStatus(${pedido.id}, 'entregue')" class="px-3 py-1 rounded-lg text-sm font-medium bg-green-100 text-green-700 hover:bg-green-200">Entregue</button>
                         <button onclick="mudarStatus(${pedido.id}, 'cancelado')" class="px-3 py-1 rounded-lg text-sm font-medium bg-red-100 text-red-700 hover:bg-red-200">Cancelado</button>
                     </div>
@@ -337,7 +342,7 @@ async function imprimirPedido(id) {
         const badge = document.getElementById('statusBadge');
         if (badge) {
             badge.className = 'px-4 py-2 rounded-full font-medium bg-blue-100 text-blue-700';
-            badge.textContent = 'Confirmado/Impresso';
+            badge.textContent = 'Confirmado';
         }
         loadPedidos();
     } catch (error) { alert('Erro ao imprimir: ' + error.message); }
@@ -349,7 +354,7 @@ function getStatusColor(status) {
 }
 
 function getStatusLabel(status) {
-    const labels = { 'pendente': 'Pendente', 'confirmado': 'Confirmado/Impresso', 'entregue': 'Entregue', 'cancelado': 'Cancelado' };
+    const labels = { 'pendente': 'Pendente', 'confirmado': 'Confirmado', 'entregue': 'Entregue', 'cancelado': 'Cancelado' };
     return labels[status] || status;
 }
 
