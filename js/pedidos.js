@@ -343,11 +343,25 @@ async function imprimirPedido(id) {
     try {
         const response = await API.getPedido(id, getEmpresaId());
         const pedido = response.pedido;
-        const enderecoTexto = (pedido.cliente_endereco || '').split('📍')[0].trim();
+
+        function ascii(str) {
+            return (str || '').replace(/[ãâà]/g,'a').replace(/[áä]/g,'a').replace(/[êè]/g,'e').replace(/[éë]/g,'e')
+                .replace(/[îì]/g,'i').replace(/[íï]/g,'i').replace(/[õôò]/g,'o').replace(/[óö]/g,'o')
+                .replace(/[ûù]/g,'u').replace(/[úü]/g,'u').replace(/ç/g,'c').replace(/[ÃÂÀ]/g,'A')
+                .replace(/[ÁÄ]/g,'A').replace(/[ÊÈ]/g,'E').replace(/[ÉË]/g,'E').replace(/[ÎÌ]/g,'I')
+                .replace(/[ÍÏ]/g,'I').replace(/[ÕÔÒ]/g,'O').replace(/[ÓÖ]/g,'O').replace(/[ÛÙ]/g,'U')
+                .replace(/[ÚÜ]/g,'U').replace(/Ç/g,'C');
+        }
+
+        const enderecoTexto = ascii((pedido.cliente_endereco || '').split('📍')[0].trim());
         const enderecoExibir = enderecoTexto || 'RETIRADA NO LOCAL';
         const itensHtml = pedido.itens.map(item =>
-            '<tr><td>' + item.quantidade + 'x ' + item.nome + '</td><td style="text-align:right">&nbsp;&nbsp;R$ ' + (item.quantidade * item.preco).toFixed(2) + '</td></tr>'
+            '<tr>' +
+            '<td style="font-size:22px;font-weight:bold;padding:4px 0;">' + item.quantidade + 'x ' + ascii(item.nome) + '</td>' +
+            '<td style="font-size:16px;text-align:right;vertical-align:middle;white-space:nowrap;">R$ ' + (item.quantidade * item.preco).toFixed(2) + '</td>' +
+            '</tr>'
         ).join('');
+
         const cupom = `<!DOCTYPE html>
 <html>
 <head>
@@ -355,43 +369,33 @@ async function imprimirPedido(id) {
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <title>Pedido #${pedido.id}</title>
 <style>
-  body { font-family: monospace; font-size: 16px; width: 72mm; margin: 0 auto; padding: 0 8mm; }
-  @media print { @page { margin: 0; } head { display: none; } }
-  h2 { text-align: center; font-size: 18px; margin: 4px 0; }
-  p { margin: 3px 0; }
-  table { width: 100%; border-collapse: collapse; margin: 6px 0; }
-  td { padding: 2px 0; vertical-align: top; }
-  .linha { border-top: 1px dashed #000; margin: 6px 0; }
-  .total { font-weight: bold; font-size: 17px; }
+  body { font-family: monospace; width: 72mm; margin: 0 auto; padding: 0; }
+  @media print { @page { margin: 4mm; size: 80mm auto; } }
+  p { margin: 3px 0; font-size: 16px; }
+  table { width: 100%; border-collapse: collapse; margin: 4px 0; }
+  td { padding: 2px 0; vertical-align: middle; }
+  .linha { border-top: 1px dashed #000; margin: 8px 0; }
   .centro { text-align: center; }
 </style>
 </head>
 <body>
-<h2>PEDIDO #${pedido.id}</h2>
-<p class="centro">${formatDate(pedido.created_at)}</p>
-<div class="linha"></div>
-<p><b>Cliente:</b> ${pedido.cliente_nome || '-'}</p>
-<p><b>Tel:</b> ${formatPhone(pedido.cliente_telefone)}</p>
-<p><b>End:</b> ${enderecoExibir}</p>
+<p class="centro" style="font-size:40px;font-weight:bold;margin:8px 0;">#${pedido.id}</p>
+<p class="centro" style="font-size:13px;">${formatDate(pedido.created_at)}</p>
 <div class="linha"></div>
 <table>${itensHtml}</table>
 <div class="linha"></div>
-<table>
-  <tr><td>Subtotal</td><td style="text-align:right">&nbsp;&nbsp;R$ ${parseFloat(pedido.subtotal).toFixed(2)}</td></tr>
-  <tr><td>Entrega</td><td style="text-align:right">&nbsp;&nbsp;R$ ${parseFloat(pedido.taxa_entrega).toFixed(2)}</td></tr>
-  <tr class="total"><td>TOTAL</td><td style="text-align:right">&nbsp;&nbsp;R$ ${parseFloat(pedido.total).toFixed(2)}</td></tr>
-</table>
-<div class="linha"></div>
-<p><b>Pagamento:</b> ${pedido.forma_pagamento || '-'}</p>
+<p><b>Cliente:</b> ${ascii(pedido.cliente_nome) || '-'}</p>
+<p><b>Tel:</b> ${formatPhone(pedido.cliente_telefone)}</p>
+<p><b>End:</b> ${enderecoExibir}</p>
+<p><b>Pgto:</b> ${ascii(pedido.forma_pagamento) || '-'}</p>
 ${pedido.troco_para ? '<p><b>Troco para:</b> R$ ' + parseFloat(pedido.troco_para).toFixed(2) + '</p>' : ''}
-${pedido.observacoes ? '<p><b>Obs:</b> ' + pedido.observacoes + '</p>' : ''}
+${pedido.observacoes ? '<p><b>Obs:</b> ' + ascii(pedido.observacoes) + '</p>' : ''}
 <div class="linha"></div>
-<p class="centro">${formatDate(pedido.created_at)}</p>
-<p class="centro">Pedido #${pedido.id}</p>
+<p class="centro" style="font-size:12px;">AmiConnect</p>
 <script>window.onload = function() { window.print(); };<\/script>
 </body>
 </html>`;
-        const janela = window.open('', '_blank', 'width=340,height=600');
+        const janela = window.open('', '_blank', 'width=340,height=700');
         janela.document.write(cupom);
         janela.document.close();
         await API.marcarPedidoImpresso(id, getEmpresaId());
