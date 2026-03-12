@@ -41,6 +41,7 @@ async function carregarConfiguracoes(empresaId) {
         document.getElementById('taxa_entrega').value = empresa.taxa_entrega || '';
         document.getElementById('pedido_minimo').value = empresa.pedido_minimo || '';
         document.getElementById('formas_pagamento').value = empresa.formas_pagamento || '';
+        document.getElementById('horario_funcionamento').value = empresa.horario_funcionamento || '';
         document.getElementById('endereco_restaurante').value = empresa.endereco_restaurante || '';
         document.getElementById('raio_entrega_km').value = empresa.raio_entrega_km || '';
         document.getElementById('latitude').value = empresa.latitude || '';
@@ -60,6 +61,7 @@ async function salvarConfiguracoes() {
             tempo_entrega_max: parseInt(document.getElementById('tempo_entrega_max').value),
             taxa_entrega: parseFloat(document.getElementById('taxa_entrega').value),
             pedido_minimo: parseFloat(document.getElementById('pedido_minimo').value),
+            horario_funcionamento: document.getElementById('horario_funcionamento').value,
             formas_pagamento: document.getElementById('formas_pagamento').value,
             endereco_restaurante: document.getElementById('endereco_restaurante').value,
             raio_entrega_km: parseFloat(document.getElementById('raio_entrega_km').value) || null,

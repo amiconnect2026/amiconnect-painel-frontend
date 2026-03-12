@@ -6,6 +6,7 @@ let intervalId = null;
 let chatTelefone = null;
 let chatEmpresaId = null;
 let chatIntervalId = null;
+let chatReadOnly = false;
 let empresaIdAtual = user.role === 'admin' ? (parseInt(localStorage.getItem('adminEmpresaId')) || null) : user.empresa_id;
 
 async function carregarSeletorEmpresas() {
@@ -75,6 +76,7 @@ function renderConversas() {
                         ${conv.modo === 'bot' ? '🤖 Bot' : '👤 Manual'}
                     </div>
                     ${conv.modo === 'bot' ? `
+                        <button onclick="verConversa('${conv.cliente_telefone}')" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg transition text-sm">👁 Ver</button>
                         <button onclick="assumirConversa('${conv.cliente_telefone}')" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition">Assumir</button>
                     ` : `
                         <button onclick="abrirChat('${conv.cliente_telefone}')" class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition">💬 Abrir Chat</button>
@@ -115,12 +117,31 @@ async function liberarParaBot() {
     fecharChat();
 }
 
-async function abrirChat(telefone) {
+async function verConversa(telefone) {
+    chatReadOnly = true;
     chatTelefone = telefone;
     chatEmpresaId = empresaIdAtual;
     const conv = conversas.find(c => c.cliente_telefone === telefone);
     document.getElementById('chatClienteNome').textContent = conv?.cliente_nome || formatPhone(telefone);
     document.getElementById('chatClienteTelefone').textContent = formatPhone(telefone);
+    document.getElementById('chatBtnLiberarBot').classList.add('hidden');
+    document.getElementById('chatBadgeLeitura').classList.remove('hidden');
+    document.getElementById('chatInputArea').classList.add('hidden');
+    document.getElementById('chatModal').classList.remove('hidden');
+    await carregarMensagens();
+    chatIntervalId = setInterval(carregarMensagens, 5000);
+}
+
+async function abrirChat(telefone) {
+    chatReadOnly = false;
+    chatTelefone = telefone;
+    chatEmpresaId = empresaIdAtual;
+    const conv = conversas.find(c => c.cliente_telefone === telefone);
+    document.getElementById('chatClienteNome').textContent = conv?.cliente_nome || formatPhone(telefone);
+    document.getElementById('chatClienteTelefone').textContent = formatPhone(telefone);
+    document.getElementById('chatBtnLiberarBot').classList.remove('hidden');
+    document.getElementById('chatBadgeLeitura').classList.add('hidden');
+    document.getElementById('chatInputArea').classList.remove('hidden');
     document.getElementById('chatModal').classList.remove('hidden');
     await carregarMensagens();
     chatIntervalId = setInterval(carregarMensagens, 5000);
@@ -129,6 +150,7 @@ async function abrirChat(telefone) {
 function fecharChat() {
     document.getElementById('chatModal').classList.add('hidden');
     chatTelefone = null;
+    chatReadOnly = false;
     if (chatIntervalId) { clearInterval(chatIntervalId); chatIntervalId = null; }
 }
 

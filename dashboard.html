@@ -44,7 +44,14 @@
     </nav>
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
+
+        <div id="seletorEmpresaDash" class="hidden bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6 flex items-center gap-4">
+            <span class="text-sm font-medium text-gray-700 whitespace-nowrap">🏪 Restaurante:</span>
+            <select id="selectEmpresaDash" class="flex-1 md:max-w-sm px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
+                <option value="">Selecione um restaurante...</option>
+            </select>
+        </div>
+
         <div class="mb-8">
             <h2 class="text-3xl font-bold text-gray-900">Início</h2>
             <p class="text-gray-600 mt-1">Visão geral do sistema</p>
@@ -133,9 +140,34 @@
         if (user.role !== 'admin') document.getElementById('navCategorias').remove();
         if (user.role === 'admin') { const el = document.getElementById('navEmpresas'); if (el) el.classList.remove('hidden'); }
 
+        async function carregarSeletorDashboard() {
+            if (user.role !== 'admin') return;
+            try {
+                const res = await apiRequest('/empresas');
+                const empresas = res.empresas || [];
+                const adminEmpresaId = parseInt(localStorage.getItem('adminEmpresaId')) || null;
+                const seletor = document.getElementById('seletorEmpresaDash');
+                const select = document.getElementById('selectEmpresaDash');
+                seletor.classList.remove('hidden');
+                select.innerHTML = '<option value="">Selecione um restaurante...</option>';
+                empresas.forEach(e => {
+                    select.innerHTML += `<option value="${e.id}" ${e.id == adminEmpresaId ? 'selected' : ''}>${e.nome}</option>`;
+                });
+                select.addEventListener('change', (ev) => {
+                    const id = parseInt(ev.target.value) || null;
+                    if (id) localStorage.setItem('adminEmpresaId', id);
+                    else localStorage.removeItem('adminEmpresaId');
+                    carregarAlertas().then(atualizarBadge);
+                });
+            } catch(e) { console.error(e); }
+        }
+
         async function loadStats() {
             try {
-                const empresaId = user.role === 'admin' ? 1 : user.empresa_id;
+                const empresaId = user.role === 'admin'
+                    ? (parseInt(localStorage.getItem('adminEmpresaId')) || null)
+                    : user.empresa_id;
+                if (!empresaId) return;
                 const response = await API.getProdutos(empresaId);
                 const produtos = response.produtos || [];
                 
@@ -147,6 +179,7 @@
             }
         }
 
+        carregarSeletorDashboard();
         loadStats();
         iniciarAlertas();
     </script>
