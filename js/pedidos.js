@@ -217,29 +217,20 @@ function renderPedidosArquivados(lista) {
     const chaves = Object.keys(grupos).sort((a, b) => b.localeCompare(a));
     container.innerHTML = chaves.map(chave => {
         const label = formatarDataGrupo(chave);
-        const rows = grupos[chave].map(pedido => {
-            const imprimidoBadge = pedido.impresso
-                ? '<span class="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">✓ Impresso</span>'
-                : '<span class="px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">Não impresso</span>';
-            return `
-            <div class="bg-white border border-gray-200 rounded-lg px-4 py-2 flex items-center gap-3 hover:border-indigo-300 transition cursor-pointer" onclick="verDetalhes(${pedido.id})">
-                <span class="text-gray-500 font-bold text-sm w-10 flex-shrink-0">#${pedido.id}</span>
-                <span class="px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(pedido.status)} flex-shrink-0">${getStatusLabel(pedido.status)}</span>
-                ${imprimidoBadge}
-                <span class="text-gray-800 text-sm font-medium flex-1 truncate">${pedido.cliente_nome || '-'}</span>
-                <span class="text-gray-500 text-sm flex-shrink-0">•</span>
-                <span class="text-green-600 font-semibold text-sm flex-shrink-0">R$ ${parseFloat(pedido.total).toFixed(2)}</span>
-                <span class="text-gray-500 text-sm flex-shrink-0">•</span>
-                <span class="text-gray-400 text-xs flex-shrink-0">${formatDate(pedido.created_at)}</span>
-            </div>`;
-        }).join('');
+        const rows = grupos[chave].map(pedido => `
+            <div class="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 cursor-pointer transition" onclick="verDetalhes(${pedido.id})">
+                <span class="text-gray-500 text-sm font-medium w-24 flex-shrink-0">[Pedido #${pedido.id}]</span>
+                <span class="text-gray-800 text-sm flex-1 truncate">${pedido.cliente_nome || '-'}</span>
+                <span class="text-gray-500 text-sm">-</span>
+                <span class="text-green-700 text-sm font-medium flex-shrink-0">R$ ${parseFloat(pedido.total).toFixed(2)}</span>
+                <span class="text-gray-500 text-sm">-</span>
+                <span class="text-gray-500 text-sm flex-shrink-0">${getStatusLabel(pedido.status).toLowerCase()}</span>
+            </div>`).join('');
         return `
-            <div class="mb-6">
-                <div class="flex items-center gap-3 mb-2">
-                    <span class="text-sm font-semibold text-gray-600">📅 ${label}</span>
-                    <hr class="flex-1 border-gray-200">
-                </div>
-                <div class="space-y-1">${rows}</div>
+            <div class="mb-4 bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                <p class="text-sm font-bold text-gray-700 mb-2">📅 ${label}</p>
+                <hr class="border-gray-100 mb-2">
+                ${rows}
             </div>`;
     }).join('');
 }
