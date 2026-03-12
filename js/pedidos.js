@@ -398,7 +398,7 @@ async function imprimirPedido(id) {
 ${pedido.observacoes ? '<p><b>Obs:</b> ' + ascii(pedido.observacoes) + '</p>' : ''}
 <div class="linha"></div>
 <p class="centro" style="font-size:12px;">AmiConnect</p>
-<script>window.onload = function() { window.print(); };<\/script>
+<script>window.onload = function() { window.print(); setTimeout(function(){ window.close(); }, 500); };<\/script>
 </body>
 </html>`;
         const janela = window.open('', '_blank', 'width=340,height=700');
