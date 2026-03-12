@@ -352,9 +352,11 @@ async function imprimirPedido(id) {
 <html>
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <title>Pedido #${pedido.id}</title>
 <style>
-  body { font-family: monospace; font-size: 16px; padding: 8px; width: 72mm; margin: 0 auto; }
+  body { font-family: monospace; font-size: 16px; width: 72mm; margin: 0 auto; padding: 0 8mm; }
+  @media print { @page { margin: 0; } head { display: none; } }
   h2 { text-align: center; font-size: 18px; margin: 4px 0; }
   p { margin: 3px 0; }
   table { width: 100%; border-collapse: collapse; margin: 6px 0; }
@@ -383,6 +385,9 @@ async function imprimirPedido(id) {
 <p><b>Pagamento:</b> ${pedido.forma_pagamento || '-'}</p>
 ${pedido.troco_para ? '<p><b>Troco para:</b> R$ ' + parseFloat(pedido.troco_para).toFixed(2) + '</p>' : ''}
 ${pedido.observacoes ? '<p><b>Obs:</b> ' + pedido.observacoes + '</p>' : ''}
+<div class="linha"></div>
+<p class="centro">${formatDate(pedido.created_at)}</p>
+<p class="centro">Pedido #${pedido.id}</p>
 <script>window.onload = function() { window.print(); };<\/script>
 </body>
 </html>`;
