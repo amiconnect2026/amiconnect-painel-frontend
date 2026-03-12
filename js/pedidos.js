@@ -384,11 +384,17 @@ async function imprimirPedido(id) {
 <div class="linha"></div>
 <table>${itensHtml}</table>
 <div class="linha"></div>
+<table>
+  <tr><td style="font-size:16px;">Subtotal</td><td style="font-size:16px;text-align:right;">R$ ${parseFloat(pedido.subtotal).toFixed(2)}</td></tr>
+  <tr><td style="font-size:16px;">Entrega</td><td style="font-size:16px;text-align:right;">R$ ${parseFloat(pedido.taxa_entrega).toFixed(2)}</td></tr>
+  <tr><td style="font-size:16px;font-weight:bold;">TOTAL</td><td style="font-size:16px;font-weight:bold;text-align:right;">R$ ${parseFloat(pedido.total).toFixed(2)}</td></tr>
+  ${pedido.troco_para ? '<tr><td style="font-size:16px;">Troco para</td><td style="font-size:16px;text-align:right;">R$ ' + parseFloat(pedido.troco_para).toFixed(2) + '</td></tr>' : ''}
+</table>
+<div class="linha"></div>
 <p><b>Cliente:</b> ${ascii(pedido.cliente_nome) || '-'}</p>
 <p><b>Tel:</b> ${formatPhone(pedido.cliente_telefone)}</p>
 <p><b>End:</b> ${enderecoExibir}</p>
 <p><b>Pgto:</b> ${ascii(pedido.forma_pagamento) || '-'}</p>
-${pedido.troco_para ? '<p><b>Troco para:</b> R$ ' + parseFloat(pedido.troco_para).toFixed(2) + '</p>' : ''}
 ${pedido.observacoes ? '<p><b>Obs:</b> ' + ascii(pedido.observacoes) + '</p>' : ''}
 <div class="linha"></div>
 <p class="centro" style="font-size:12px;">AmiConnect</p>
