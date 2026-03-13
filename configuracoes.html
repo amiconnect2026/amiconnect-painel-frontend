@@ -80,6 +80,24 @@
                         <input type="number" id="pedido_minimo" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" min="0" step="0.50">
                     </div>
                 </div>
+
+                <!-- Toggle retirada no local -->
+                <div class="flex items-center gap-3 mt-4 pt-4 border-t border-gray-100">
+                    <input type="checkbox" id="permite_retirada" class="w-5 h-5 accent-indigo-600 cursor-pointer">
+                    <label for="permite_retirada" class="text-sm font-medium text-gray-700 cursor-pointer">Permitir retirada no local</label>
+                </div>
+
+                <!-- Taxas por distância -->
+                <div class="mt-4 pt-4 border-t border-gray-100">
+                    <h4 class="text-sm font-semibold text-gray-700 mb-3">📏 Taxas por Distância</h4>
+                    <div id="listaTaxas" class="space-y-2 mb-3"></div>
+                    <div class="flex items-center gap-2">
+                        <input type="number" id="novaTaxaDistancia" min="0" step="0.1" placeholder="Até (km)" class="w-32 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <input type="number" id="novaTaxaValor" min="0" step="0.50" placeholder="Taxa (R$)" class="w-32 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <button onclick="adicionarTaxa()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-lg text-sm transition">+ Adicionar</button>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-2">As faixas são aplicadas do menor para o maior alcance.</p>
+                </div>
             </div>
 
             <!-- Area de Entrega -->

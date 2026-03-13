@@ -48,6 +48,8 @@ async function carregarConfiguracoes(empresaId) {
         document.getElementById('raio_entrega_km').value = empresa.raio_entrega_km || '';
         document.getElementById('latitude').value = empresa.latitude || '';
         document.getElementById('longitude').value = empresa.longitude || '';
+        document.getElementById('permite_retirada').checked = empresa.permite_retirada !== false;
+        carregarTaxas(empresaId);
         if (empresa.foto_capa) {
             document.getElementById('fotoCapa_preview').src = empresa.foto_capa;
             document.getElementById('fotoCapa_previewContainer').classList.remove('hidden');
@@ -117,7 +119,8 @@ async function salvarConfiguracoes() {
             endereco_restaurante: document.getElementById('endereco_restaurante').value,
             raio_entrega_km: parseFloat(document.getElementById('raio_entrega_km').value) || null,
             latitude: parseFloat(document.getElementById('latitude').value) || null,
-            longitude: parseFloat(document.getElementById('longitude').value) || null
+            longitude: parseFloat(document.getElementById('longitude').value) || null,
+            permite_retirada: document.getElementById('permite_retirada').checked
         };
         await API.atualizarEmpresa(empresaIdAtual, dados);
         const msg = document.getElementById('mensagem');
@@ -142,6 +145,58 @@ async function geocodificarEndereco() {
         alert('Coordenadas atualizadas!');
     } catch (error) {
         alert('Erro ao geocodificar: ' + error.message);
+    }
+}
+
+// ── Taxas por distância ───────────────────────────────────────────────────────
+
+async function carregarTaxas(empresaId) {
+    const container = document.getElementById('listaTaxas');
+    if (!container) return;
+    try {
+        const res = await apiRequest(`/empresas/${empresaId}/taxas-entrega`);
+        const taxas = res.taxas || [];
+        if (taxas.length === 0) {
+            container.innerHTML = '<p class="text-sm text-gray-400">Nenhuma faixa cadastrada.</p>';
+            return;
+        }
+        container.innerHTML = taxas.map(t => `
+            <div class="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2 text-sm">
+                <span class="text-gray-700">Até <strong>${parseFloat(t.distancia_ate_km).toFixed(1)} km</strong> → <strong>R$ ${parseFloat(t.taxa).toFixed(2)}</strong></span>
+                <button onclick="removerTaxa(${t.id})" class="text-red-400 hover:text-red-600 font-bold text-lg leading-none ml-3" title="Remover">✕</button>
+            </div>
+        `).join('');
+    } catch(e) {
+        console.error('Erro ao carregar taxas:', e);
+    }
+}
+
+async function adicionarTaxa() {
+    if (!empresaIdAtual) return alert('Selecione um restaurante!');
+    const distancia = parseFloat(document.getElementById('novaTaxaDistancia').value);
+    const taxa = parseFloat(document.getElementById('novaTaxaValor').value);
+    if (isNaN(distancia) || distancia <= 0) return alert('Digite uma distância válida.');
+    if (isNaN(taxa) || taxa < 0) return alert('Digite uma taxa válida.');
+    try {
+        await apiRequest(`/empresas/${empresaIdAtual}/taxas-entrega`, {
+            method: 'POST',
+            body: JSON.stringify({ distancia_ate_km: distancia, taxa })
+        });
+        document.getElementById('novaTaxaDistancia').value = '';
+        document.getElementById('novaTaxaValor').value = '';
+        carregarTaxas(empresaIdAtual);
+    } catch(e) {
+        alert('Erro ao adicionar taxa: ' + e.message);
+    }
+}
+
+async function removerTaxa(taxaId) {
+    if (!confirm('Remover esta faixa de taxa?')) return;
+    try {
+        await apiRequest(`/empresas/${empresaIdAtual}/taxas-entrega/${taxaId}`, { method: 'DELETE' });
+        carregarTaxas(empresaIdAtual);
+    } catch(e) {
+        alert('Erro ao remover taxa: ' + e.message);
     }
 }
 
