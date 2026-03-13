@@ -89,7 +89,7 @@
     <div id="conteudo" class="hidden">
 
         <!-- Header -->
-        <div class="bg-indigo-600 text-white">
+        <div id="restauranteHeader" class="bg-indigo-600 text-white">
             <div class="max-w-3xl mx-auto px-4 py-8">
                 <div class="flex items-center gap-4">
                     <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center text-3xl shadow-lg">🍽️</div>
@@ -121,6 +121,9 @@
                 <div id="categoriaTabs" class="flex gap-6 overflow-x-auto py-3"></div>
             </div>
         </div>
+
+        <!-- Seções em destaque -->
+        <div id="featuredSections" class="max-w-3xl mx-auto px-4 pt-4"></div>
 
         <!-- Produtos -->
         <div class="max-w-3xl mx-auto px-4 py-6 pb-32">
@@ -240,7 +243,13 @@
                 document.getElementById('carritoRestaurante').textContent = empresa.nome;
                 document.getElementById('taxaCarrinho').textContent = `R$ ${parseFloat(empresa.taxa_entrega).toFixed(2)}`;
 
+                if (empresa.foto_capa) {
+                    const header = document.getElementById('restauranteHeader');
+                    header.style.background = `linear-gradient(to bottom, rgba(0,0,0,0.45), rgba(0,0,0,0.65)), url(${empresa.foto_capa}) center/cover no-repeat`;
+                }
+
                 const produtosDisponiveis = produtos.filter(p => p.disponivel);
+                renderFeaturedSections(produtosDisponiveis);
 
                 if (produtosDisponiveis.length === 0) {
                     document.getElementById('loading').classList.add('hidden');
@@ -279,18 +288,21 @@
                         <h2 class="text-xl font-extrabold text-gray-900 mb-4 pb-2 border-b border-gray-200">${cat}</h2>
                         <div class="grid grid-cols-1 gap-4">
                             ${prods.map(p => `
-                                <div class="produto-card bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex">
+                                <div class="produto-card bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex relative">
+                                    ${p.is_novo ? '<span class="absolute top-2 left-2 z-10 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">NOVO</span>' : ''}
+                                    ${!p.disponivel ? '<div class="absolute inset-0 bg-gray-900 bg-opacity-60 flex items-center justify-center z-10 rounded-xl"><span class="text-white font-bold text-sm bg-gray-800 px-3 py-1 rounded-full">ESGOTADO</span></div>' : ''}
                                     <div class="flex-1 p-4 flex flex-col justify-between">
                                         <div>
                                             <h3 class="font-extrabold text-gray-900 text-base">${p.nome}</h3>
                                             ${p.descricao ? `<p class="text-gray-500 text-sm mt-1 leading-relaxed">${p.descricao}</p>` : ''}
                                         </div>
                                         <div class="flex items-center justify-between mt-3">
-                                            <p class="text-indigo-600 font-extrabold text-lg">R$ ${parseFloat(p.preco).toFixed(2)}</p>
-                                            <button class="btn-adicionar bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-xl text-sm flex items-center gap-1 shadow-sm"
-                                                onclick="adicionarAoCarrinho(${p.id}, '${p.nome.replace(/'/g, "\\'")}', ${p.preco})">
-                                                <span class="text-lg leading-none">+</span> Adicionar
-                                            </button>
+                                            <div>
+                                                ${p.promocao_ativa && p.desconto_percent > 0
+                                                    ? `<p class="text-gray-400 text-sm line-through">R$ ${parseFloat(p.preco).toFixed(2)}</p><p class="text-red-600 font-extrabold text-lg">R$ ${(parseFloat(p.preco) * (1 - p.desconto_percent / 100)).toFixed(2)}</p>`
+                                                    : `<p class="text-indigo-600 font-extrabold text-lg">R$ ${parseFloat(p.preco).toFixed(2)}</p>`}
+                                            </div>
+                                            ${p.disponivel ? `<button class="btn-adicionar bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-xl text-sm flex items-center gap-1 shadow-sm" onclick="adicionarAoCarrinho(${p.id}, '${p.nome.replace(/'/g, "\\'")}', ${p.promocao_ativa && p.desconto_percent > 0 ? (parseFloat(p.preco) * (1 - p.desconto_percent / 100)).toFixed(2) : p.preco})"><span class="text-lg leading-none">+</span> Adicionar</button>` : ''}
                                         </div>
                                     </div>
                                     ${p.imagem_url ? `
@@ -314,6 +326,85 @@
                 console.error('Erro:', error);
                 document.getElementById('loading').classList.add('hidden');
                 document.getElementById('erro').classList.remove('hidden');
+            }
+        }
+
+        // ===== SEÇÕES EM DESTAQUE =====
+
+        function renderFeaturedSections(todos) {
+            const container = document.getElementById('featuredSections');
+            container.innerHTML = '';
+
+            const destaqueDia = todos.filter(p => p.tipo_destaque === 'destaque_dia');
+            const maisPedidos = todos.filter(p => p.tipo_destaque === 'mais_pedido');
+            const sugestoes  = todos.filter(p => p.tipo_destaque === 'sugestao');
+
+            if (destaqueDia.length > 0) {
+                const p = destaqueDia[0];
+                const preco = p.promocao_ativa && p.desconto_percent > 0
+                    ? `<span class="line-through text-gray-300 text-sm">R$ ${parseFloat(p.preco).toFixed(2)}</span> <span class="text-yellow-300 font-extrabold text-xl">R$ ${(parseFloat(p.preco) * (1 - p.desconto_percent / 100)).toFixed(2)}</span>`
+                    : `<span class="text-yellow-300 font-extrabold text-xl">R$ ${parseFloat(p.preco).toFixed(2)}</span>`;
+                container.innerHTML += `
+                <div class="mb-4">
+                    <h3 class="text-base font-extrabold text-gray-800 mb-2">⭐ Destaque do dia</h3>
+                    <div class="relative rounded-2xl overflow-hidden bg-indigo-700 flex items-center gap-4 p-4 shadow cursor-pointer"
+                         onclick="adicionarAoCarrinho(${p.id}, '${p.nome.replace(/'/g, "\\'")}', ${p.preco})">
+                        ${p.imagem_url ? `<img src="${p.imagem_url}" class="w-24 h-24 rounded-xl object-cover flex-shrink-0">` : `<div class="w-24 h-24 rounded-xl bg-indigo-600 flex items-center justify-center text-4xl flex-shrink-0">🍽️</div>`}
+                        <div class="flex-1 text-white">
+                            <p class="font-extrabold text-lg">${p.nome}</p>
+                            ${p.descricao ? `<p class="text-indigo-200 text-sm mt-0.5">${p.descricao}</p>` : ''}
+                            <div class="flex items-center gap-2 mt-2">${preco}</div>
+                        </div>
+                        <button class="flex-shrink-0 bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-extrabold px-4 py-2 rounded-xl text-sm">+ Add</button>
+                    </div>
+                </div>`;
+            }
+
+            if (maisPedidos.length > 0) {
+                const cards = maisPedidos.map(p => {
+                    const precoFinal = p.promocao_ativa && p.desconto_percent > 0
+                        ? (parseFloat(p.preco) * (1 - p.desconto_percent / 100)).toFixed(2)
+                        : parseFloat(p.preco).toFixed(2);
+                    return `<div class="flex-shrink-0 w-40 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden cursor-pointer"
+                                 onclick="adicionarAoCarrinho(${p.id}, '${p.nome.replace(/'/g, "\\'")}', ${precoFinal})">
+                        ${p.imagem_url ? `<img src="${p.imagem_url}" class="w-full h-28 object-cover">` : `<div class="w-full h-28 bg-gray-100 flex items-center justify-center text-3xl">🍽️</div>`}
+                        <div class="p-2">
+                            <p class="font-bold text-gray-900 text-sm truncate">${p.nome}</p>
+                            <p class="text-indigo-600 font-extrabold text-sm">R$ ${precoFinal}</p>
+                        </div>
+                    </div>`;
+                }).join('');
+                container.innerHTML += `
+                <div class="mb-4">
+                    <h3 class="text-base font-extrabold text-gray-800 mb-2">🔥 Os mais pedidos</h3>
+                    <div class="flex gap-3 overflow-x-auto pb-2">${cards}</div>
+                </div>`;
+            }
+
+            if (sugestoes.length > 0) {
+                const cards = sugestoes.map(p => {
+                    const precoFinal = p.promocao_ativa && p.desconto_percent > 0
+                        ? (parseFloat(p.preco) * (1 - p.desconto_percent / 100)).toFixed(2)
+                        : parseFloat(p.preco).toFixed(2);
+                    return `<div class="flex items-center gap-3 bg-white rounded-xl border border-gray-100 p-3 shadow-sm cursor-pointer"
+                                 onclick="adicionarAoCarrinho(${p.id}, '${p.nome.replace(/'/g, "\\'")}', ${precoFinal})">
+                        ${p.imagem_url ? `<img src="${p.imagem_url}" class="w-14 h-14 rounded-lg object-cover flex-shrink-0">` : `<div class="w-14 h-14 rounded-lg bg-gray-100 flex items-center justify-center text-2xl flex-shrink-0">🍽️</div>`}
+                        <div class="flex-1">
+                            <p class="font-bold text-gray-900 text-sm">${p.nome}</p>
+                            ${p.descricao ? `<p class="text-gray-500 text-xs mt-0.5 truncate">${p.descricao}</p>` : ''}
+                        </div>
+                        <p class="text-indigo-600 font-extrabold text-sm flex-shrink-0">R$ ${precoFinal}</p>
+                    </div>`;
+                }).join('');
+                container.innerHTML += `
+                <div class="mb-4">
+                    <h3 class="text-base font-extrabold text-gray-800 mb-2">💡 Sugestões</h3>
+                    <div class="space-y-2">${cards}</div>
+                </div>`;
+            }
+
+            if (container.innerHTML) {
+                container.innerHTML += '<hr class="border-gray-200 my-2">';
             }
         }
 

@@ -3,6 +3,8 @@ if (!user) window.location.href = 'index.html';
 document.getElementById('userName').textContent = user.nome;
 
 let empresaIdAtual = user.role === 'admin' ? (parseInt(localStorage.getItem('adminEmpresaId')) || null) : user.empresa_id;
+let fotoCapa_file = null;
+let fotoCapa_remover = false;
 
 async function carregarSeletorEmpresas() {
     if (user.role !== 'admin') {
@@ -46,10 +48,59 @@ async function carregarConfiguracoes(empresaId) {
         document.getElementById('raio_entrega_km').value = empresa.raio_entrega_km || '';
         document.getElementById('latitude').value = empresa.latitude || '';
         document.getElementById('longitude').value = empresa.longitude || '';
+        if (empresa.foto_capa) {
+            document.getElementById('fotoCapa_preview').src = empresa.foto_capa;
+            document.getElementById('fotoCapa_previewContainer').classList.remove('hidden');
+            document.getElementById('fotoCapa_placeholder').classList.add('hidden');
+        } else {
+            document.getElementById('fotoCapa_previewContainer').classList.add('hidden');
+            document.getElementById('fotoCapa_placeholder').classList.remove('hidden');
+        }
         document.getElementById('loading').classList.add('hidden');
         document.getElementById('formContainer').classList.remove('hidden');
     } catch (error) {
         alert('Erro ao carregar configuracoes: ' + error.message);
+    }
+}
+
+function previewFotoCapa(input) {
+    const file = input.files[0];
+    if (!file) return;
+    fotoCapa_file = file;
+    fotoCapa_remover = false;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        document.getElementById('fotoCapa_preview').src = e.target.result;
+        document.getElementById('fotoCapa_previewContainer').classList.remove('hidden');
+        document.getElementById('fotoCapa_placeholder').classList.add('hidden');
+    };
+    reader.readAsDataURL(file);
+}
+
+function removerFotoCapa() {
+    fotoCapa_file = null;
+    fotoCapa_remover = true;
+    document.getElementById('fotoCapa_input').value = '';
+    document.getElementById('fotoCapa_previewContainer').classList.add('hidden');
+    document.getElementById('fotoCapa_placeholder').classList.remove('hidden');
+}
+
+async function salvarFotoCapa() {
+    if (!empresaIdAtual) return alert('Selecione um restaurante!');
+    if (!fotoCapa_file && !fotoCapa_remover) return alert('Nenhuma alteração na foto de capa.');
+    const formData = new FormData();
+    if (fotoCapa_file) {
+        formData.append('foto_capa', fotoCapa_file);
+    } else {
+        formData.append('remover_foto_capa', 'true');
+    }
+    try {
+        await apiRequest(`/empresas/${empresaIdAtual}/foto-capa`, { method: 'PATCH', body: formData });
+        fotoCapa_file = null;
+        fotoCapa_remover = false;
+        alert('Foto de capa salva com sucesso!');
+    } catch(e) {
+        alert('Erro ao salvar foto de capa: ' + e.message);
     }
 }
 

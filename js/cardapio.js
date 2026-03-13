@@ -174,6 +174,7 @@ function removerImagem() {
     document.getElementById('imagemInput').value = '';
     document.getElementById('imagemPreviewContainer').classList.add('hidden');
     document.getElementById('imagemPlaceholder').classList.remove('hidden');
+    document.getElementById('removerImagemFlag').value = 'true';
 }
 
 function openAddModal() {
@@ -187,9 +188,18 @@ function openAddModal() {
     document.getElementById('modalTitle').textContent = 'Adicionar Produto';
     document.getElementById('produtoForm').reset();
     document.getElementById('produtoId').value = '';
+    document.getElementById('removerImagemFlag').value = 'false';
     document.getElementById('produtoDisponivel').checked = true;
     document.getElementById('imagemPreviewContainer').classList.add('hidden');
     document.getElementById('imagemPlaceholder').classList.remove('hidden');
+    document.getElementById('produtoIsNovo').checked = false;
+    document.getElementById('produtoDestaque').checked = false;
+    document.getElementById('produtoTipoDestaque').value = 'mais_pedido';
+    document.getElementById('produtoPromocao').checked = false;
+    document.getElementById('produtoDesconto').value = '';
+    document.getElementById('precoComDesconto').textContent = '';
+    toggleTipoDestaque();
+    toggleDesconto();
     document.getElementById('produtoModal').classList.remove('hidden');
 }
 
@@ -203,11 +213,20 @@ function editProduto(id) {
 
     document.getElementById('modalTitle').textContent = 'Editar Produto';
     document.getElementById('produtoId').value = produto.id;
+    document.getElementById('removerImagemFlag').value = 'false';
     document.getElementById('produtoNome').value = produto.nome;
     document.getElementById('produtoDescricao').value = produto.descricao || '';
     document.getElementById('produtoPreco').value = produto.preco;
     document.getElementById('produtoCategoria').value = produto.categoria_id;
     document.getElementById('produtoDisponivel').checked = produto.disponivel;
+    document.getElementById('produtoIsNovo').checked = produto.is_novo || false;
+    document.getElementById('produtoDestaque').checked = produto.destaque || false;
+    document.getElementById('produtoTipoDestaque').value = produto.tipo_destaque || 'mais_pedido';
+    document.getElementById('produtoPromocao').checked = produto.promocao_ativa || false;
+    document.getElementById('produtoDesconto').value = produto.desconto_percent || '';
+    toggleTipoDestaque();
+    toggleDesconto();
+    atualizarPrecoDesconto();
 
     if (produto.imagem_url) {
         document.getElementById('imagemPreview').src = produto.imagem_url;
@@ -266,6 +285,12 @@ document.getElementById('produtoForm').addEventListener('submit', async (e) => {
     if (selectedImageFile) {
         formData.append('imagem', selectedImageFile);
     }
+    formData.append('remover_imagem', document.getElementById('removerImagemFlag').value);
+    formData.append('is_novo', document.getElementById('produtoIsNovo').checked);
+    formData.append('destaque', document.getElementById('produtoDestaque').checked);
+    formData.append('tipo_destaque', document.getElementById('produtoTipoDestaque').value);
+    formData.append('promocao_ativa', document.getElementById('produtoPromocao').checked);
+    formData.append('desconto_percent', document.getElementById('produtoDesconto').value || '');
 
     try {
         if (editingProductId) {
@@ -277,11 +302,30 @@ document.getElementById('produtoForm').addEventListener('submit', async (e) => {
             alert('Produto criado com sucesso!');
         }
 
+        document.getElementById('removerImagemFlag').value = 'false';
         closeModal();
         await carregarProdutos(empresaSelecionadaId);
     } catch (error) {
         alert('Erro ao salvar produto: ' + error.message);
     }
 });
+
+function toggleTipoDestaque() {
+    const checked = document.getElementById('produtoDestaque').checked;
+    document.getElementById('produtoTipoDestaque').classList.toggle('hidden', !checked);
+}
+
+function toggleDesconto() {
+    const checked = document.getElementById('produtoPromocao').checked;
+    document.getElementById('descontoContainer').classList.toggle('hidden', !checked);
+    if (!checked) document.getElementById('precoComDesconto').textContent = '';
+}
+
+function atualizarPrecoDesconto() {
+    const preco = parseFloat(document.getElementById('produtoPreco').value) || 0;
+    const desconto = parseFloat(document.getElementById('produtoDesconto').value) || 0;
+    const span = document.getElementById('precoComDesconto');
+    span.textContent = desconto > 0 && preco > 0 ? `→ R$ ${(preco * (1 - desconto / 100)).toFixed(2)}` : '';
+}
 
 init();

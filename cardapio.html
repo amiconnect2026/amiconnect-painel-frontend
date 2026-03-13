@@ -96,6 +96,7 @@
             </div>
             <form id="produtoForm" class="p-6 space-y-4">
                 <input type="hidden" id="produtoId">
+                <input type="hidden" id="removerImagemFlag" value="false">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Foto do Produto</label>
                     <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-indigo-400 transition" onclick="document.getElementById('imagemInput').click()">
@@ -134,6 +135,32 @@
                 <div class="flex items-center gap-3">
                     <input type="checkbox" id="produtoDisponivel" checked class="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
                     <label for="produtoDisponivel" class="text-sm font-medium text-gray-700">Produto disponível</label>
+                </div>
+                <!-- Destaque & Promoção -->
+                <div class="border-t border-gray-100 pt-4 space-y-3">
+                    <h4 class="text-sm font-semibold text-gray-700">Destaque &amp; Promoção</h4>
+                    <div class="flex items-center gap-3">
+                        <input type="checkbox" id="produtoIsNovo" class="w-4 h-4 accent-indigo-600">
+                        <label for="produtoIsNovo" class="text-sm text-gray-700">Marcar como Novo</label>
+                    </div>
+                    <div class="flex items-center gap-3 flex-wrap">
+                        <input type="checkbox" id="produtoDestaque" class="w-4 h-4 accent-indigo-600" onchange="toggleTipoDestaque()">
+                        <label for="produtoDestaque" class="text-sm text-gray-700">Destaque</label>
+                        <select id="produtoTipoDestaque" class="hidden border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="mais_pedido">🔥 Os mais pedidos</option>
+                            <option value="sugestao">💡 Sugestão</option>
+                            <option value="destaque_dia">⭐ Destaque do dia</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-3 flex-wrap">
+                        <input type="checkbox" id="produtoPromocao" class="w-4 h-4 accent-indigo-600" onchange="toggleDesconto()">
+                        <label for="produtoPromocao" class="text-sm text-gray-700">Promoção ativa</label>
+                        <div id="descontoContainer" class="hidden flex items-center gap-2">
+                            <input type="number" id="produtoDesconto" min="0" max="100" step="1" class="w-20 border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="%" oninput="atualizarPrecoDesconto()">
+                            <span class="text-sm text-gray-500">% off</span>
+                            <span id="precoComDesconto" class="text-sm font-semibold text-green-600 ml-2"></span>
+                        </div>
+                    </div>
                 </div>
                 <div class="flex gap-3 pt-4">
                     <button type="button" onclick="closeModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 rounded-lg transition">Cancelar</button>
