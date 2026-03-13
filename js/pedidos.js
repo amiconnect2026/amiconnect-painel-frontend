@@ -76,6 +76,7 @@ function renderPedidos() {
         const cards = grupos[chave].map(pedido => {
             const selecionado = pedidosSelecionados.has(pedido.id);
             const podeArquivar = pedido.impresso || pedido.status === 'cancelado';
+            const podeSairEntrega = pedido.status !== 'pendente' && pedido.status !== 'saiu_entrega' && pedido.status !== 'entregue' && pedido.status !== 'cancelado';
             return `
             <div class="bg-white rounded-xl shadow-sm border-2 transition ${selecionado ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200 hover:border-indigo-300'}">
                 <div class="flex items-start gap-3 p-6">
@@ -105,9 +106,10 @@ function renderPedidos() {
                         </div>
                         <p class="text-xs text-gray-400 mt-3">🕐 ${formatDate(pedido.created_at)}</p>
                     </div>
-                    ${podeArquivar
-                        ? `<button onclick="confirmarArquivar(${pedido.id})" class="flex-shrink-0 text-sm text-gray-400 hover:text-orange-600 transition whitespace-nowrap pt-1">☐ Arquivar pedido</button>`
-                        : '<div class="flex-shrink-0 w-28"></div>'}
+                    <div class="flex flex-col gap-2 flex-shrink-0 items-end pt-1">
+                        ${podeSairEntrega ? `<button onclick="sairParaEntrega(${pedido.id})" class="text-sm bg-blue-600 hover:bg-blue-700 text-white font-semibold px-3 py-1.5 rounded-lg transition whitespace-nowrap">🛵 Saiu para entrega</button>` : ''}
+                        ${podeArquivar ? `<button onclick="confirmarArquivar(${pedido.id})" class="text-sm text-gray-400 hover:text-orange-600 transition whitespace-nowrap">☐ Arquivar pedido</button>` : ''}
+                    </div>
                 </div>
             </div>`;
         }).join('');
@@ -175,6 +177,17 @@ function atualizarBarraSelecionados() {
 function limparSelecao() {
     pedidosSelecionados.clear();
     atualizarBarraSelecionados();
+}
+
+async function sairParaEntrega(id) {
+    if (!confirm('Confirmar que o pedido saiu para entrega?')) return;
+    try {
+        await apiRequest(`/pedidos/${id}/saiu-entrega`, {
+            method: 'PATCH',
+            body: JSON.stringify({ empresa_id: empresaIdAtual })
+        });
+        await loadPedidos();
+    } catch (error) { alert('Erro: ' + error.message); }
 }
 
 function confirmarArquivar(id) {
@@ -284,6 +297,7 @@ async function verDetalhes(id) {
                     <div class="flex gap-2 flex-wrap">
                         <button onclick="mudarStatus(${pedido.id}, 'pendente')" class="px-3 py-1 rounded-lg text-sm font-medium bg-yellow-100 text-yellow-700 hover:bg-yellow-200">Pendente</button>
                         <button onclick="mudarStatus(${pedido.id}, 'confirmado')" class="px-3 py-1 rounded-lg text-sm font-medium bg-blue-100 text-blue-700 hover:bg-blue-200">Confirmado</button>
+                        <button onclick="mudarStatus(${pedido.id}, 'saiu_entrega')" class="px-3 py-1 rounded-lg text-sm font-medium bg-purple-100 text-purple-700 hover:bg-purple-200">🛵 Saiu p/ entrega</button>
                         <button onclick="mudarStatus(${pedido.id}, 'entregue')" class="px-3 py-1 rounded-lg text-sm font-medium bg-green-100 text-green-700 hover:bg-green-200">Entregue</button>
                         <button onclick="mudarStatus(${pedido.id}, 'cancelado')" class="px-3 py-1 rounded-lg text-sm font-medium bg-red-100 text-red-700 hover:bg-red-200">Cancelado</button>
                     </div>
@@ -416,12 +430,24 @@ ${pedido.observacoes ? '<p><b>Obs:</b> ' + ascii(pedido.observacoes) + '</p>' : 
 }
 
 function getStatusColor(status) {
-    const colors = { 'pendente': 'bg-yellow-100 text-yellow-700', 'confirmado': 'bg-blue-100 text-blue-700', 'entregue': 'bg-green-100 text-green-700', 'cancelado': 'bg-red-100 text-red-700' };
+    const colors = {
+        'pendente': 'bg-yellow-100 text-yellow-700',
+        'confirmado': 'bg-blue-100 text-blue-700',
+        'saiu_entrega': 'bg-purple-100 text-purple-700',
+        'entregue': 'bg-green-100 text-green-700',
+        'cancelado': 'bg-red-100 text-red-700'
+    };
     return colors[status] || 'bg-gray-100 text-gray-700';
 }
 
 function getStatusLabel(status) {
-    const labels = { 'pendente': 'Pendente', 'confirmado': 'Confirmado', 'entregue': 'Entregue', 'cancelado': 'Cancelado' };
+    const labels = {
+        'pendente': 'Pendente',
+        'confirmado': 'Confirmado',
+        'saiu_entrega': '🛵 Saiu para entrega',
+        'entregue': 'Entregue',
+        'cancelado': 'Cancelado'
+    };
     return labels[status] || status;
 }
 
