@@ -7,8 +7,8 @@ if (!user) {
 document.getElementById('userName').textContent = user.nome;
 
 const isAdmin = user.role === 'admin';
-// Apenas admin pode adicionar, deletar e editar modal
-const canEditModal = user.role === 'admin';
+// Apenas admin pode adicionar e deletar produtos
+const canAdminActions = user.role === 'admin';
 
 // Empresa selecionada atualmente
 let empresaSelecionadaId = isAdmin
@@ -154,8 +154,8 @@ function renderProdutos() {
                                     >
                                         ${p.disponivel ? '✅ Disponível' : '❌ Indisponível'}
                                     </button>
-                                    ${canEditModal ? `
-                                        <button onclick="editProduto(${p.id})" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Editar">✏️</button>
+                                    <button onclick="editProduto(${p.id})" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Editar">✏️</button>
+                                    ${canAdminActions ? `
                                         <button onclick="deleteProduto(${p.id}, '${p.nome.replace(/'/g, "\\'")}')" class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition" title="Deletar">🗑️</button>
                                     ` : ''}
                                 </div>
@@ -357,7 +357,7 @@ function removerImagem() {
 // ── Modal open/close ──────────────────────────────────────────────────────────
 
 async function openAddModal() {
-    if (!canEditModal) return;
+    if (!canAdminActions) return;
     if (!empresaSelecionadaId) {
         alert('Selecione um restaurante primeiro!');
         return;
@@ -380,7 +380,6 @@ async function openAddModal() {
 }
 
 function editProduto(id) {
-    if (!canEditModal) return;
     const produto = produtos.find(p => p.id === id);
     if (!produto) return;
 
@@ -430,7 +429,7 @@ async function toggleDisponivel(id) {
 // ── Delete ────────────────────────────────────────────────────────────────────
 
 async function deleteProduto(id, nome) {
-    if (!canEditModal) return;
+    if (!canAdminActions) return;
     if (!confirm(`Tem certeza que deseja deletar "${nome}"?`)) return;
     try {
         await API.deleteProduto(id);
@@ -446,7 +445,7 @@ async function deleteProduto(id, nome) {
 
 document.getElementById('produtoForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!canEditModal) return;
+    if (!empresaSelecionadaId) return;
 
     const produto = editingProductId ? produtos.find(p => p.id === editingProductId) : null;
 
