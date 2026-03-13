@@ -297,7 +297,6 @@ async function verDetalhes(id) {
                     <div class="flex gap-2 flex-wrap">
                         <button onclick="mudarStatus(${pedido.id}, 'pendente')" class="px-3 py-1 rounded-lg text-sm font-medium bg-yellow-100 text-yellow-700 hover:bg-yellow-200">Pendente</button>
                         <button onclick="mudarStatus(${pedido.id}, 'confirmado')" class="px-3 py-1 rounded-lg text-sm font-medium bg-blue-100 text-blue-700 hover:bg-blue-200">Confirmado</button>
-                        <button onclick="mudarStatus(${pedido.id}, 'saiu_entrega')" class="px-3 py-1 rounded-lg text-sm font-medium bg-purple-100 text-purple-700 hover:bg-purple-200">🛵 Saiu p/ entrega</button>
                         <button onclick="mudarStatus(${pedido.id}, 'entregue')" class="px-3 py-1 rounded-lg text-sm font-medium bg-green-100 text-green-700 hover:bg-green-200">Entregue</button>
                         <button onclick="mudarStatus(${pedido.id}, 'cancelado')" class="px-3 py-1 rounded-lg text-sm font-medium bg-red-100 text-red-700 hover:bg-red-200">Cancelado</button>
                     </div>
