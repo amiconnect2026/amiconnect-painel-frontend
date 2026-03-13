@@ -335,9 +335,9 @@
             const container = document.getElementById('featuredSections');
             container.innerHTML = '';
 
-            const destaqueDia = todos.filter(p => p.tipo_destaque === 'destaque_dia');
-            const maisPedidos = todos.filter(p => p.tipo_destaque === 'mais_pedido');
-            const sugestoes  = todos.filter(p => p.tipo_destaque === 'sugestao');
+            const destaqueDia = todos.filter(p => p.destaque === true && p.tipo_destaque === 'destaque_dia');
+            const maisPedidos = todos.filter(p => p.destaque === true && p.tipo_destaque === 'mais_pedido');
+            const sugestoes  = todos.filter(p => p.destaque === true && p.tipo_destaque === 'sugestao');
 
             if (destaqueDia.length > 0) {
                 const p = destaqueDia[0];
