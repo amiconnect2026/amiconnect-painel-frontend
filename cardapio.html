@@ -57,14 +57,29 @@
                 <h2 class="text-3xl font-bold text-gray-900">Gerenciar Cardápio</h2>
                 <p class="text-gray-600 mt-1">Ative ou desative produtos do cardápio</p>
             </div>
-            <div class="flex gap-3">
+            <div class="flex gap-3 flex-wrap">
                 <button onclick="verCardapioPublico()" class="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg transition">
                     👁️ Ver Cardápio Público
+                </button>
+                <button id="btnModoSelecao" onclick="toggleModoSelecao()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-6 py-3 rounded-lg transition">
+                    ☑️ Selecionar produtos
                 </button>
                 <button id="btnAdicionarProduto" onclick="openAddModal()" class="hidden bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-lg transition">
                     + Adicionar Produto
                 </button>
             </div>
+        </div>
+
+        <!-- Bulk actions toolbar -->
+        <div id="bulkActionsBar" class="hidden bg-indigo-50 border border-indigo-200 rounded-xl p-4 mb-4 flex items-center gap-4 flex-wrap">
+            <span class="text-sm font-medium text-indigo-700">Aplicar desconto em massa:</span>
+            <input type="number" id="bulkDesconto" min="0" max="100" step="1" placeholder="% off" class="w-24 border border-indigo-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <button onclick="aplicarDescontoBulk()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-lg text-sm transition">
+                🏷️ Aplicar desconto
+            </button>
+            <button onclick="removerDescontoBulk()" class="bg-red-100 hover:bg-red-200 text-red-700 font-semibold px-4 py-2 rounded-lg text-sm transition">
+                ✕ Remover desconto
+            </button>
         </div>
 
         <!-- Selecione empresa primeiro -->
@@ -136,32 +151,6 @@
                     <input type="checkbox" id="produtoDisponivel" checked class="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
                     <label for="produtoDisponivel" class="text-sm font-medium text-gray-700">Produto disponível</label>
                 </div>
-                <!-- Destaque & Promoção -->
-                <div class="border-t border-gray-100 pt-4 space-y-3">
-                    <h4 class="text-sm font-semibold text-gray-700">Destaque &amp; Promoção</h4>
-                    <div class="flex items-center gap-3">
-                        <input type="checkbox" id="produtoIsNovo" class="w-4 h-4 accent-indigo-600">
-                        <label for="produtoIsNovo" class="text-sm text-gray-700">Marcar como Novo</label>
-                    </div>
-                    <div class="flex items-center gap-3 flex-wrap">
-                        <input type="checkbox" id="produtoDestaque" class="w-4 h-4 accent-indigo-600" onchange="toggleTipoDestaque()">
-                        <label for="produtoDestaque" class="text-sm text-gray-700">Destaque</label>
-                        <select id="produtoTipoDestaque" class="hidden border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                            <option value="mais_pedido">🔥 Os mais pedidos</option>
-                            <option value="sugestao">💡 Sugestão</option>
-                            <option value="destaque_dia">⭐ Destaque do dia</option>
-                        </select>
-                    </div>
-                    <div class="flex items-center gap-3 flex-wrap">
-                        <input type="checkbox" id="produtoPromocao" class="w-4 h-4 accent-indigo-600" onchange="toggleDesconto()">
-                        <label for="produtoPromocao" class="text-sm text-gray-700">Promoção ativa</label>
-                        <div id="descontoContainer" class="hidden flex items-center gap-2">
-                            <input type="number" id="produtoDesconto" min="0" max="100" step="1" class="w-20 border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="%" oninput="atualizarPrecoDesconto()">
-                            <span class="text-sm text-gray-500">% off</span>
-                            <span id="precoComDesconto" class="text-sm font-semibold text-green-600 ml-2"></span>
-                        </div>
-                    </div>
-                </div>
                 <div class="flex gap-3 pt-4">
                     <button type="button" onclick="closeModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 rounded-lg transition">Cancelar</button>
                     <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg transition">Salvar</button>
@@ -181,11 +170,11 @@
         </div>
     </div>
 
-    <script src="js/api.js"></script>
-    <script src="js/pausa.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/alertas.js"></script>
-    <script src="js/cardapio.js"></script>
+    <script src="js/api.js?v=2"></script>
+    <script src="js/pausa.js?v=2"></script>
+    <script src="js/auth.js?v=2"></script>
+    <script src="js/alertas.js?v=2"></script>
+    <script src="js/cardapio.js?v=4"></script>
     <script>
         iniciarAlertas();
         (function() { const u = JSON.parse(localStorage.getItem('user') || '{}'); if (u.role !== 'admin') { const el = document.getElementById('navCategorias'); if (el) el.remove(); } if (u.role === 'admin') { const el = document.getElementById('navEmpresas'); if (el) el.classList.remove('hidden'); } })();
