@@ -160,12 +160,15 @@ async function carregarTaxas(empresaId) {
             container.innerHTML = '<p class="text-sm text-gray-400">Nenhuma faixa cadastrada.</p>';
             return;
         }
-        container.innerHTML = taxas.map(t => `
+        container.innerHTML = taxas.map((t, i) => {
+            const de = i === 0 ? 0 : parseFloat(taxas[i - 1].distancia_ate_km);
+            const ate = parseFloat(t.distancia_ate_km);
+            return `
             <div class="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2 text-sm">
-                <span class="text-gray-700">Até <strong>${parseFloat(t.distancia_ate_km).toFixed(1)} km</strong> → <strong>R$ ${parseFloat(t.taxa).toFixed(2)}</strong></span>
+                <span class="text-gray-700"><strong>${de.toFixed(1)} - ${ate.toFixed(1)} km</strong> → <strong>R$ ${parseFloat(t.taxa).toFixed(2)}</strong></span>
                 <button onclick="removerTaxa(${t.id})" class="text-red-400 hover:text-red-600 font-bold text-lg leading-none ml-3" title="Remover">✕</button>
-            </div>
-        `).join('');
+            </div>`;
+        }).join('');
     } catch(e) {
         console.error('Erro ao carregar taxas:', e);
     }
