@@ -238,7 +238,7 @@
             const u = JSON.parse(localStorage.getItem('user') || '{}');
             if (u.role !== 'admin') { const el = document.getElementById('navCategorias'); if (el) el.remove(); }
             if (u.role === 'admin') { const el = document.getElementById('navEmpresas'); if (el) el.classList.remove('hidden'); }
-            if (u.role === 'admin') { document.getElementById('secaoWhatsApp').classList.remove('hidden'); }
+            if (u.role === 'admin' || u.role === 'gerente') { document.getElementById('secaoWhatsApp').classList.remove('hidden'); }
         })();
     </script>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
