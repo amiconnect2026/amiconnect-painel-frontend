@@ -230,11 +230,27 @@ function fbLoginCallback(response) {
             method: 'POST',
             body: JSON.stringify({
                 empresa_id: empresaIdAtual,
-                code: response.authResponse.code
+                code: response.authResponse.code,
+                usar_token_sistema: true
             })
         })
         .then(() => checkStatusWhatsApp())
         .catch(err => alert('Erro ao conectar WhatsApp: ' + err.message));
+    }
+}
+
+async function conectarComTokenSistema() {
+    if (!empresaIdAtual) return alert('Selecione um restaurante!');
+    if (!confirm('Conectar WhatsApp usando o token do sistema?')) return;
+    try {
+        const res = await apiRequest('/empresas/conectar-whatsapp', {
+            method: 'POST',
+            body: JSON.stringify({ empresa_id: empresaIdAtual, usar_token_sistema: true })
+        });
+        alert(`Conectado com sucesso!\nWABA ID: ${res.waba_id}\nPhone Number ID: ${res.phone_number_id}`);
+        checkStatusWhatsApp();
+    } catch (err) {
+        alert('Erro ao conectar: ' + err.message);
     }
 }
 
