@@ -35,13 +35,6 @@ function tocarBeep(freq, dur, vol, tipo = 'square') {
     } catch (e) { console.warn('Áudio:', e.message); }
 }
 
-// Som de pedido novo — caixa registradora: ding → tchink → cling
-function tocarSomPedido() {
-    tocarBeep(1400, 0.08, 0.8, 'sine');                          // ding
-    setTimeout(() => tocarBeep(2200, 0.06, 0.8, 'triangle'), 120); // tchink metálico
-    setTimeout(() => tocarBeep(1800, 0.10, 0.8, 'sine'),       200); // cling final
-}
-
 // Som de alerta — MSN Messenger: B5 → E6
 function tocarSomAlerta() {
     tocarBeep(988,  0.12, 0.5, 'sine');                         // B5
