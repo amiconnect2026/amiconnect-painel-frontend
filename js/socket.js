@@ -29,7 +29,8 @@ function iniciarSocket() {
   });
   socket.on('novo_pedido', (data) => {
     console.log('🧾 Novo pedido:', data);
-    // loadPedidos() detecta o novo ID e toca o som via pedidos.js
+    // Toca o som diretamente — independente do filtro ativo na tela
+    if (typeof registrarNovoPedidoSom === 'function') registrarNovoPedidoSom(data.pedido_id);
     if (typeof loadPedidos === 'function') loadPedidos();
     pedidosPendentes++;
     atualizarBadgePedidos();

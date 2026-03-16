@@ -70,6 +70,14 @@ function _iniciarRepetidorSom() {
     }, 30 * 1000); // 30s: pedido novo precisa de resposta rápida
 }
 
+// Chamado pelo socket quando chega novo pedido — independente do filtro ativo
+function registrarNovoPedidoSom(pedidoId) {
+    if (_pedidosSomJaDisparado.has(pedidoId)) return;
+    _pedidosSomJaDisparado.add(pedidoId);
+    tocarSomPedido();
+    _iniciarRepetidorSom();
+}
+
 // ── Fim som de pedido ─────────────────────────────────────────────────────────
 
 function getEmpresaId() {
