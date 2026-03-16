@@ -10,8 +10,13 @@ let empresaIdAtual = user.role === 'admin' ? (parseInt(localStorage.getItem('adm
 // ── Som de pedido ─────────────────────────────────────────────────────────────
 
 // Som de pedido novo
+let _pedidoAudio = null;
 function tocarSomPedido() {
-    try { new Audio('/sounds/pedido.mp3').play(); } catch (e) { console.warn('Áudio pedido:', e.message); }
+    try {
+        if (!_pedidoAudio) _pedidoAudio = new Audio('/sounds/pedido.mp3');
+        _pedidoAudio.currentTime = 0;
+        _pedidoAudio.play().catch(e => console.warn('Áudio pedido bloqueado:', e.message));
+    } catch (e) { console.warn('Áudio pedido:', e.message); }
 }
 
 const _STORAGE_PEDIDOS_VISTOS = 'amiconnect_pedidos_som_vistos';

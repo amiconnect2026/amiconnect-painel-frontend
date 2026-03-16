@@ -7,8 +7,13 @@ let intervalAlertas = null;
 const _tituloOriginal = document.title;
 
 // Som de alerta novo
+let _alertaAudio = null;
 function tocarSomAlerta() {
-    try { new Audio('/sounds/alerta.mp3').play(); } catch (e) { console.warn('Áudio alerta:', e.message); }
+    try {
+        if (!_alertaAudio) _alertaAudio = new Audio('/sounds/alerta.mp3');
+        _alertaAudio.currentTime = 0;
+        _alertaAudio.play().catch(e => console.warn('Áudio alerta bloqueado:', e.message));
+    } catch (e) { console.warn('Áudio alerta:', e.message); }
 }
 
 // ── Fim sons ──────────────────────────────────────────────────────────────────
