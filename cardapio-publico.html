@@ -231,17 +231,28 @@
                 const data = await response.json();
                 if (!response.ok) throw new Error('Empresa não encontrada');
 
-                const { empresa, produtos } = data;
+                const { empresa, produtos, taxas_entrega } = data;
                 dadosEmpresa = empresa;
 
                 document.title = `Cardápio - ${empresa.nome}`;
                 document.getElementById('nomeRestaurante').textContent = empresa.nome;
                 document.getElementById('horarioFuncionamento').textContent = `⏰ ${empresa.horario_funcionamento}`;
-                document.getElementById('taxaEntrega').textContent = `R$ ${parseFloat(empresa.taxa_entrega).toFixed(2)}`;
                 document.getElementById('pedidoMinimo').textContent = `R$ ${parseFloat(empresa.pedido_minimo).toFixed(2)}`;
                 document.getElementById('tempoEntrega').textContent = `${empresa.tempo_entrega_min}-${empresa.tempo_entrega_max} min`;
                 document.getElementById('carritoRestaurante').textContent = empresa.nome;
-                document.getElementById('taxaCarrinho').textContent = `R$ ${parseFloat(empresa.taxa_entrega).toFixed(2)}`;
+
+                // Taxa de entrega: se há faixas, mostrar "A partir de R$ X,XX"
+                if (taxas_entrega && taxas_entrega.length > 0) {
+                    const menorTaxa = Math.min(...taxas_entrega.map(t => parseFloat(t.taxa)));
+                    const taxaTexto = menorTaxa === 0 ? 'Grátis' : `A partir de R$ ${menorTaxa.toFixed(2)}`;
+                    document.getElementById('taxaEntrega').textContent = taxaTexto;
+                    document.getElementById('taxaCarrinho').textContent = taxaTexto;
+                } else {
+                    const taxaFixa = parseFloat(empresa.taxa_entrega || 0);
+                    const taxaTexto = taxaFixa === 0 ? 'Grátis' : `R$ ${taxaFixa.toFixed(2)}`;
+                    document.getElementById('taxaEntrega').textContent = taxaTexto;
+                    document.getElementById('taxaCarrinho').textContent = taxaTexto;
+                }
 
                 if (empresa.foto_capa) {
                     const header = document.getElementById('restauranteHeader');

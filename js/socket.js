@@ -28,8 +28,7 @@ function iniciarSocket() {
     if (typeof loadConversas === 'function') loadConversas();
   });
   socket.on('novo_pedido', (data) => {
-    console.log('🧾 Novo pedido recebido:', data);
-    console.log('[SOM] registrarNovoPedidoSom disponível?', typeof registrarNovoPedidoSom);
+    console.log('🧾 Novo pedido:', data);
     if (typeof registrarNovoPedidoSom === 'function') registrarNovoPedidoSom(data.pedido_id);
     if (typeof loadPedidos === 'function') loadPedidos();
     pedidosPendentes++;
