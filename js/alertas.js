@@ -35,42 +35,42 @@ function tocarBeep(freq, dur, vol, tipo = 'square') {
     } catch (e) { console.warn('Áudio:', e.message); }
 }
 
-// Som de alerta — campainha de hotel
+// Som de alerta — campainha de hotel (3 osciladores simultâneos)
 function tocarSomAlerta() {
     if (!_userInteracted) return;
     try {
         const ctx = _getAudioCtx();
         const now = ctx.currentTime;
 
-        // Transiente de impacto: "ding" de bater na campainha (50ms, some rápido)
-        const osc0 = ctx.createOscillator();
-        const gain0 = ctx.createGain();
-        osc0.connect(gain0); gain0.connect(ctx.destination);
-        osc0.type = 'sine';
-        osc0.frequency.setValueAtTime(4200, now);
-        gain0.gain.setValueAtTime(0.4, now);
-        gain0.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
-        osc0.start(now); osc0.stop(now + 0.05);
-
-        // Fundamental: 900Hz, ressoa por 1.5s
+        // Oscilador 1: fundamental 800Hz, vol 0.6, decay 1.5s
         const osc1 = ctx.createOscillator();
         const gain1 = ctx.createGain();
         osc1.connect(gain1); gain1.connect(ctx.destination);
         osc1.type = 'sine';
-        osc1.frequency.setValueAtTime(900, now);
-        gain1.gain.setValueAtTime(0.8, now);
+        osc1.frequency.setValueAtTime(800, now);
+        gain1.gain.setValueAtTime(0.6, now);
         gain1.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
         osc1.start(now); osc1.stop(now + 1.5);
 
-        // Parcial inarmônico: 2480Hz (não é 3x exato — dá timbre metálico de sino)
+        // Oscilador 2: harmônico 1200Hz, vol 0.2, decay 1.0s
         const osc2 = ctx.createOscillator();
         const gain2 = ctx.createGain();
         osc2.connect(gain2); gain2.connect(ctx.destination);
         osc2.type = 'sine';
-        osc2.frequency.setValueAtTime(2480, now);
+        osc2.frequency.setValueAtTime(1200, now);
         gain2.gain.setValueAtTime(0.2, now);
-        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
-        osc2.start(now); osc2.stop(now + 0.8);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 1.0);
+        osc2.start(now); osc2.stop(now + 1.0);
+
+        // Oscilador 3: sub-harmônico 400Hz, vol 0.3, decay 2.0s
+        const osc3 = ctx.createOscillator();
+        const gain3 = ctx.createGain();
+        osc3.connect(gain3); gain3.connect(ctx.destination);
+        osc3.type = 'sine';
+        osc3.frequency.setValueAtTime(400, now);
+        gain3.gain.setValueAtTime(0.3, now);
+        gain3.gain.exponentialRampToValueAtTime(0.001, now + 2.0);
+        osc3.start(now); osc3.stop(now + 2.0);
 
     } catch (e) { console.warn('Áudio alerta:', e.message); }
 }
@@ -100,6 +100,7 @@ function atualizarTitulo() {
 const _STORAGE_ALERTAS_VISTOS = 'amiconnect_alertas_som_vistos';
 const _alertasSomJaDisparado = new Set(); // in-memory: evita repetir no mesmo carregamento
 let _intervalSomAlerta = null;
+let _primeiraCarregaAlertas = true; // na primeira carga não toca — só marca os existentes
 
 function _getAlertasSomVistos() {
     try { return new Set(JSON.parse(localStorage.getItem(_STORAGE_ALERTAS_VISTOS) || '[]')); }
@@ -164,9 +165,13 @@ async function carregarAlertas() {
         );
         if (novosNaoOuvidos.length > 0) {
             novosNaoOuvidos.forEach(a => _alertasSomJaDisparado.add(a.id));
-            tocarSomAlerta();
-            _iniciarRepetidorAlerta();
+            if (!_primeiraCarregaAlertas) {
+                // Só toca para alertas que chegaram depois da página abrir
+                tocarSomAlerta();
+                _iniciarRepetidorAlerta();
+            }
         }
+        _primeiraCarregaAlertas = false;
 
     } catch (error) {
         console.error('Erro ao carregar alertas:', error);
