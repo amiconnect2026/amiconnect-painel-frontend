@@ -41,7 +41,7 @@ function _iniciarRepetidorSom() {
             clearInterval(_intervalSomPedido);
             _intervalSomPedido = null;
         }
-    }, 2 * 60 * 1000);
+    }, 30 * 1000); // 30s: pedido novo precisa de resposta rápida
 }
 
 // ── Fim som de pedido ─────────────────────────────────────────────────────────

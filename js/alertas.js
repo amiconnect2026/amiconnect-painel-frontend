@@ -35,15 +35,17 @@ function tocarBeep(freq, dur, vol, tipo = 'square') {
     } catch (e) { console.warn('Áudio:', e.message); }
 }
 
-// Som de pedido novo — beep duplo, grave e forte
+// Som de pedido novo — caixa registradora: ding → tchink → cling
 function tocarSomPedido() {
-    tocarBeep(440, 0.35, 0.8, 'square');
-    setTimeout(() => tocarBeep(550, 0.35, 0.8, 'square'), 420);
+    tocarBeep(1400, 0.08, 0.8, 'sine');                          // ding
+    setTimeout(() => tocarBeep(2200, 0.06, 0.8, 'triangle'), 120); // tchink metálico
+    setTimeout(() => tocarBeep(1800, 0.10, 0.8, 'sine'),       200); // cling final
 }
 
-// Som de alerta — beep simples, agudo e suave
+// Som de alerta — MSN Messenger: B5 → E6
 function tocarSomAlerta() {
-    tocarBeep(880, 0.25, 0.35, 'sine');
+    tocarBeep(988,  0.12, 0.5, 'sine');                         // B5
+    setTimeout(() => tocarBeep(1319, 0.18, 0.5, 'sine'), 150); // E6
 }
 
 // ── Fim audio engine ──────────────────────────────────────────────────────────
@@ -97,7 +99,7 @@ function _iniciarRepetidorAlerta() {
             clearInterval(_intervalSomAlerta);
             _intervalSomAlerta = null;
         }
-    }, 2 * 60 * 1000);
+    }, 60 * 1000); // 60s: alertas menos urgentes que pedidos
 }
 
 // ── Fim controle de som de alertas ────────────────────────────────────────────
