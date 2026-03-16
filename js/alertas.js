@@ -35,36 +35,42 @@ function tocarBeep(freq, dur, vol, tipo = 'square') {
     } catch (e) { console.warn('Áudio:', e.message); }
 }
 
-// Som de alerta — campainha de hotel: ding limpo e ressonante
+// Som de alerta — campainha de hotel
 function tocarSomAlerta() {
     if (!_userInteracted) return;
     try {
         const ctx = _getAudioCtx();
         const now = ctx.currentTime;
 
-        // Nota principal: 800Hz, decay longo de 0.4s
+        // Transiente de impacto: "ding" de bater na campainha (50ms, some rápido)
+        const osc0 = ctx.createOscillator();
+        const gain0 = ctx.createGain();
+        osc0.connect(gain0); gain0.connect(ctx.destination);
+        osc0.type = 'sine';
+        osc0.frequency.setValueAtTime(4200, now);
+        gain0.gain.setValueAtTime(0.4, now);
+        gain0.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+        osc0.start(now); osc0.stop(now + 0.05);
+
+        // Fundamental: 900Hz, ressoa por 1.5s
         const osc1 = ctx.createOscillator();
         const gain1 = ctx.createGain();
-        osc1.connect(gain1);
-        gain1.connect(ctx.destination);
+        osc1.connect(gain1); gain1.connect(ctx.destination);
         osc1.type = 'sine';
-        osc1.frequency.setValueAtTime(800, now);
-        gain1.gain.setValueAtTime(0.7, now);
-        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
-        osc1.start(now);
-        osc1.stop(now + 0.4);
+        osc1.frequency.setValueAtTime(900, now);
+        gain1.gain.setValueAtTime(0.8, now);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
+        osc1.start(now); osc1.stop(now + 1.5);
 
-        // Harmônico: 1600Hz, volume menor, ressonância metálica
+        // Parcial inarmônico: 2480Hz (não é 3x exato — dá timbre metálico de sino)
         const osc2 = ctx.createOscillator();
         const gain2 = ctx.createGain();
-        osc2.connect(gain2);
-        gain2.connect(ctx.destination);
+        osc2.connect(gain2); gain2.connect(ctx.destination);
         osc2.type = 'sine';
-        osc2.frequency.setValueAtTime(1600, now);
-        gain2.gain.setValueAtTime(0.3, now);
-        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-        osc2.start(now);
-        osc2.stop(now + 0.35);
+        osc2.frequency.setValueAtTime(2480, now);
+        gain2.gain.setValueAtTime(0.2, now);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+        osc2.start(now); osc2.stop(now + 0.8);
 
     } catch (e) { console.warn('Áudio alerta:', e.message); }
 }
