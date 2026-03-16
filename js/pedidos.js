@@ -12,6 +12,7 @@ let empresaIdAtual = user.role === 'admin' ? (parseInt(localStorage.getItem('adm
 const _STORAGE_PEDIDOS_VISTOS = 'amiconnect_pedidos_som_vistos';
 const _pedidosSomJaDisparado = new Set(); // in-memory: evita repetir no mesmo carregamento
 let _intervalSomPedido = null;
+let _primeiraCarregaPedidos = true; // na primeira carga não toca — só marca os pendentes existentes
 
 function _getPedidosSomVistos() {
     try { return new Set(JSON.parse(localStorage.getItem(_STORAGE_PEDIDOS_VISTOS) || '[]')); }
@@ -95,9 +96,13 @@ async function loadPedidos() {
         );
         if (novosPendentes.length > 0) {
             novosPendentes.forEach(p => _pedidosSomJaDisparado.add(p.id));
-            tocarSomPedido();
-            _iniciarRepetidorSom();
+            if (!_primeiraCarregaPedidos) {
+                // Só toca para pedidos que chegaram depois da página abrir
+                tocarSomPedido();
+                _iniciarRepetidorSom();
+            }
         }
+        _primeiraCarregaPedidos = false;
 
         // Atualizar contagem de pedidos pendentes no título da aba
         const pendentesCount = pedidos.filter(p => p.status === 'pendente').length;
