@@ -517,17 +517,13 @@
             if (carrinho.length === 0) return;
 
             const obs = document.getElementById('observacoesCarrinho').value.trim();
-            const taxa = parseFloat(dadosEmpresa?.taxa_entrega || 0);
             const subtotal = carrinho.reduce((acc, i) => acc + i.preco * i.quantidade, 0);
-            const total = subtotal + taxa;
 
             let msg = `Olá! Gostaria de fazer um pedido:\n\n`;
             carrinho.forEach(item => {
                 msg += `• ${item.quantidade}x ${item.nome} — R$ ${(item.preco * item.quantidade).toFixed(2)}\n`;
             });
             msg += `\nSubtotal: R$ ${subtotal.toFixed(2)}`;
-            msg += `\nTaxa de entrega: R$ ${taxa.toFixed(2)}`;
-            msg += `\n*Total: R$ ${total.toFixed(2)}*`;
             if (obs) msg += `\n\nObservações: ${obs}`;
 
             const numero = dadosEmpresa?.whatsapp || '';

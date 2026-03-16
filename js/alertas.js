@@ -6,11 +6,24 @@ let intervalAlertas = null;
 
 const _tituloOriginal = document.title;
 
-// Som de alerta novo
 let _alertaAudio = null;
+let _alertaUserInteracted = false;
+
+document.addEventListener('click',     () => { _alertaUserInteracted = true; });
+document.addEventListener('keydown',   () => { _alertaUserInteracted = true; });
+document.addEventListener('touchstart',() => { _alertaUserInteracted = true; });
+
+// Pré-carrega o áudio na primeira interação para evitar delay
+document.addEventListener('click', () => {
+    if (!_alertaAudio) _alertaAudio = new Audio('/sounds/alerta.mp3');
+}, { once: true });
+
+// Som de alerta novo
 function tocarSomAlerta() {
+    if (!_alertaUserInteracted) return;
     try {
         if (!_alertaAudio) _alertaAudio = new Audio('/sounds/alerta.mp3');
+        _alertaAudio.volume = 1.0;
         _alertaAudio.currentTime = 0;
         _alertaAudio.play().catch(e => console.warn('Áudio alerta bloqueado:', e.message));
     } catch (e) { console.warn('Áudio alerta:', e.message); }
