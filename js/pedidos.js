@@ -11,7 +11,19 @@ let empresaIdAtual = user.role === 'admin' ? (parseInt(localStorage.getItem('adm
 
 // Som de pedido novo
 let _pedidoAudio = null;
+let _pedidoUserInteracted = false;
+
+document.addEventListener('click',    () => { _pedidoUserInteracted = true; });
+document.addEventListener('keydown',  () => { _pedidoUserInteracted = true; });
+document.addEventListener('touchstart', () => { _pedidoUserInteracted = true; });
+
+// Pré-carrega o áudio na primeira interação para evitar delay
+document.addEventListener('click', () => {
+    if (!_pedidoAudio) _pedidoAudio = new Audio('/sounds/pedido.mp3');
+}, { once: true });
+
 function tocarSomPedido() {
+    if (!_pedidoUserInteracted) return;
     try {
         if (!_pedidoAudio) _pedidoAudio = new Audio('/sounds/pedido.mp3');
         _pedidoAudio.currentTime = 0;
@@ -36,9 +48,12 @@ function _salvarPedidoSomVisto(id) {
 }
 
 function _temPendentesNaoOuvidos() {
+    // Repete som apenas pelos pedidos que dispararam som nesta sessão
+    // e o atendente ainda não abriu (não está no localStorage)
     const vistos = _getPedidosSomVistos();
     return pedidos.some(p =>
         (p.status === 'pendente' || p.status === 'confirmado') &&
+        _pedidosSomJaDisparado.has(p.id) &&
         !vistos.has(p.id)
     );
 }

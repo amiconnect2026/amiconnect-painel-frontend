@@ -55,8 +55,14 @@ function _salvarAlertasSomVistos(ids) {
 }
 
 function _temAlertasNaoOuvidos() {
+    // Repete som apenas pelos alertas que dispararam som nesta sessão
+    // e o usuário ainda não abriu o sino (não está no localStorage)
     const vistos = _getAlertasSomVistos();
-    return todosAlertas.some(a => !a.lido && !vistos.has(a.id));
+    return todosAlertas.some(a =>
+        !a.lido &&
+        _alertasSomJaDisparado.has(a.id) &&
+        !vistos.has(a.id)
+    );
 }
 
 function _iniciarRepetidorAlerta() {
