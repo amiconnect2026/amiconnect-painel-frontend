@@ -9,37 +9,9 @@ let empresaIdAtual = user.role === 'admin' ? (parseInt(localStorage.getItem('adm
 
 // ── Som de pedido ─────────────────────────────────────────────────────────────
 
-// Audio engine local — independente do alertas.js
-let _pedAudioCtx = null;
-let _pedUserInteracted = false;
-
-['click', 'keydown', 'touchstart'].forEach(ev =>
-    document.addEventListener(ev, () => { _pedUserInteracted = true; }, { once: true })
-);
-
-function _pedBeep(freq, dur, vol, tipo = 'sine') {
-    if (!_pedUserInteracted) return;
-    try {
-        if (!_pedAudioCtx) _pedAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (_pedAudioCtx.state === 'suspended') _pedAudioCtx.resume();
-        const osc = _pedAudioCtx.createOscillator();
-        const gain = _pedAudioCtx.createGain();
-        osc.connect(gain);
-        gain.connect(_pedAudioCtx.destination);
-        osc.type = tipo;
-        osc.frequency.setValueAtTime(freq, _pedAudioCtx.currentTime);
-        gain.gain.setValueAtTime(vol, _pedAudioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, _pedAudioCtx.currentTime + dur);
-        osc.start();
-        osc.stop(_pedAudioCtx.currentTime + dur);
-    } catch (e) { console.warn('Áudio pedido:', e.message); }
-}
-
-// Som de caixa registradora: ding → tchink → cling
+// Som de pedido novo
 function tocarSomPedido() {
-    _pedBeep(1400, 0.08, 0.8, 'sine');                            // ding
-    setTimeout(() => _pedBeep(2200, 0.06, 0.8, 'triangle'), 120); // tchink metálico
-    setTimeout(() => _pedBeep(1800, 0.10, 0.8, 'sine'),       200); // cling final
+    try { new Audio('/sounds/pedido.mp3').play(); } catch (e) { console.warn('Áudio pedido:', e.message); }
 }
 
 const _STORAGE_PEDIDOS_VISTOS = 'amiconnect_pedidos_som_vistos';

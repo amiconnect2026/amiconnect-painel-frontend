@@ -2,80 +2,16 @@ let alertasNaoLidos = 0;
 let todosAlertas = [];
 let intervalAlertas = null;
 
-// ── Audio engine ──────────────────────────────────────────────────────────────
+// ── Sons ──────────────────────────────────────────────────────────────────────
 
-let _audioCtx = null;
-let _userInteracted = false;
 const _tituloOriginal = document.title;
 
-['click', 'keydown', 'touchstart'].forEach(ev =>
-    document.addEventListener(ev, () => { _userInteracted = true; }, { once: true })
-);
-
-function _getAudioCtx() {
-    if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if (_audioCtx.state === 'suspended') _audioCtx.resume();
-    return _audioCtx;
-}
-
-function tocarBeep(freq, dur, vol, tipo = 'square') {
-    if (!_userInteracted) return;
-    try {
-        const ctx = _getAudioCtx();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.type = tipo;
-        osc.frequency.setValueAtTime(freq, ctx.currentTime);
-        gain.gain.setValueAtTime(vol, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
-        osc.start();
-        osc.stop(ctx.currentTime + dur);
-    } catch (e) { console.warn('Áudio:', e.message); }
-}
-
-// Som de alerta — campainha de hotel (3 osciladores simultâneos)
+// Som de alerta novo
 function tocarSomAlerta() {
-    if (!_userInteracted) return;
-    try {
-        const ctx = _getAudioCtx();
-        const now = ctx.currentTime;
-
-        // Oscilador 1: fundamental 800Hz, vol 0.6, decay 1.5s
-        const osc1 = ctx.createOscillator();
-        const gain1 = ctx.createGain();
-        osc1.connect(gain1); gain1.connect(ctx.destination);
-        osc1.type = 'sine';
-        osc1.frequency.setValueAtTime(800, now);
-        gain1.gain.setValueAtTime(0.6, now);
-        gain1.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
-        osc1.start(now); osc1.stop(now + 1.5);
-
-        // Oscilador 2: harmônico 1200Hz, vol 0.2, decay 1.0s
-        const osc2 = ctx.createOscillator();
-        const gain2 = ctx.createGain();
-        osc2.connect(gain2); gain2.connect(ctx.destination);
-        osc2.type = 'sine';
-        osc2.frequency.setValueAtTime(1200, now);
-        gain2.gain.setValueAtTime(0.2, now);
-        gain2.gain.exponentialRampToValueAtTime(0.001, now + 1.0);
-        osc2.start(now); osc2.stop(now + 1.0);
-
-        // Oscilador 3: sub-harmônico 400Hz, vol 0.3, decay 2.0s
-        const osc3 = ctx.createOscillator();
-        const gain3 = ctx.createGain();
-        osc3.connect(gain3); gain3.connect(ctx.destination);
-        osc3.type = 'sine';
-        osc3.frequency.setValueAtTime(400, now);
-        gain3.gain.setValueAtTime(0.3, now);
-        gain3.gain.exponentialRampToValueAtTime(0.001, now + 2.0);
-        osc3.start(now); osc3.stop(now + 2.0);
-
-    } catch (e) { console.warn('Áudio alerta:', e.message); }
+    try { new Audio('/sounds/alerta.mp3').play(); } catch (e) { console.warn('Áudio alerta:', e.message); }
 }
 
-// ── Fim audio engine ──────────────────────────────────────────────────────────
+// ── Fim sons ──────────────────────────────────────────────────────────────────
 
 // ── Title badge (pedidos + alertas) ──────────────────────────────────────────
 
