@@ -11,16 +11,18 @@ let empresaIdAtual = user.role === 'admin' ? (parseInt(localStorage.getItem('adm
 
 // Som de pedido novo
 let _pedidoAudio = null;
-let _pedidoUserInteracted = false;
+// Persiste no localStorage: uma vez interagiu em qualquer página, todas tocam
+let _pedidoUserInteracted = localStorage.getItem('amiconnect_audio_unlocked') === '1';
 
-document.addEventListener('click',    () => { _pedidoUserInteracted = true; });
-document.addEventListener('keydown',  () => { _pedidoUserInteracted = true; });
-document.addEventListener('touchstart', () => { _pedidoUserInteracted = true; });
-
-// Pré-carrega o áudio na primeira interação para evitar delay
-document.addEventListener('click', () => {
+function _unlockPedidoAudio() {
+    if (_pedidoUserInteracted) return;
+    _pedidoUserInteracted = true;
+    localStorage.setItem('amiconnect_audio_unlocked', '1');
     if (!_pedidoAudio) _pedidoAudio = new Audio('/sounds/pedido.mp3');
-}, { once: true });
+}
+document.addEventListener('click',     _unlockPedidoAudio);
+document.addEventListener('keydown',   _unlockPedidoAudio);
+document.addEventListener('touchstart',_unlockPedidoAudio);
 
 function tocarSomPedido() {
     if (!_pedidoUserInteracted) return;

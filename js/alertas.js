@@ -7,16 +7,18 @@ let intervalAlertas = null;
 const _tituloOriginal = document.title;
 
 let _alertaAudio = null;
-let _alertaUserInteracted = false;
+// Persiste no localStorage: uma vez interagiu em qualquer página, todas tocam
+let _alertaUserInteracted = localStorage.getItem('amiconnect_audio_unlocked') === '1';
 
-document.addEventListener('click',     () => { _alertaUserInteracted = true; });
-document.addEventListener('keydown',   () => { _alertaUserInteracted = true; });
-document.addEventListener('touchstart',() => { _alertaUserInteracted = true; });
-
-// Pré-carrega o áudio na primeira interação para evitar delay
-document.addEventListener('click', () => {
+function _unlockAudio() {
+    if (_alertaUserInteracted) return;
+    _alertaUserInteracted = true;
+    localStorage.setItem('amiconnect_audio_unlocked', '1');
     if (!_alertaAudio) _alertaAudio = new Audio('/sounds/alerta.mp3');
-}, { once: true });
+}
+document.addEventListener('click',     _unlockAudio);
+document.addEventListener('keydown',   _unlockAudio);
+document.addEventListener('touchstart',_unlockAudio);
 
 // Som de alerta novo
 function tocarSomAlerta() {
