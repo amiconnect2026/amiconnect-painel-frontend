@@ -7,6 +7,45 @@ let tabAtual = 'ativos';
 let pedidosSelecionados = new Set();
 let empresaIdAtual = user.role === 'admin' ? (parseInt(localStorage.getItem('adminEmpresaId')) || null) : user.empresa_id;
 
+// ── Som de pedido ─────────────────────────────────────────────────────────────
+
+const _STORAGE_PEDIDOS_VISTOS = 'amiconnect_pedidos_som_vistos';
+const _pedidosSomJaDisparado = new Set(); // in-memory: evita repetir no mesmo carregamento
+let _intervalSomPedido = null;
+
+function _getPedidosSomVistos() {
+    try { return new Set(JSON.parse(localStorage.getItem(_STORAGE_PEDIDOS_VISTOS) || '[]')); }
+    catch { return new Set(); }
+}
+
+function _salvarPedidoSomVisto(id) {
+    const vistos = _getPedidosSomVistos();
+    vistos.add(id);
+    localStorage.setItem(_STORAGE_PEDIDOS_VISTOS, JSON.stringify([...vistos].slice(-500)));
+}
+
+function _temPendentesNaoOuvidos() {
+    const vistos = _getPedidosSomVistos();
+    return pedidos.some(p =>
+        (p.status === 'pendente' || p.status === 'confirmado') &&
+        !vistos.has(p.id)
+    );
+}
+
+function _iniciarRepetidorSom() {
+    if (_intervalSomPedido) return;
+    _intervalSomPedido = setInterval(() => {
+        if (_temPendentesNaoOuvidos()) {
+            tocarSomPedido();
+        } else {
+            clearInterval(_intervalSomPedido);
+            _intervalSomPedido = null;
+        }
+    }, 2 * 60 * 1000);
+}
+
+// ── Fim som de pedido ─────────────────────────────────────────────────────────
+
 function getEmpresaId() {
     return empresaIdAtual;
 }
@@ -46,6 +85,24 @@ async function loadPedidos() {
         const response = await apiRequest(url);
         pedidos = response.pedidos || [];
         if (filtroAtual === 'novos') pedidos = pedidos.filter(p => !p.impresso);
+
+        // Detectar pedidos pendentes novos não ouvidos ainda (localStorage + in-memory)
+        const somVistos = _getPedidosSomVistos();
+        const novosPendentes = pedidos.filter(p =>
+            (p.status === 'pendente' || p.status === 'confirmado') &&
+            !_pedidosSomJaDisparado.has(p.id) &&
+            !somVistos.has(p.id)
+        );
+        if (novosPendentes.length > 0) {
+            novosPendentes.forEach(p => _pedidosSomJaDisparado.add(p.id));
+            tocarSomPedido();
+            _iniciarRepetidorSom();
+        }
+
+        // Atualizar contagem de pedidos pendentes no título da aba
+        const pendentesCount = pedidos.filter(p => p.status === 'pendente').length;
+        setPedidosPendentesCount(pendentesCount);
+
         renderPedidos();
     } catch (error) { console.error('Erro:', error); }
 }
@@ -276,6 +333,12 @@ function formatarDataGrupo(dataStr) {
 }
 
 async function verDetalhes(id) {
+    _salvarPedidoSomVisto(id);
+    _pedidosSomJaDisparado.add(id);
+    if (!_temPendentesNaoOuvidos()) {
+        clearInterval(_intervalSomPedido);
+        _intervalSomPedido = null;
+    }
     try {
         const response = await API.getPedido(id, getEmpresaId());
         const pedido = response.pedido;

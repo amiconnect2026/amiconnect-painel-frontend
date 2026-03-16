@@ -2,6 +2,106 @@ let alertasNaoLidos = 0;
 let todosAlertas = [];
 let intervalAlertas = null;
 
+// ── Audio engine ──────────────────────────────────────────────────────────────
+
+let _audioCtx = null;
+let _userInteracted = false;
+const _tituloOriginal = document.title;
+
+['click', 'keydown', 'touchstart'].forEach(ev =>
+    document.addEventListener(ev, () => { _userInteracted = true; }, { once: true })
+);
+
+function _getAudioCtx() {
+    if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (_audioCtx.state === 'suspended') _audioCtx.resume();
+    return _audioCtx;
+}
+
+function tocarBeep(freq, dur, vol, tipo = 'square') {
+    if (!_userInteracted) return;
+    try {
+        const ctx = _getAudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = tipo;
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        gain.gain.setValueAtTime(vol, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+        osc.start();
+        osc.stop(ctx.currentTime + dur);
+    } catch (e) { console.warn('Áudio:', e.message); }
+}
+
+// Som de pedido novo — beep duplo, grave e forte
+function tocarSomPedido() {
+    tocarBeep(440, 0.35, 0.8, 'square');
+    setTimeout(() => tocarBeep(550, 0.35, 0.8, 'square'), 420);
+}
+
+// Som de alerta — beep simples, agudo e suave
+function tocarSomAlerta() {
+    tocarBeep(880, 0.25, 0.35, 'sine');
+}
+
+// ── Fim audio engine ──────────────────────────────────────────────────────────
+
+// ── Title badge (pedidos + alertas) ──────────────────────────────────────────
+
+let _pedidosPendentesCount = 0;
+
+function setPedidosPendentesCount(n) {
+    _pedidosPendentesCount = n;
+    atualizarTitulo();
+}
+
+function atualizarTitulo() {
+    const partes = [];
+    if (_pedidosPendentesCount > 0) partes.push(`${_pedidosPendentesCount} pedido${_pedidosPendentesCount > 1 ? 's' : ''}`);
+    if (alertasNaoLidos > 0) partes.push(`${alertasNaoLidos} alerta${alertasNaoLidos > 1 ? 's' : ''}`);
+    document.title = partes.length > 0 ? `(${partes.join(', ')}) ${_tituloOriginal}` : _tituloOriginal;
+}
+
+// ── Fim title badge ───────────────────────────────────────────────────────────
+
+// ── Controle de som de alertas ────────────────────────────────────────────────
+
+const _STORAGE_ALERTAS_VISTOS = 'amiconnect_alertas_som_vistos';
+const _alertasSomJaDisparado = new Set(); // in-memory: evita repetir no mesmo carregamento
+let _intervalSomAlerta = null;
+
+function _getAlertasSomVistos() {
+    try { return new Set(JSON.parse(localStorage.getItem(_STORAGE_ALERTAS_VISTOS) || '[]')); }
+    catch { return new Set(); }
+}
+
+function _salvarAlertasSomVistos(ids) {
+    const vistos = _getAlertasSomVistos();
+    ids.forEach(id => vistos.add(id));
+    localStorage.setItem(_STORAGE_ALERTAS_VISTOS, JSON.stringify([...vistos].slice(-500)));
+}
+
+function _temAlertasNaoOuvidos() {
+    const vistos = _getAlertasSomVistos();
+    return todosAlertas.some(a => !a.lido && !vistos.has(a.id));
+}
+
+function _iniciarRepetidorAlerta() {
+    if (_intervalSomAlerta) return;
+    _intervalSomAlerta = setInterval(() => {
+        if (_temAlertasNaoOuvidos()) {
+            tocarSomAlerta();
+        } else {
+            clearInterval(_intervalSomAlerta);
+            _intervalSomAlerta = null;
+        }
+    }, 2 * 60 * 1000);
+}
+
+// ── Fim controle de som de alertas ────────────────────────────────────────────
+
 function getEmpresaIdAtual() {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     return user.role === 'admin' ? (parseInt(localStorage.getItem('adminEmpresaId')) || null) : user.empresa_id;
@@ -28,6 +128,17 @@ async function carregarAlertas() {
         todosAlertas = alertasRes.alertas || [];
         alertasNaoLidos = naoLidosRes.total || 0;
 
+        // Detectar alertas novos não ouvidos ainda (localStorage + in-memory)
+        const somVistos = _getAlertasSomVistos();
+        const novosNaoOuvidos = todosAlertas.filter(a =>
+            !a.lido && !_alertasSomJaDisparado.has(a.id) && !somVistos.has(a.id)
+        );
+        if (novosNaoOuvidos.length > 0) {
+            novosNaoOuvidos.forEach(a => _alertasSomJaDisparado.add(a.id));
+            tocarSomAlerta();
+            _iniciarRepetidorAlerta();
+        }
+
     } catch (error) {
         console.error('Erro ao carregar alertas:', error);
     }
@@ -36,19 +147,27 @@ async function carregarAlertas() {
 function atualizarBadge() {
     const badge = document.getElementById('alertasBadge');
     if (!badge) return;
-    
+
     if (alertasNaoLidos > 0) {
         badge.textContent = alertasNaoLidos > 9 ? '9+' : alertasNaoLidos;
         badge.classList.remove('hidden');
     } else {
         badge.classList.add('hidden');
     }
+    atualizarTitulo();
 }
 
 function mostrarAlertas() {
+    // Silencia o som: marca alertas não lidos como ouvidos no localStorage e para o intervalo
+    const naoLidosIds = todosAlertas.filter(a => !a.lido).map(a => a.id);
+    _salvarAlertasSomVistos(naoLidosIds);
+    naoLidosIds.forEach(id => _alertasSomJaDisparado.add(id));
+    clearInterval(_intervalSomAlerta);
+    _intervalSomAlerta = null;
+
     const modal = document.getElementById('alertasModal');
     const lista = document.getElementById('alertasLista');
-    
+
     if (todosAlertas.length === 0) {
         lista.innerHTML = `
             <div class="text-center py-8 text-gray-500">
@@ -64,7 +183,7 @@ function mostrarAlertas() {
             : '';
 
         lista.innerHTML = btnMarcarTodos + todosAlertas.map(alerta => `
-            <div class="p-4 border-b border-gray-200 hover:bg-gray-50 cursor-pointer ${!alerta.lido ? 'bg-blue-50' : ''}" 
+            <div class="p-4 border-b border-gray-200 hover:bg-gray-50 cursor-pointer ${!alerta.lido ? 'bg-blue-50' : ''}"
                  onclick="marcarComoLido(${alerta.id}, '${alerta.link || ''}')">
                 <div class="flex items-start gap-3">
                     <span class="text-2xl">${getIconeAlerta(alerta.tipo)}</span>
@@ -78,7 +197,7 @@ function mostrarAlertas() {
             </div>
         `).join('');
     }
-    
+
     modal.classList.remove('hidden');
 }
 
@@ -140,16 +259,17 @@ function formatarData(data) {
     const agora = new Date();
     const diff = agora - date;
     const minutos = Math.floor(diff / 60000);
-    
+
     if (minutos < 1) return 'Agora';
     if (minutos < 60) return `${minutos} min atrás`;
-    
+
     const horas = Math.floor(minutos / 60);
     if (horas < 24) return `${horas}h atrás`;
-    
+
     return date.toLocaleDateString('pt-BR');
 }
 
 window.addEventListener('beforeunload', () => {
     if (intervalAlertas) clearInterval(intervalAlertas);
+    if (_intervalSomAlerta) clearInterval(_intervalSomAlerta);
 });
