@@ -23,12 +23,17 @@ document.addEventListener('click', () => {
 }, { once: true });
 
 function tocarSomPedido() {
-    if (!_pedidoUserInteracted) return;
+    console.log('[SOM] tocarSomPedido chamado — interacted:', _pedidoUserInteracted);
+    if (!_pedidoUserInteracted) {
+        console.warn('[SOM] bloqueado: usuário ainda não interagiu com a página');
+        return;
+    }
     try {
         if (!_pedidoAudio) _pedidoAudio = new Audio('/sounds/pedido.mp3');
         _pedidoAudio.currentTime = 0;
-        _pedidoAudio.play().catch(e => console.warn('Áudio pedido bloqueado:', e.message));
-    } catch (e) { console.warn('Áudio pedido:', e.message); }
+        const p = _pedidoAudio.play();
+        if (p) p.then(() => console.log('[SOM] pedido.mp3 tocando')).catch(e => console.warn('[SOM] play() bloqueado:', e.message));
+    } catch (e) { console.warn('[SOM] erro:', e.message); }
 }
 
 const _STORAGE_PEDIDOS_VISTOS = 'amiconnect_pedidos_som_vistos';
@@ -72,7 +77,11 @@ function _iniciarRepetidorSom() {
 
 // Chamado pelo socket quando chega novo pedido — independente do filtro ativo
 function registrarNovoPedidoSom(pedidoId) {
-    if (_pedidosSomJaDisparado.has(pedidoId)) return;
+    console.log('[SOM] registrarNovoPedidoSom chamado — pedidoId:', pedidoId);
+    if (_pedidosSomJaDisparado.has(pedidoId)) {
+        console.log('[SOM] pedido já registrado, ignorando');
+        return;
+    }
     _pedidosSomJaDisparado.add(pedidoId);
     tocarSomPedido();
     _iniciarRepetidorSom();
