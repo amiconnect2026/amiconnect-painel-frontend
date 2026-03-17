@@ -6,31 +6,51 @@ let intervalAlertas = null;
 
 const _tituloOriginal = document.title;
 
-let _alertaAudio = null;
-// Persiste no localStorage: uma vez interagiu em qualquer página, todas tocam
-let _alertaUserInteracted = localStorage.getItem('amiconnect_audio_unlocked') === '1';
-if (_alertaUserInteracted) _alertaAudio = new Audio('/sounds/alerta.mp3');
+let _ctxAlerta = null;
+let _bufAlerta  = null;
+
+async function _initAlertaAudio() {
+    if (_ctxAlerta) return;
+    try {
+        _ctxAlerta = new (window.AudioContext || window.webkitAudioContext)();
+        if (localStorage.getItem('amiconnect_audio_unlocked') === '1') {
+            _ctxAlerta.resume().catch(() => {});
+        }
+        const resp = await fetch('/sounds/alerta.mp3');
+        const arr  = await resp.arrayBuffer();
+        _bufAlerta = await _ctxAlerta.decodeAudioData(arr);
+    } catch(e) { console.warn('Init áudio alerta:', e); }
+}
 
 function _unlockAudio() {
-    if (_alertaUserInteracted) return;
-    _alertaUserInteracted = true;
     localStorage.setItem('amiconnect_audio_unlocked', '1');
-    if (!_alertaAudio) _alertaAudio = new Audio('/sounds/alerta.mp3');
+    if (_ctxAlerta && _ctxAlerta.state === 'suspended') _ctxAlerta.resume().catch(() => {});
 }
-document.addEventListener('click',     _unlockAudio);
-document.addEventListener('keydown',   _unlockAudio);
-document.addEventListener('touchstart',_unlockAudio);
+document.addEventListener('click',      _unlockAudio);
+document.addEventListener('keydown',    _unlockAudio);
+document.addEventListener('touchstart', _unlockAudio);
 
 // Som de alerta novo
 function tocarSomAlerta() {
-    if (!_alertaUserInteracted) return;
-    try {
-        if (!_alertaAudio) _alertaAudio = new Audio('/sounds/alerta.mp3');
-        _alertaAudio.volume = 1.0;
-        _alertaAudio.currentTime = 0;
-        _alertaAudio.play().catch(e => console.warn('Áudio alerta bloqueado:', e.message));
-    } catch (e) { console.warn('Áudio alerta:', e.message); }
+    if (!_ctxAlerta || !_bufAlerta) return;
+    const play = () => {
+        try {
+            const src        = _ctxAlerta.createBufferSource();
+            const gain       = _ctxAlerta.createGain();
+            const compressor = _ctxAlerta.createDynamicsCompressor();
+            src.buffer       = _bufAlerta;
+            gain.gain.value  = 2.0; // alto, mas menos destaque que pedido
+            src.connect(gain);
+            gain.connect(compressor);
+            compressor.connect(_ctxAlerta.destination);
+            src.start(0);
+        } catch(e) { console.warn('Play alerta:', e); }
+    };
+    if (_ctxAlerta.state === 'suspended') _ctxAlerta.resume().then(play).catch(() => {});
+    else play();
 }
+
+_initAlertaAudio();
 
 // ── Fim sons ──────────────────────────────────────────────────────────────────
 

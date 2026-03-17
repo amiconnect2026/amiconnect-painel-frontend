@@ -9,31 +9,50 @@ let empresaIdAtual = user.role === 'admin' ? (parseInt(localStorage.getItem('adm
 
 // ── Som de pedido ─────────────────────────────────────────────────────────────
 
-// Som de pedido novo
-let _pedidoAudio = null;
-// Persiste no localStorage: uma vez interagiu em qualquer página, todas tocam
-let _pedidoUserInteracted = localStorage.getItem('amiconnect_audio_unlocked') === '1';
-if (_pedidoUserInteracted) _pedidoAudio = new Audio('/sounds/pedido.mp3');
+let _ctxPedido = null;
+let _bufPedido = null;
+
+async function _initPedidoAudio() {
+    if (_ctxPedido) return;
+    try {
+        _ctxPedido = new (window.AudioContext || window.webkitAudioContext)();
+        if (localStorage.getItem('amiconnect_audio_unlocked') === '1') {
+            _ctxPedido.resume().catch(() => {});
+        }
+        const resp = await fetch('/sounds/pedido.mp3');
+        const arr  = await resp.arrayBuffer();
+        _bufPedido = await _ctxPedido.decodeAudioData(arr);
+    } catch(e) { console.warn('Init áudio pedido:', e); }
+}
 
 function _unlockPedidoAudio() {
-    if (_pedidoUserInteracted) return;
-    _pedidoUserInteracted = true;
     localStorage.setItem('amiconnect_audio_unlocked', '1');
-    if (!_pedidoAudio) _pedidoAudio = new Audio('/sounds/pedido.mp3');
+    if (_ctxPedido && _ctxPedido.state === 'suspended') _ctxPedido.resume().catch(() => {});
 }
-document.addEventListener('click',     _unlockPedidoAudio);
-document.addEventListener('keydown',   _unlockPedidoAudio);
-document.addEventListener('touchstart',_unlockPedidoAudio);
+document.addEventListener('click',      _unlockPedidoAudio);
+document.addEventListener('keydown',    _unlockPedidoAudio);
+document.addEventListener('touchstart', _unlockPedidoAudio);
 
 function tocarSomPedido() {
-    if (!_pedidoUserInteracted) return;
-    try {
-        if (!_pedidoAudio) _pedidoAudio = new Audio('/sounds/pedido.mp3');
-        _pedidoAudio.volume = 1.0;
-        _pedidoAudio.currentTime = 0;
-        _pedidoAudio.play().catch(e => console.warn('Áudio pedido bloqueado:', e.message));
-    } catch (e) { console.warn('Áudio pedido:', e.message); }
+    if (!_ctxPedido || !_bufPedido) return;
+    const play = () => {
+        try {
+            const src        = _ctxPedido.createBufferSource();
+            const gain       = _ctxPedido.createGain();
+            const compressor = _ctxPedido.createDynamicsCompressor();
+            src.buffer       = _bufPedido;
+            gain.gain.value  = 3.0; // máximo destaque
+            src.connect(gain);
+            gain.connect(compressor);
+            compressor.connect(_ctxPedido.destination);
+            src.start(0);
+        } catch(e) { console.warn('Play pedido:', e); }
+    };
+    if (_ctxPedido.state === 'suspended') _ctxPedido.resume().then(play).catch(() => {});
+    else play();
 }
+
+_initPedidoAudio();
 
 const _STORAGE_PEDIDOS_VISTOS = 'amiconnect_pedidos_som_vistos';
 const _pedidosSomJaDisparado = new Set(); // in-memory: evita repetir no mesmo carregamento
