@@ -310,10 +310,10 @@
                                         <div class="flex items-center justify-between mt-3">
                                             <div>
                                                 ${p.promocao_ativa && p.desconto_percent > 0
-                                                    ? `<p class="text-gray-400 text-sm line-through">R$ ${parseFloat(p.preco).toFixed(2)}</p><p class="text-red-600 font-extrabold text-lg">R$ ${(parseFloat(p.preco) * (1 - p.desconto_percent / 100)).toFixed(2)}</p>`
-                                                    : `<p class="text-indigo-600 font-extrabold text-lg">R$ ${parseFloat(p.preco).toFixed(2)}</p>`}
+                                                    ? `<p class="text-gray-400 text-sm line-through">R$ ${parseFloat(p.preco).toFixed(2)}</p><p class="text-red-600 font-extrabold text-lg">R$ ${parseFloat(p.preco_final).toFixed(2)}</p>`
+                                                    : `<p class="text-indigo-600 font-extrabold text-lg">R$ ${parseFloat(p.preco_final).toFixed(2)}</p>`}
                                             </div>
-                                            ${p.disponivel ? `<button class="btn-adicionar bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-xl text-sm flex items-center gap-1 shadow-sm" onclick="adicionarAoCarrinho(${p.id}, '${p.nome.replace(/'/g, "\\'")}', ${p.promocao_ativa && p.desconto_percent > 0 ? (parseFloat(p.preco) * (1 - p.desconto_percent / 100)).toFixed(2) : p.preco})"><span class="text-lg leading-none">+</span> Adicionar</button>` : ''}
+                                            ${p.disponivel ? `<button class="btn-adicionar bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-xl text-sm flex items-center gap-1 shadow-sm" onclick="adicionarAoCarrinho(${p.id}, '${p.nome.replace(/'/g, "\\'")}', ${parseFloat(p.preco_final).toFixed(2)})"><span class="text-lg leading-none">+</span> Adicionar</button>` : ''}
                                         </div>
                                     </div>
                                     ${p.imagem_url ? `
@@ -353,13 +353,13 @@
             if (destaqueDia.length > 0) {
                 const p = destaqueDia[0];
                 const preco = p.promocao_ativa && p.desconto_percent > 0
-                    ? `<span class="line-through text-gray-300 text-sm">R$ ${parseFloat(p.preco).toFixed(2)}</span> <span class="text-yellow-300 font-extrabold text-xl">R$ ${(parseFloat(p.preco) * (1 - p.desconto_percent / 100)).toFixed(2)}</span>`
-                    : `<span class="text-yellow-300 font-extrabold text-xl">R$ ${parseFloat(p.preco).toFixed(2)}</span>`;
+                    ? `<span class="line-through text-gray-300 text-sm">R$ ${parseFloat(p.preco).toFixed(2)}</span> <span class="text-yellow-300 font-extrabold text-xl">R$ ${parseFloat(p.preco_final).toFixed(2)}</span>`
+                    : `<span class="text-yellow-300 font-extrabold text-xl">R$ ${parseFloat(p.preco_final).toFixed(2)}</span>`;
                 container.innerHTML += `
                 <div class="mb-4">
                     <h3 class="text-base font-extrabold text-gray-800 mb-2">⭐ Destaque do dia</h3>
                     <div class="relative rounded-2xl overflow-hidden bg-indigo-700 flex items-center gap-4 p-4 shadow cursor-pointer"
-                         onclick="adicionarAoCarrinho(${p.id}, '${p.nome.replace(/'/g, "\\'")}', ${p.preco})">
+                         onclick="adicionarAoCarrinho(${p.id}, '${p.nome.replace(/'/g, "\\'")}', ${parseFloat(p.preco_final).toFixed(2)})">
                         ${p.imagem_url ? `<img src="${p.imagem_url}" class="w-24 h-24 rounded-xl object-cover flex-shrink-0">` : `<div class="w-24 h-24 rounded-xl bg-indigo-600 flex items-center justify-center text-4xl flex-shrink-0">🍽️</div>`}
                         <div class="flex-1 text-white">
                             <p class="font-extrabold text-lg">${p.nome}</p>
@@ -373,9 +373,7 @@
 
             if (maisPedidos.length > 0) {
                 const cards = maisPedidos.map(p => {
-                    const precoFinal = p.promocao_ativa && p.desconto_percent > 0
-                        ? (parseFloat(p.preco) * (1 - p.desconto_percent / 100)).toFixed(2)
-                        : parseFloat(p.preco).toFixed(2);
+                    const precoFinal = parseFloat(p.preco_final).toFixed(2);
                     return `<div class="flex-shrink-0 w-40 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden cursor-pointer"
                                  onclick="adicionarAoCarrinho(${p.id}, '${p.nome.replace(/'/g, "\\'")}', ${precoFinal})">
                         ${p.imagem_url ? `<img src="${p.imagem_url}" class="w-full h-28 object-cover">` : `<div class="w-full h-28 bg-gray-100 flex items-center justify-center text-3xl">🍽️</div>`}
@@ -394,9 +392,7 @@
 
             if (sugestoes.length > 0) {
                 const cards = sugestoes.map(p => {
-                    const precoFinal = p.promocao_ativa && p.desconto_percent > 0
-                        ? (parseFloat(p.preco) * (1 - p.desconto_percent / 100)).toFixed(2)
-                        : parseFloat(p.preco).toFixed(2);
+                    const precoFinal = parseFloat(p.preco_final).toFixed(2);
                     return `<div class="flex items-center gap-3 bg-white rounded-xl border border-gray-100 p-3 shadow-sm cursor-pointer"
                                  onclick="adicionarAoCarrinho(${p.id}, '${p.nome.replace(/'/g, "\\'")}', ${precoFinal})">
                         ${p.imagem_url ? `<img src="${p.imagem_url}" class="w-14 h-14 rounded-lg object-cover flex-shrink-0">` : `<div class="w-14 h-14 rounded-lg bg-gray-100 flex items-center justify-center text-2xl flex-shrink-0">🍽️</div>`}
