@@ -13,6 +13,7 @@ let empresaIdAtual = user.role === 'admin' ? (parseInt(localStorage.getItem('adm
 let _pedidoAudio = null;
 // Persiste no localStorage: uma vez interagiu em qualquer página, todas tocam
 let _pedidoUserInteracted = localStorage.getItem('amiconnect_audio_unlocked') === '1';
+if (_pedidoUserInteracted) _pedidoAudio = new Audio('/sounds/pedido.mp3');
 
 function _unlockPedidoAudio() {
     if (_pedidoUserInteracted) return;

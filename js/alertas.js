@@ -9,6 +9,7 @@ const _tituloOriginal = document.title;
 let _alertaAudio = null;
 // Persiste no localStorage: uma vez interagiu em qualquer página, todas tocam
 let _alertaUserInteracted = localStorage.getItem('amiconnect_audio_unlocked') === '1';
+if (_alertaUserInteracted) _alertaAudio = new Audio('/sounds/alerta.mp3');
 
 function _unlockAudio() {
     if (_alertaUserInteracted) return;
