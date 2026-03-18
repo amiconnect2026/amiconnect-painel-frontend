@@ -136,11 +136,22 @@ async function verConversa(telefone) {
     document.getElementById('chatClienteNome').textContent = conv?.cliente_nome || formatPhone(telefone);
     document.getElementById('chatClienteTelefone').textContent = formatPhone(telefone);
     document.getElementById('chatBtnLiberarBot').classList.add('hidden');
+    document.getElementById('chatBtnAssumir').classList.remove('hidden');
     document.getElementById('chatBadgeLeitura').classList.remove('hidden');
     document.getElementById('chatInputArea').classList.add('hidden');
     document.getElementById('chatModal').classList.remove('hidden');
     await carregarMensagens();
     chatIntervalId = setInterval(carregarMensagens, 5000);
+}
+
+async function assumirDoModal() {
+    if (!chatTelefone) return;
+    await assumirConversa(chatTelefone);
+    document.getElementById('chatBtnAssumir').classList.add('hidden');
+    document.getElementById('chatBadgeLeitura').classList.add('hidden');
+    document.getElementById('chatBtnLiberarBot').classList.remove('hidden');
+    document.getElementById('chatInputArea').classList.remove('hidden');
+    chatReadOnly = false;
 }
 
 async function abrirChat(telefone) {
@@ -151,6 +162,7 @@ async function abrirChat(telefone) {
     document.getElementById('chatClienteNome').textContent = conv?.cliente_nome || formatPhone(telefone);
     document.getElementById('chatClienteTelefone').textContent = formatPhone(telefone);
     document.getElementById('chatBtnLiberarBot').classList.remove('hidden');
+    document.getElementById('chatBtnAssumir').classList.add('hidden');
     document.getElementById('chatBadgeLeitura').classList.add('hidden');
     document.getElementById('chatInputArea').classList.remove('hidden');
     document.getElementById('chatModal').classList.remove('hidden');

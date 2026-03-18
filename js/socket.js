@@ -26,6 +26,7 @@ function iniciarSocket() {
       if (typeof carregarMensagens === 'function') carregarMensagens();
     }
     if (typeof loadConversas === 'function') loadConversas();
+    if (typeof incrementarBadgeConversas === 'function') incrementarBadgeConversas();
   });
   socket.on('novo_pedido', (data) => {
     console.log('🧾 Novo pedido:', data);
