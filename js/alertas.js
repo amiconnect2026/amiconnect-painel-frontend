@@ -75,6 +75,24 @@ function tocarSomPedido() {
     else play();
 }
 
+// Repetidor global de pedido para páginas sem pedidos.js (máx 10x = 5 min)
+let _intervalRepetidorPedidoGlobal = null;
+
+function _iniciarRepetidorPedidoGlobal() {
+    if (typeof _iniciarRepetidorSom === 'function') return; // pedidos.js gerencia
+    if (_intervalRepetidorPedidoGlobal) return;
+    let count = 0;
+    _intervalRepetidorPedidoGlobal = setInterval(() => {
+        count++;
+        if (_pedidosSomJaDisparadoGlobal.size > 0 && count <= 10) {
+            tocarSomPedido();
+        } else {
+            clearInterval(_intervalRepetidorPedidoGlobal);
+            _intervalRepetidorPedidoGlobal = null;
+        }
+    }, 30 * 1000);
+}
+
 // Chamado pelo socket em qualquer página
 function registrarNovoPedidoSom(pedidoId) {
     if (_pedidosSomJaDisparadoGlobal.has(pedidoId)) return;
@@ -82,8 +100,8 @@ function registrarNovoPedidoSom(pedidoId) {
     // Sincroniza com o set do pedidos.js para evitar double-play no polling
     if (typeof _pedidosSomJaDisparado !== 'undefined') _pedidosSomJaDisparado.add(pedidoId);
     tocarSomPedido();
-    // Inicia o repetidor de 30s se estiver na página de pedidos
     if (typeof _iniciarRepetidorSom === 'function') _iniciarRepetidorSom();
+    else _iniciarRepetidorPedidoGlobal();
 }
 
 _initPedidoAudio();
@@ -93,10 +111,29 @@ function _unlockAudio() {
     localStorage.setItem('amiconnect_audio_unlocked', '1');
     if (_ctxAlerta && _ctxAlerta.state === 'suspended') _ctxAlerta.resume().catch(() => {});
     if (_ctxPedido && _ctxPedido.state === 'suspended') _ctxPedido.resume().catch(() => {});
+    const b = document.getElementById('_bannerAudio');
+    if (b) b.remove();
 }
 document.addEventListener('click',      _unlockAudio);
 document.addEventListener('keydown',    _unlockAudio);
 document.addEventListener('touchstart', _unlockAudio);
+
+// ── Banner de ativação de áudio ───────────────────────────────────────────────
+function _mostrarBannerAudio() {
+    if (document.getElementById('_bannerAudio')) return;
+    const b = document.createElement('div');
+    b.id = '_bannerAudio';
+    b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#f59e0b;color:#1a1a1a;text-align:center;padding:12px 16px;font-weight:700;cursor:pointer;font-size:15px;box-shadow:0 2px 8px rgba(0,0,0,.2);';
+    b.innerHTML = '🔔 Clique aqui para ativar os alertas sonoros';
+    b.onclick = _unlockAudio;
+    document.body.appendChild(b);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    if (localStorage.getItem('amiconnect_audio_unlocked') !== '1') {
+        _mostrarBannerAudio();
+    }
+});
 
 // ── Fim sons ──────────────────────────────────────────────────────────────────
 
@@ -335,4 +372,5 @@ function formatarData(data) {
 window.addEventListener('beforeunload', () => {
     if (intervalAlertas) clearInterval(intervalAlertas);
     if (_intervalSomAlerta) clearInterval(_intervalSomAlerta);
+    if (_intervalRepetidorPedidoGlobal) clearInterval(_intervalRepetidorPedidoGlobal);
 });
