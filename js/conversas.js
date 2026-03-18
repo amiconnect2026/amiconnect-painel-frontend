@@ -8,6 +8,7 @@ let chatEmpresaId = null;
 let chatIntervalId = null;
 let chatReadOnly = false;
 let empresaIdAtual = user.role === 'admin' ? (parseInt(localStorage.getItem('adminEmpresaId')) || null) : user.empresa_id;
+let _autoOpenDone = false;
 
 async function carregarSeletorEmpresas() {
     if (user.role !== 'admin') { if (empresaIdAtual) loadConversas(); return; }
@@ -39,6 +40,16 @@ async function loadConversas() {
         conversas = response.conversas || [];
         renderConversas();
         updateStats();
+
+        if (!_autoOpenDone) {
+            _autoOpenDone = true;
+            const telefone = new URLSearchParams(window.location.search).get('telefone');
+            if (telefone) {
+                const conv = conversas.find(c => c.cliente_telefone === telefone);
+                if (conv && conv.modo !== 'bot') abrirChat(telefone);
+                else verConversa(telefone);
+            }
+        }
     } catch (error) { console.error('Erro:', error); }
 }
 

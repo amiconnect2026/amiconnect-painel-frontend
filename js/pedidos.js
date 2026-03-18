@@ -149,7 +149,7 @@ function renderPedidos() {
                     ${podeArquivar ? `<input type="checkbox" class="mt-1 w-4 h-4 flex-shrink-0 cursor-pointer accent-indigo-600" ${selecionado ? 'checked' : ''} onchange="toggleSelecao(${pedido.id})">` : '<div class="w-4 flex-shrink-0 mt-1"></div>'}
                     <div class="flex-1 cursor-pointer min-w-0" onclick="verDetalhes(${pedido.id})">
                         <div class="flex items-center gap-3 mb-2 flex-wrap">
-                            <span class="text-2xl font-bold text-indigo-600">#${pedido.id}</span>
+                            <span class="text-2xl font-bold text-indigo-600">#${pedido.numero_diario || pedido.id}</span>
                             <span class="px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(pedido.status)}">${getStatusLabel(pedido.status)}</span>
                             ${pedido.impresso
                                 ? '<span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">✓ Impresso</span>'
@@ -318,7 +318,7 @@ function renderPedidosArquivados(lista) {
         const label = formatarDataGrupo(chave);
         const rows = grupos[chave].map(pedido => `
             <div class="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 cursor-pointer transition" onclick="verDetalhes(${pedido.id})">
-                <span class="text-gray-500 text-sm font-medium w-24 flex-shrink-0">[Pedido #${pedido.id}]</span>
+                <span class="text-gray-500 text-sm font-medium w-24 flex-shrink-0">[Pedido #${pedido.numero_diario || pedido.id}]</span>
                 <span class="text-gray-800 text-sm flex-1 truncate">${pedido.cliente_nome || '-'}</span>
                 <span class="text-gray-500 text-sm">-</span>
                 <span class="text-green-700 text-sm font-medium flex-shrink-0">R$ ${parseFloat(pedido.total).toFixed(2)}</span>
@@ -359,7 +359,7 @@ async function verDetalhes(id) {
             <div class="space-y-6">
                 <div class="flex justify-between items-start">
                     <div>
-                        <h4 class="text-2xl font-bold text-gray-900">Pedido #${pedido.id}</h4>
+                        <h4 class="text-2xl font-bold text-gray-900">Pedido #${pedido.numero_diario || pedido.id}</h4>
                         <p class="text-gray-600">${formatDate(pedido.created_at)}</p>
                     </div>
                     <span id="statusBadge" class="px-4 py-2 rounded-full font-medium ${getStatusColor(pedido.status)}">${getStatusLabel(pedido.status)}</span>
