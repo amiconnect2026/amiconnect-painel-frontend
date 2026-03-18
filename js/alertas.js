@@ -6,6 +6,7 @@ let intervalAlertas = null;
 
 const _tituloOriginal = document.title;
 
+// ── Som de alerta ─────────────────────────────────────────────────────────────
 let _ctxAlerta = null;
 let _bufAlerta  = null;
 
@@ -13,36 +14,23 @@ async function _initAlertaAudio() {
     if (_ctxAlerta) return;
     try {
         _ctxAlerta = new (window.AudioContext || window.webkitAudioContext)();
-        if (localStorage.getItem('amiconnect_audio_unlocked') === '1') {
-            _ctxAlerta.resume().catch(() => {});
-        }
+        if (localStorage.getItem('amiconnect_audio_unlocked') === '1') _ctxAlerta.resume().catch(() => {});
         const resp = await fetch('/sounds/alerta.mp3');
         const arr  = await resp.arrayBuffer();
         _bufAlerta = await _ctxAlerta.decodeAudioData(arr);
     } catch(e) { console.warn('Init áudio alerta:', e); }
 }
 
-function _unlockAudio() {
-    localStorage.setItem('amiconnect_audio_unlocked', '1');
-    if (_ctxAlerta && _ctxAlerta.state === 'suspended') _ctxAlerta.resume().catch(() => {});
-}
-document.addEventListener('click',      _unlockAudio);
-document.addEventListener('keydown',    _unlockAudio);
-document.addEventListener('touchstart', _unlockAudio);
-
-// Som de alerta novo
 function tocarSomAlerta() {
     if (!_ctxAlerta || !_bufAlerta) return;
     const play = () => {
         try {
-            const src        = _ctxAlerta.createBufferSource();
-            const gain       = _ctxAlerta.createGain();
-            const compressor = _ctxAlerta.createDynamicsCompressor();
-            src.buffer       = _bufAlerta;
-            gain.gain.value  = 2.0; // alto, mas menos destaque que pedido
-            src.connect(gain);
-            gain.connect(compressor);
-            compressor.connect(_ctxAlerta.destination);
+            const src = _ctxAlerta.createBufferSource();
+            const gain = _ctxAlerta.createGain();
+            const comp = _ctxAlerta.createDynamicsCompressor();
+            src.buffer = _bufAlerta;
+            gain.gain.value = 2.0;
+            src.connect(gain); gain.connect(comp); comp.connect(_ctxAlerta.destination);
             src.start(0);
         } catch(e) { console.warn('Play alerta:', e); }
     };
@@ -51,6 +39,64 @@ function tocarSomAlerta() {
 }
 
 _initAlertaAudio();
+
+// ── Som de pedido (carregado em todas as páginas) ─────────────────────────────
+let _ctxPedido = null;
+let _bufPedido  = null;
+const _pedidosSomJaDisparadoGlobal = new Set();
+
+async function _initPedidoAudio() {
+    if (_ctxPedido) return;
+    try {
+        _ctxPedido = new (window.AudioContext || window.webkitAudioContext)();
+        if (localStorage.getItem('amiconnect_audio_unlocked') === '1') _ctxPedido.resume().catch(() => {});
+        const resp = await fetch('/sounds/pedido.mp3');
+        const arr  = await resp.arrayBuffer();
+        _bufPedido = await _ctxPedido.decodeAudioData(arr);
+        console.log('[Audio Pedido] Buffer carregado');
+    } catch(e) { console.warn('Init áudio pedido:', e); }
+}
+
+function tocarSomPedido() {
+    if (!_ctxPedido || !_bufPedido) { console.warn('[Audio Pedido] ctx ou buffer ausente'); return; }
+    const play = () => {
+        try {
+            const src = _ctxPedido.createBufferSource();
+            const gain = _ctxPedido.createGain();
+            const comp = _ctxPedido.createDynamicsCompressor();
+            src.buffer = _bufPedido;
+            gain.gain.value = 3.0;
+            src.connect(gain); gain.connect(comp); comp.connect(_ctxPedido.destination);
+            src.start(0);
+            console.log('[Audio Pedido] ✅ Som tocado');
+        } catch(e) { console.error('[Audio Pedido] Play erro:', e); }
+    };
+    if (_ctxPedido.state === 'suspended') _ctxPedido.resume().then(play).catch(e => console.error('[Audio Pedido] Resume falhou:', e));
+    else play();
+}
+
+// Chamado pelo socket em qualquer página
+function registrarNovoPedidoSom(pedidoId) {
+    if (_pedidosSomJaDisparadoGlobal.has(pedidoId)) return;
+    _pedidosSomJaDisparadoGlobal.add(pedidoId);
+    // Sincroniza com o set do pedidos.js para evitar double-play no polling
+    if (typeof _pedidosSomJaDisparado !== 'undefined') _pedidosSomJaDisparado.add(pedidoId);
+    tocarSomPedido();
+    // Inicia o repetidor de 30s se estiver na página de pedidos
+    if (typeof _iniciarRepetidorSom === 'function') _iniciarRepetidorSom();
+}
+
+_initPedidoAudio();
+
+// ── Unlock unificado ──────────────────────────────────────────────────────────
+function _unlockAudio() {
+    localStorage.setItem('amiconnect_audio_unlocked', '1');
+    if (_ctxAlerta && _ctxAlerta.state === 'suspended') _ctxAlerta.resume().catch(() => {});
+    if (_ctxPedido && _ctxPedido.state === 'suspended') _ctxPedido.resume().catch(() => {});
+}
+document.addEventListener('click',      _unlockAudio);
+document.addEventListener('keydown',    _unlockAudio);
+document.addEventListener('touchstart', _unlockAudio);
 
 // ── Fim sons ──────────────────────────────────────────────────────────────────
 
