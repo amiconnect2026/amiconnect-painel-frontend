@@ -127,8 +127,7 @@ function _injetarBadgeConversas() {
     if (!link || link.querySelector('#conversasBadge')) return;
     const badge = document.createElement('span');
     badge.id = 'conversasBadge';
-    badge.className = 'hidden';
-    badge.style.cssText = 'background:#22c55e;color:white;font-size:11px;font-weight:700;border-radius:9999px;min-width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;padding:0 4px;margin-left:4px;';
+    badge.style.cssText = 'display:none;background:#22c55e;color:white;font-size:11px;font-weight:700;border-radius:9999px;min-width:18px;height:18px;align-items:center;justify-content:center;padding:0 4px;margin-left:4px;';
     link.style.display = 'inline-flex';
     link.style.alignItems = 'center';
     link.appendChild(badge);
@@ -140,7 +139,7 @@ function incrementarBadgeConversas() {
     const badge = document.getElementById('conversasBadge');
     if (!badge) return;
     badge.textContent = _novasConversasCount > 9 ? '9+' : _novasConversasCount;
-    badge.classList.remove('hidden');
+    badge.style.display = 'inline-flex';
 }
 
 document.addEventListener('DOMContentLoaded', () => {
