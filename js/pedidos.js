@@ -16,40 +16,50 @@ async function _initPedidoAudio() {
     if (_ctxPedido) return;
     try {
         _ctxPedido = new (window.AudioContext || window.webkitAudioContext)();
+        console.log('[Audio Pedido] AudioContext criado, state:', _ctxPedido.state);
         if (localStorage.getItem('amiconnect_audio_unlocked') === '1') {
             _ctxPedido.resume().catch(() => {});
+            console.log('[Audio Pedido] resume() chamado (localStorage desbloqueado)');
         }
         const resp = await fetch('/sounds/pedido.mp3');
+        if (!resp.ok) { console.error('[Audio Pedido] Falha ao buscar MP3:', resp.status, resp.url); return; }
         const arr  = await resp.arrayBuffer();
         _bufPedido = await _ctxPedido.decodeAudioData(arr);
-    } catch(e) { console.warn('Init áudio pedido:', e); }
+        console.log('[Audio Pedido] Buffer carregado com sucesso');
+    } catch(e) { console.error('[Audio Pedido] Init erro:', e); }
 }
 
 function _unlockPedidoAudio() {
     localStorage.setItem('amiconnect_audio_unlocked', '1');
-    if (_ctxPedido && _ctxPedido.state === 'suspended') _ctxPedido.resume().catch(() => {});
+    if (_ctxPedido && _ctxPedido.state === 'suspended') {
+        _ctxPedido.resume().then(() => console.log('[Audio Pedido] Desbloqueado pela interação')).catch(() => {});
+    }
 }
 document.addEventListener('click',      _unlockPedidoAudio);
 document.addEventListener('keydown',    _unlockPedidoAudio);
 document.addEventListener('touchstart', _unlockPedidoAudio);
 
 function tocarSomPedido() {
-    if (!_ctxPedido || !_bufPedido) return;
+    console.log('[Audio Pedido] tocarSomPedido() chamado — ctx:', _ctxPedido?.state, '| buffer:', !!_bufPedido);
+    if (!_ctxPedido || !_bufPedido) { console.warn('[Audio Pedido] Não pode tocar — ctx ou buffer ausente'); return; }
     const play = () => {
         try {
             const src        = _ctxPedido.createBufferSource();
             const gain       = _ctxPedido.createGain();
             const compressor = _ctxPedido.createDynamicsCompressor();
             src.buffer       = _bufPedido;
-            gain.gain.value  = 3.0; // máximo destaque
+            gain.gain.value  = 3.0;
             src.connect(gain);
             gain.connect(compressor);
             compressor.connect(_ctxPedido.destination);
             src.start(0);
-        } catch(e) { console.warn('Play pedido:', e); }
+            console.log('[Audio Pedido] ✅ Som tocado');
+        } catch(e) { console.error('[Audio Pedido] Play erro:', e); }
     };
-    if (_ctxPedido.state === 'suspended') _ctxPedido.resume().then(play).catch(() => {});
-    else play();
+    if (_ctxPedido.state === 'suspended') {
+        console.warn('[Audio Pedido] Contexto suspenso — tentando resume()');
+        _ctxPedido.resume().then(play).catch(e => console.error('[Audio Pedido] Resume falhou:', e));
+    } else play();
 }
 
 _initPedidoAudio();
