@@ -552,6 +552,8 @@ async function abrirPedidoManual() {
     _pmTipoEntrega = 'entrega';
     _pmPerfil = null;
     _pmEnderecosSalvos = [];
+    _pmResultados = [];
+    pmFecharDropdown();
     document.getElementById('pm_nome').value = '';
     document.getElementById('pm_telefone').value = '';
     document.getElementById('pm_endereco').value = '';
@@ -606,34 +608,91 @@ function selecionarTipoEntregaManual(tipo) {
     }
 }
 
+// ── Autocomplete de perfil ────────────────────────────────────────────────────
+
+let _pmDebounceTimer = null;
+let _pmResultados = []; // cache dos últimos resultados do dropdown
+
+function pmDebounce(q) {
+    clearTimeout(_pmDebounceTimer);
+    if (!q || q.length < 2) { pmFecharDropdown(); return; }
+    _pmDebounceTimer = setTimeout(() => pmBuscarDropdown(q), 300);
+}
+
+async function pmBuscarDropdown(q) {
+    try {
+        const res = await apiRequest(`/perfis/buscar?q=${encodeURIComponent(q)}`);
+        _pmResultados = res.perfis || [];
+        pmRenderDropdown(_pmResultados);
+    } catch(e) { pmFecharDropdown(); }
+}
+
+function pmRenderDropdown(perfis) {
+    const dropdown = document.getElementById('pm_dropdown');
+    if (!perfis.length) { dropdown.classList.add('hidden'); return; }
+    dropdown.innerHTML = perfis.map((p, i) => `
+        <div class="px-4 py-2.5 hover:bg-indigo-50 cursor-pointer border-b border-gray-100 last:border-0"
+             onmousedown="pmSelecionarPerfil(${i})">
+            <p class="font-semibold text-gray-900 text-sm">${p.nome}</p>
+            <p class="text-gray-400 text-xs">${p.telefone}</p>
+        </div>`).join('');
+    dropdown.classList.remove('hidden');
+}
+
+function pmFecharDropdown() {
+    const el = document.getElementById('pm_dropdown');
+    if (el) el.classList.add('hidden');
+}
+
+async function pmSelecionarPerfil(idx) {
+    pmFecharDropdown();
+    const p = _pmResultados[idx];
+    if (!p) return;
+    document.getElementById('pm_nome').value = p.nome;
+    document.getElementById('pm_telefone').value = p.telefone;
+    _pmEnderecosSalvos = p.enderecos || [];
+    // Se a busca não incluiu endereços, buscar separado
+    if (!_pmEnderecosSalvos.length) {
+        try {
+            const endRes = await apiRequest(`/perfis/${p.id}/enderecos`);
+            _pmEnderecosSalvos = endRes.enderecos || [];
+        } catch(e) {}
+    }
+    pmAplicarEnderecos(_pmEnderecosSalvos);
+}
+
+function pmAplicarEnderecos(enderecos) {
+    const statusEl = document.getElementById('pm_perfil_status');
+    const nome = document.getElementById('pm_nome').value;
+    statusEl.textContent = `✅ Cliente encontrado: ${nome}`;
+    statusEl.classList.remove('hidden');
+    if (enderecos.length > 0) {
+        const sel = document.getElementById('pm_endereco_select');
+        sel.innerHTML = '';
+        enderecos.forEach((e, i) => {
+            const label = [e.rua, e.numero, e.bairro, e.cidade, e.complemento].filter(Boolean).join(', ');
+            sel.innerHTML += `<option value="${i}" data-lat="${e.lat || ''}" data-lng="${e.lng || ''}">${label}</option>`;
+        });
+        sel.innerHTML += `<option value="outro">+ Outro endereço</option>`;
+        sel.classList.remove('hidden');
+        document.getElementById('pm_endereco').classList.add('hidden');
+        document.getElementById('pm_endereco').value = '';
+        onEnderecoSelecionadoManual();
+    }
+}
+
 async function buscarPerfilManual() {
+    // Mantido como fallback no blur — usa o valor do telefone
     const tel = document.getElementById('pm_telefone').value.trim().replace(/\D/g, '');
     if (tel.length < 10) return;
     try {
         const res = await apiRequest(`/perfis/buscar?q=${tel}`);
         const perfis = res.perfis || [];
-        if (perfis.length === 0) return;
-        _pmPerfil = perfis[0];
-        _pmEnderecosSalvos = _pmPerfil.enderecos || [];
-        if (!document.getElementById('pm_nome').value) {
-            document.getElementById('pm_nome').value = _pmPerfil.nome;
-        }
-        const statusEl = document.getElementById('pm_perfil_status');
-        statusEl.textContent = `✅ Cliente encontrado: ${_pmPerfil.nome}`;
-        statusEl.classList.remove('hidden');
-        if (_pmEnderecosSalvos.length > 0) {
-            const sel = document.getElementById('pm_endereco_select');
-            sel.innerHTML = '';
-            _pmEnderecosSalvos.forEach((e, i) => {
-                const label = [e.rua, e.numero, e.bairro, e.cidade, e.complemento].filter(Boolean).join(', ');
-                sel.innerHTML += `<option value="${i}" data-lat="${e.lat || ''}" data-lng="${e.lng || ''}">${label}</option>`;
-            });
-            sel.innerHTML += `<option value="outro">+ Outro endereço</option>`;
-            sel.classList.remove('hidden');
-            document.getElementById('pm_endereco').classList.add('hidden');
-            document.getElementById('pm_endereco').value = '';
-            onEnderecoSelecionadoManual();
-        }
+        if (!perfis.length) return;
+        const p = perfis[0];
+        if (!document.getElementById('pm_nome').value) document.getElementById('pm_nome').value = p.nome;
+        _pmEnderecosSalvos = p.enderecos || [];
+        pmAplicarEnderecos(_pmEnderecosSalvos);
     } catch(e) { console.warn('Erro ao buscar perfil:', e); }
 }
 
