@@ -258,7 +258,7 @@
 
                 <!-- Step 2: Entrega ou Retirada + Endereço -->
                 <div id="step2" class="modal-step px-6 py-5 space-y-4">
-                    <div class="grid grid-cols-2 gap-3">
+                    <div id="tipoEntregaGrid" class="grid gap-3">
                         <button id="btnEntrega" onclick="selecionarTipoEntrega('entrega')"
                             class="flex flex-col items-center justify-center py-4 rounded-xl border-2 border-indigo-600 bg-indigo-50 text-indigo-700 font-bold text-sm gap-1">
                             <span class="text-2xl">🛵</span> Entrega
@@ -302,6 +302,11 @@
                                 <input id="endComplemento" type="text" placeholder="Apto, bloco, referência..."
                                     class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 mt-0.5">
                             </div>
+                            <button id="btnGeolocalizacao" onclick="usarLocalizacaoAtual()"
+                                class="w-full border border-indigo-300 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 font-semibold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2">
+                                <span>📍</span> Usar minha localização atual
+                            </button>
+                            <div id="geoStatus" class="hidden text-xs text-center text-gray-500"></div>
                             <button onclick="salvarNovoEndereco()"
                                 class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-sm transition">
                                 Salvar endereço
@@ -646,6 +651,8 @@
         let _ckEnderecos = [];         // endereços salvos do perfil
         let _ckEnderecoSelecionado = null;
         let _ckTipoEntrega = 'entrega';
+        let _ckGeoLat = null;
+        let _ckGeoLng = null;
         let _ckStep = 1;
 
         function abrirModalPedido() {
@@ -654,6 +661,7 @@
             // reset state
             _ckPerfil = null; _ckEnderecos = []; _ckEnderecoSelecionado = null;
             _ckTipoEntrega = 'entrega'; _ckStep = 1;
+            _ckGeoLat = null; _ckGeoLng = null;
             document.getElementById('ckTelefone').value = '';
             document.getElementById('ckNome').value = '';
             document.getElementById('ckPerfisEncontrado').classList.add('hidden');
@@ -722,6 +730,19 @@
             }
 
             renderEnderecosSalvos();
+
+            // Mostrar/ocultar opção retirada conforme configuração da empresa
+            const permiteRetirada = dadosEmpresa?.permite_retirada !== false;
+            const grid = document.getElementById('tipoEntregaGrid');
+            const btnRetirada = document.getElementById('btnRetirada');
+            if (permiteRetirada) {
+                grid.style.gridTemplateColumns = '1fr 1fr';
+                btnRetirada.classList.remove('hidden');
+            } else {
+                grid.style.gridTemplateColumns = '1fr';
+                btnRetirada.classList.add('hidden');
+            }
+
             mostrarStep(2);
             selecionarTipoEntrega('entrega');
         }
@@ -772,9 +793,45 @@
         function mostrarFormEndereco() {
             document.getElementById('formEndereco').classList.remove('hidden');
             _ckEnderecoSelecionado = null;
+            _ckGeoLat = null; _ckGeoLng = null;
+            const btn = document.getElementById('btnGeolocalizacao');
+            btn.disabled = false;
+            btn.innerHTML = '<span>📍</span> Usar minha localização atual';
+            btn.className = 'w-full border border-indigo-300 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 font-semibold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2';
+            document.getElementById('geoStatus').classList.add('hidden');
             document.querySelectorAll('#enderecosSalvos div').forEach(d => {
                 d.className = d.className.replace('border-indigo-600 bg-indigo-50', 'border-gray-200 bg-white');
             });
+        }
+
+        function usarLocalizacaoAtual() {
+            if (!navigator.geolocation) {
+                alert('Seu navegador não suporta geolocalização.');
+                return;
+            }
+            const btn = document.getElementById('btnGeolocalizacao');
+            const status = document.getElementById('geoStatus');
+            btn.disabled = true;
+            btn.textContent = 'Obtendo localização...';
+            status.classList.remove('hidden');
+            status.textContent = 'Aguardando permissão...';
+
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    _ckGeoLat = pos.coords.latitude;
+                    _ckGeoLng = pos.coords.longitude;
+                    btn.innerHTML = '<span>✅</span> Localização capturada';
+                    btn.className = btn.className.replace('border-indigo-300 text-indigo-700 bg-indigo-50 hover:bg-indigo-100', 'border-green-300 text-green-700 bg-green-50');
+                    btn.disabled = false;
+                    status.textContent = `Lat: ${_ckGeoLat.toFixed(5)}, Lng: ${_ckGeoLng.toFixed(5)}`;
+                },
+                (err) => {
+                    btn.innerHTML = '<span>📍</span> Usar minha localização atual';
+                    btn.disabled = false;
+                    status.textContent = err.code === 1 ? 'Permissão negada.' : 'Não foi possível obter localização.';
+                },
+                { timeout: 10000 }
+            );
         }
 
         async function salvarNovoEndereco() {
@@ -785,7 +842,8 @@
 
             if (!rua || !numero || !bairro) { alert('Preencha rua, número e bairro.'); return; }
 
-            const end = { rua, numero, bairro, complemento: complemento || null, apelido: 'Endereço' };
+            const end = { rua, numero, bairro, complemento: complemento || null, apelido: 'Endereço',
+                lat: _ckGeoLat || null, lng: _ckGeoLng || null };
             _ckEnderecoSelecionado = end;
 
             // Salvar no perfil se tiver id
