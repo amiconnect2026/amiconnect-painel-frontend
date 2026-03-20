@@ -38,6 +38,8 @@
         #carritoPanel.aberto {
             transform: translateX(0) !important;
         }
+        .modal-step { display: none; }
+        .modal-step.ativo { display: block; }
         .btn-adicionar {
             transition: all 0.2s;
         }
@@ -201,13 +203,141 @@
                 class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-300 mb-4"
                 rows="2"></textarea>
 
-            <button onclick="enviarPedidoWhatsApp()"
+            <button onclick="abrirModalPedido()"
                 class="w-full bg-green-500 hover:bg-green-600 text-white font-extrabold py-4 rounded-2xl flex items-center justify-center gap-2 text-lg transition-all active:scale-95 shadow-lg">
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="white">
                     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
                 </svg>
                 Pedir pelo WhatsApp
             </button>
+        </div>
+    </div>
+
+    <!-- Modal Checkout -->
+    <div id="checkoutModal" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-3xl shadow-2xl flex flex-col max-h-[90vh]">
+
+            <!-- Header modal -->
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
+                <div>
+                    <h2 class="text-lg font-extrabold text-gray-900" id="checkoutTitulo">Finalizar Pedido</h2>
+                    <div class="flex gap-1 mt-1">
+                        <span id="dot1" class="w-2 h-2 rounded-full bg-indigo-600"></span>
+                        <span id="dot2" class="w-2 h-2 rounded-full bg-gray-200"></span>
+                        <span id="dot3" class="w-2 h-2 rounded-full bg-gray-200"></span>
+                    </div>
+                </div>
+                <button onclick="fecharCheckout()" class="text-gray-400 hover:text-gray-600 text-3xl leading-none">&times;</button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto">
+
+                <!-- Step 1: Identificação -->
+                <div id="step1" class="modal-step ativo px-6 py-5 space-y-4">
+                    <p class="text-gray-600 text-sm">Informe seu telefone para continuar</p>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">📱 Telefone (WhatsApp)</label>
+                        <input id="ckTelefone" type="tel" placeholder="Ex: 5511999999999"
+                            class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-400 font-semibold text-gray-900"
+                            oninput="onTelefoneInput()">
+                        <p class="text-xs text-gray-400 mt-1">Com código do país e DDD, ex: 5511999887766</p>
+                    </div>
+                    <div id="nomeField">
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">👤 Seu nome</label>
+                        <input id="ckNome" type="text" placeholder="Como devemos te chamar?"
+                            class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                    </div>
+                    <div id="ckPerfisEncontrado" class="hidden bg-green-50 border border-green-200 rounded-xl p-3 text-sm text-green-800">
+                        ✅ Olá, <strong id="ckNomeEncontrado"></strong>! Seus dados foram encontrados.
+                    </div>
+                    <button onclick="irParaStep2()"
+                        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-4 rounded-2xl text-base transition active:scale-95">
+                        Continuar →
+                    </button>
+                </div>
+
+                <!-- Step 2: Entrega ou Retirada + Endereço -->
+                <div id="step2" class="modal-step px-6 py-5 space-y-4">
+                    <div class="grid grid-cols-2 gap-3">
+                        <button id="btnEntrega" onclick="selecionarTipoEntrega('entrega')"
+                            class="flex flex-col items-center justify-center py-4 rounded-xl border-2 border-indigo-600 bg-indigo-50 text-indigo-700 font-bold text-sm gap-1">
+                            <span class="text-2xl">🛵</span> Entrega
+                        </button>
+                        <button id="btnRetirada" onclick="selecionarTipoEntrega('retirada')"
+                            class="flex flex-col items-center justify-center py-4 rounded-xl border-2 border-gray-200 text-gray-500 font-bold text-sm gap-1">
+                            <span class="text-2xl">🏃</span> Retirada
+                        </button>
+                    </div>
+
+                    <!-- Endereços salvos (só entrega) -->
+                    <div id="enderecoSection">
+                        <p class="text-sm font-semibold text-gray-700 mb-2">📍 Endereço de entrega</p>
+                        <div id="enderecosSalvos" class="space-y-2 mb-3"></div>
+                        <button id="btnNovoEndereco" onclick="mostrarFormEndereco()"
+                            class="w-full border-2 border-dashed border-gray-300 rounded-xl py-3 text-sm font-semibold text-gray-500 hover:border-indigo-400 hover:text-indigo-600 transition">
+                            + Novo endereço
+                        </button>
+
+                        <!-- Formulário novo endereço -->
+                        <div id="formEndereco" class="hidden mt-3 space-y-3">
+                            <div class="grid grid-cols-3 gap-2">
+                                <div class="col-span-2">
+                                    <label class="text-xs font-semibold text-gray-600">Rua *</label>
+                                    <input id="endRua" type="text" placeholder="Nome da rua"
+                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 mt-0.5">
+                                </div>
+                                <div>
+                                    <label class="text-xs font-semibold text-gray-600">Número *</label>
+                                    <input id="endNumero" type="text" placeholder="123"
+                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 mt-0.5">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="text-xs font-semibold text-gray-600">Bairro *</label>
+                                <input id="endBairro" type="text" placeholder="Nome do bairro"
+                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 mt-0.5">
+                            </div>
+                            <div>
+                                <label class="text-xs font-semibold text-gray-600">Complemento</label>
+                                <input id="endComplemento" type="text" placeholder="Apto, bloco, referência..."
+                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 mt-0.5">
+                            </div>
+                            <button onclick="salvarNovoEndereco()"
+                                class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-sm transition">
+                                Salvar endereço
+                            </button>
+                        </div>
+                    </div>
+
+                    <button onclick="irParaStep3()"
+                        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-4 rounded-2xl text-base transition active:scale-95">
+                        Confirmar →
+                    </button>
+                    <button onclick="voltarStep1()" class="w-full text-gray-400 text-sm py-1">← Voltar</button>
+                </div>
+
+                <!-- Step 3: Confirmação -->
+                <div id="step3" class="modal-step px-6 py-5 space-y-4">
+                    <div class="bg-gray-50 rounded-xl p-4 space-y-1 text-sm">
+                        <div id="step3Itens" class="space-y-1 text-gray-700"></div>
+                        <div class="border-t border-gray-200 pt-2 mt-2 flex justify-between font-extrabold text-gray-900">
+                            <span>Subtotal</span>
+                            <span id="step3Subtotal"></span>
+                        </div>
+                    </div>
+                    <div id="step3Entrega" class="text-sm text-gray-600 bg-indigo-50 rounded-xl p-3"></div>
+                    <div id="step3Obs" class="hidden text-sm text-gray-500 italic px-1"></div>
+                    <button onclick="confirmarEAbrirWhatsApp()"
+                        class="w-full bg-green-500 hover:bg-green-600 text-white font-extrabold py-4 rounded-2xl flex items-center justify-center gap-2 text-lg transition active:scale-95 shadow-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="white">
+                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                        </svg>
+                        Enviar pelo WhatsApp
+                    </button>
+                    <button onclick="voltarStep2()" class="w-full text-gray-400 text-sm py-1">← Voltar</button>
+                </div>
+
+            </div>
         </div>
     </div>
 
@@ -509,23 +639,270 @@
             document.body.style.overflow = '';
         }
 
-        function enviarPedidoWhatsApp() {
+        // ===== CHECKOUT MODAL =====
+
+        const API_BASE = 'https://painel.amiconnect.com.br/api';
+        let _ckPerfil = null;          // perfil encontrado/criado
+        let _ckEnderecos = [];         // endereços salvos do perfil
+        let _ckEnderecoSelecionado = null;
+        let _ckTipoEntrega = 'entrega';
+        let _ckStep = 1;
+
+        function abrirModalPedido() {
             if (carrinho.length === 0) return;
+            fecharCarrinho();
+            // reset state
+            _ckPerfil = null; _ckEnderecos = []; _ckEnderecoSelecionado = null;
+            _ckTipoEntrega = 'entrega'; _ckStep = 1;
+            document.getElementById('ckTelefone').value = '';
+            document.getElementById('ckNome').value = '';
+            document.getElementById('ckPerfisEncontrado').classList.add('hidden');
+            document.getElementById('nomeField').classList.remove('hidden');
+            mostrarStep(1);
+            document.getElementById('checkoutModal').classList.remove('hidden');
+        }
+
+        function fecharCheckout() {
+            document.getElementById('checkoutModal').classList.add('hidden');
+        }
+
+        function mostrarStep(n) {
+            _ckStep = n;
+            document.querySelectorAll('.modal-step').forEach(el => el.classList.remove('ativo'));
+            document.getElementById('step' + n).classList.add('ativo');
+            const titulos = ['', 'Identificação', 'Tipo de entrega', 'Confirmar pedido'];
+            document.getElementById('checkoutTitulo').textContent = titulos[n];
+            ['dot1','dot2','dot3'].forEach((id, i) => {
+                document.getElementById(id).className = 'w-2 h-2 rounded-full ' + (i < n ? 'bg-indigo-600' : 'bg-gray-200');
+            });
+        }
+
+        function onTelefoneInput() {
+            document.getElementById('ckPerfisEncontrado').classList.add('hidden');
+        }
+
+        async function irParaStep2() {
+            const tel = document.getElementById('ckTelefone').value.trim().replace(/\D/g, '');
+            const nome = document.getElementById('ckNome').value.trim();
+
+            if (!tel || tel.length < 10) {
+                alert('Informe um telefone válido com DDD.');
+                return;
+            }
+            if (!nome && !_ckPerfil) {
+                alert('Informe seu nome.');
+                return;
+            }
+
+            try {
+                // Buscar ou criar perfil
+                if (!_ckPerfil) {
+                    const resp = await fetch(`${API_BASE}/perfis/publico/buscar?telefone=${tel}`);
+                    const data = await resp.json();
+                    if (data.encontrado) {
+                        _ckPerfil = data.perfil;
+                        _ckEnderecos = data.enderecos || [];
+                    } else {
+                        // Criar perfil
+                        const cr = await fetch(`${API_BASE}/perfis/publico`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ telefone: tel, nome })
+                        });
+                        const cd = await cr.json();
+                        _ckPerfil = cd.perfil;
+                        _ckEnderecos = [];
+                    }
+                }
+            } catch(e) {
+                console.warn('Erro ao buscar perfil:', e);
+                // continua mesmo sem perfil
+                _ckPerfil = { id: null, telefone: tel, nome: nome };
+                _ckEnderecos = [];
+            }
+
+            renderEnderecosSalvos();
+            mostrarStep(2);
+            selecionarTipoEntrega('entrega');
+        }
+
+        function voltarStep1() { mostrarStep(1); }
+        function voltarStep2() { mostrarStep(2); }
+
+        function selecionarTipoEntrega(tipo) {
+            _ckTipoEntrega = tipo;
+            const btnE = document.getElementById('btnEntrega');
+            const btnR = document.getElementById('btnRetirada');
+            const sec = document.getElementById('enderecoSection');
+
+            if (tipo === 'entrega') {
+                btnE.className = 'flex flex-col items-center justify-center py-4 rounded-xl border-2 border-indigo-600 bg-indigo-50 text-indigo-700 font-bold text-sm gap-1';
+                btnR.className = 'flex flex-col items-center justify-center py-4 rounded-xl border-2 border-gray-200 text-gray-500 font-bold text-sm gap-1';
+                sec.classList.remove('hidden');
+            } else {
+                btnR.className = 'flex flex-col items-center justify-center py-4 rounded-xl border-2 border-indigo-600 bg-indigo-50 text-indigo-700 font-bold text-sm gap-1';
+                btnE.className = 'flex flex-col items-center justify-center py-4 rounded-xl border-2 border-gray-200 text-gray-500 font-bold text-sm gap-1';
+                sec.classList.add('hidden');
+                _ckEnderecoSelecionado = null;
+            }
+        }
+
+        function renderEnderecosSalvos() {
+            const container = document.getElementById('enderecosSalvos');
+            container.innerHTML = '';
+            _ckEnderecos.forEach((end, i) => {
+                const label = [end.rua, end.numero, end.bairro, end.complemento].filter(Boolean).join(', ');
+                const div = document.createElement('div');
+                div.className = 'flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition ' +
+                    (i === 0 ? 'border-indigo-600 bg-indigo-50' : 'border-gray-200 bg-white');
+                div.innerHTML = `<span class="text-lg">${end.apelido === 'Casa' ? '🏠' : '📍'}</span>
+                    <div class="flex-1 text-sm"><p class="font-semibold text-gray-900">${end.apelido || 'Endereço'}</p>
+                    <p class="text-gray-500 text-xs">${label}</p></div>`;
+                div.onclick = () => {
+                    _ckEnderecoSelecionado = end;
+                    container.querySelectorAll('div').forEach(d => d.className = d.className.replace('border-indigo-600 bg-indigo-50', 'border-gray-200 bg-white'));
+                    div.className = div.className.replace('border-gray-200 bg-white', 'border-indigo-600 bg-indigo-50');
+                    document.getElementById('formEndereco').classList.add('hidden');
+                };
+                if (i === 0) _ckEnderecoSelecionado = end;
+                container.appendChild(div);
+            });
+        }
+
+        function mostrarFormEndereco() {
+            document.getElementById('formEndereco').classList.remove('hidden');
+            _ckEnderecoSelecionado = null;
+            document.querySelectorAll('#enderecosSalvos div').forEach(d => {
+                d.className = d.className.replace('border-indigo-600 bg-indigo-50', 'border-gray-200 bg-white');
+            });
+        }
+
+        async function salvarNovoEndereco() {
+            const rua = document.getElementById('endRua').value.trim();
+            const numero = document.getElementById('endNumero').value.trim();
+            const bairro = document.getElementById('endBairro').value.trim();
+            const complemento = document.getElementById('endComplemento').value.trim();
+
+            if (!rua || !numero || !bairro) { alert('Preencha rua, número e bairro.'); return; }
+
+            const end = { rua, numero, bairro, complemento: complemento || null, apelido: 'Endereço' };
+            _ckEnderecoSelecionado = end;
+
+            // Salvar no perfil se tiver id
+            if (_ckPerfil?.id) {
+                try {
+                    const r = await fetch(`${API_BASE}/perfis/publico/${_ckPerfil.id}/enderecos`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(end)
+                    });
+                    const d = await r.json();
+                    if (d.endereco) {
+                        _ckEnderecoSelecionado = d.endereco;
+                        _ckEnderecos.unshift(d.endereco);
+                        renderEnderecosSalvos();
+                        document.getElementById('formEndereco').classList.add('hidden');
+                        _ckEnderecoSelecionado = d.endereco;
+                    }
+                } catch(e) { console.warn('Erro ao salvar endereço:', e); }
+            } else {
+                // Sem perfil, usa local
+                _ckEnderecos.unshift(end);
+                renderEnderecosSalvos();
+                document.getElementById('formEndereco').classList.add('hidden');
+                _ckEnderecoSelecionado = end;
+            }
+        }
+
+        function irParaStep3() {
+            if (_ckTipoEntrega === 'entrega' && !_ckEnderecoSelecionado) {
+                // Tenta pegar do form
+                const rua = document.getElementById('endRua').value.trim();
+                const numero = document.getElementById('endNumero').value.trim();
+                const bairro = document.getElementById('endBairro').value.trim();
+                if (!rua || !numero || !bairro) {
+                    alert('Selecione ou preencha um endereço de entrega.');
+                    return;
+                }
+                _ckEnderecoSelecionado = { rua, numero, bairro, complemento: document.getElementById('endComplemento').value.trim() || null };
+            }
+
+            // Preencher step 3
+            const subtotal = carrinho.reduce((acc, i) => acc + i.preco * i.quantidade, 0);
+            const itensEl = document.getElementById('step3Itens');
+            itensEl.innerHTML = carrinho.map(i =>
+                `<div class="flex justify-between"><span>${i.quantidade}x ${i.nome}</span><span class="font-semibold">R$ ${(i.preco * i.quantidade).toFixed(2)}</span></div>`
+            ).join('');
+            document.getElementById('step3Subtotal').textContent = `R$ ${subtotal.toFixed(2)}`;
+
+            const entregaEl = document.getElementById('step3Entrega');
+            if (_ckTipoEntrega === 'retirada') {
+                entregaEl.innerHTML = '🏃 <strong>Retirada no local</strong>';
+            } else {
+                const e = _ckEnderecoSelecionado;
+                let label = `📍 <strong>${[e.rua, e.numero, e.bairro, e.complemento].filter(Boolean).join(', ')}</strong>`;
+                if (e.lat && e.lng) label += ` <a href="https://www.google.com/maps?q=${e.lat},${e.lng}" target="_blank" class="text-indigo-600 underline text-xs ml-1">Ver mapa</a>`;
+                entregaEl.innerHTML = label;
+            }
 
             const obs = document.getElementById('observacoesCarrinho').value.trim();
+            const obsEl = document.getElementById('step3Obs');
+            if (obs) { obsEl.textContent = `Obs: ${obs}`; obsEl.classList.remove('hidden'); }
+            else obsEl.classList.add('hidden');
+
+            mostrarStep(3);
+        }
+
+        function confirmarEAbrirWhatsApp() {
             const subtotal = carrinho.reduce((acc, i) => acc + i.preco * i.quantidade, 0);
+            const obs = document.getElementById('observacoesCarrinho').value.trim();
+            const nome = _ckPerfil?.nome || document.getElementById('ckNome').value.trim();
 
             let msg = `Olá! Gostaria de fazer um pedido:\n\n`;
+            if (nome) msg += `*Nome:* ${nome}\n`;
             carrinho.forEach(item => {
                 msg += `• ${item.quantidade}x ${item.nome} — R$ ${(item.preco * item.quantidade).toFixed(2)}\n`;
             });
-            msg += `\nSubtotal: R$ ${subtotal.toFixed(2)}`;
-            if (obs) msg += `\n\nObservações: ${obs}`;
+            msg += `\n*Subtotal:* R$ ${subtotal.toFixed(2)}`;
+
+            if (_ckTipoEntrega === 'retirada') {
+                msg += `\n\n🏃 *Vou retirar no local*`;
+            } else if (_ckEnderecoSelecionado) {
+                const e = _ckEnderecoSelecionado;
+                msg += `\n\n📍 *Endereço de entrega:*\n${[e.rua, e.numero, e.bairro, e.complemento].filter(Boolean).join(', ')}`;
+                if (e.lat && e.lng) msg += `\nhttps://www.google.com/maps?q=${e.lat},${e.lng}`;
+            }
+
+            if (obs) msg += `\n\n💬 Obs: ${obs}`;
 
             const numero = dadosEmpresa?.whatsapp || '';
             const url = `https://wa.me/${numero}?text=${encodeURIComponent(msg)}`;
             window.open(url, '_blank');
+            fecharCheckout();
         }
+
+        async function buscarPerfilPorTelefone(tel) {
+            try {
+                const resp = await fetch(`${API_BASE}/perfis/publico/buscar?telefone=${tel}`);
+                const data = await resp.json();
+                if (data.encontrado) {
+                    _ckPerfil = data.perfil;
+                    _ckEnderecos = data.enderecos || [];
+                    document.getElementById('ckNome').value = data.perfil.nome;
+                    document.getElementById('ckNomeEncontrado').textContent = data.perfil.nome;
+                    document.getElementById('ckPerfisEncontrado').classList.remove('hidden');
+                    document.getElementById('nomeField').classList.add('hidden');
+                }
+            } catch(e) {}
+        }
+
+        // Lookup automático quando sair do campo telefone
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('ckTelefone').addEventListener('blur', function() {
+                const tel = this.value.trim().replace(/\D/g, '');
+                if (tel.length >= 10) buscarPerfilPorTelefone(tel);
+            });
+        });
     </script>
 </body>
 </html>
