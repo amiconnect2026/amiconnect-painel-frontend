@@ -273,9 +273,20 @@
                     <div id="enderecoSection">
                         <p class="text-sm font-semibold text-gray-700 mb-2">📍 Endereço de entrega</p>
                         <div id="enderecosSalvos" class="space-y-2 mb-3"></div>
+
+                        <!-- Dica de localização + botão em destaque -->
+                        <div id="geoDicaBox" class="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-3">
+                            <p class="text-xs text-amber-800 leading-relaxed mb-2">📍 <strong>Dica:</strong> compartilhe sua localização para facilitar a entrega! Principalmente se você não souber o endereço exato, como em casas de veraneio ou locais novos.</p>
+                            <button id="btnGeolocalizacao" onclick="usarLocalizacaoAtual()"
+                                class="w-full bg-amber-400 hover:bg-amber-500 text-amber-900 font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2 active:scale-95">
+                                <span>📍</span> Usar minha localização atual
+                            </button>
+                            <div id="geoStatus" class="hidden text-xs text-center text-amber-700 mt-1.5 font-medium"></div>
+                        </div>
+
                         <button id="btnNovoEndereco" onclick="mostrarFormEndereco()"
                             class="w-full border-2 border-dashed border-gray-300 rounded-xl py-3 text-sm font-semibold text-gray-500 hover:border-indigo-400 hover:text-indigo-600 transition">
-                            + Novo endereço
+                            + Informar endereço
                         </button>
 
                         <!-- Formulário novo endereço -->
@@ -302,11 +313,6 @@
                                 <input id="endComplemento" type="text" placeholder="Apto, bloco, referência..."
                                     class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 mt-0.5">
                             </div>
-                            <button id="btnGeolocalizacao" onclick="usarLocalizacaoAtual()"
-                                class="w-full border border-indigo-300 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 font-semibold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2">
-                                <span>📍</span> Usar minha localização atual
-                            </button>
-                            <div id="geoStatus" class="hidden text-xs text-center text-gray-500"></div>
                             <button onclick="salvarNovoEndereco()"
                                 class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-sm transition">
                                 Salvar endereço
@@ -662,6 +668,15 @@
             _ckPerfil = null; _ckEnderecos = []; _ckEnderecoSelecionado = null;
             _ckTipoEntrega = 'entrega'; _ckStep = 1;
             _ckGeoLat = null; _ckGeoLng = null;
+            // Reset geo button
+            const geoBtn = document.getElementById('btnGeolocalizacao');
+            if (geoBtn) {
+                geoBtn.disabled = false;
+                geoBtn.innerHTML = '<span>📍</span> Usar minha localização atual';
+                geoBtn.className = 'w-full bg-amber-400 hover:bg-amber-500 text-amber-900 font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2 active:scale-95';
+            }
+            const geoSt = document.getElementById('geoStatus');
+            if (geoSt) geoSt.classList.add('hidden');
             document.getElementById('ckTelefone').value = '';
             document.getElementById('ckNome').value = '';
             document.getElementById('ckPerfisEncontrado').classList.add('hidden');
@@ -793,12 +808,6 @@
         function mostrarFormEndereco() {
             document.getElementById('formEndereco').classList.remove('hidden');
             _ckEnderecoSelecionado = null;
-            _ckGeoLat = null; _ckGeoLng = null;
-            const btn = document.getElementById('btnGeolocalizacao');
-            btn.disabled = false;
-            btn.innerHTML = '<span>📍</span> Usar minha localização atual';
-            btn.className = 'w-full border border-indigo-300 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 font-semibold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2';
-            document.getElementById('geoStatus').classList.add('hidden');
             document.querySelectorAll('#enderecosSalvos div').forEach(d => {
                 d.className = d.className.replace('border-indigo-600 bg-indigo-50', 'border-gray-200 bg-white');
             });
@@ -812,7 +821,7 @@
             const btn = document.getElementById('btnGeolocalizacao');
             const status = document.getElementById('geoStatus');
             btn.disabled = true;
-            btn.textContent = 'Obtendo localização...';
+            btn.innerHTML = 'Obtendo localização...';
             status.classList.remove('hidden');
             status.textContent = 'Aguardando permissão...';
 
@@ -820,15 +829,15 @@
                 (pos) => {
                     _ckGeoLat = pos.coords.latitude;
                     _ckGeoLng = pos.coords.longitude;
-                    btn.innerHTML = '<span>✅</span> Localização capturada';
-                    btn.className = btn.className.replace('border-indigo-300 text-indigo-700 bg-indigo-50 hover:bg-indigo-100', 'border-green-300 text-green-700 bg-green-50');
+                    btn.innerHTML = '✅ Localização capturada!';
+                    btn.className = 'w-full bg-green-500 text-white font-bold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2';
                     btn.disabled = false;
-                    status.textContent = `Lat: ${_ckGeoLat.toFixed(5)}, Lng: ${_ckGeoLng.toFixed(5)}`;
+                    status.textContent = 'Localização salva — será enviada com o pedido';
                 },
                 (err) => {
                     btn.innerHTML = '<span>📍</span> Usar minha localização atual';
                     btn.disabled = false;
-                    status.textContent = err.code === 1 ? 'Permissão negada.' : 'Não foi possível obter localização.';
+                    status.textContent = err.code === 1 ? 'Permissão negada pelo navegador.' : 'Não foi possível obter localização.';
                 },
                 { timeout: 10000 }
             );
