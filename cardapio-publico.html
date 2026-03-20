@@ -309,6 +309,11 @@
                                     class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 mt-0.5">
                             </div>
                             <div>
+                                <label class="text-xs font-semibold text-gray-600">Cidade *</label>
+                                <input id="endCidade" type="text" placeholder="Nome da cidade"
+                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 mt-0.5">
+                            </div>
+                            <div>
                                 <label class="text-xs font-semibold text-gray-600">Complemento</label>
                                 <input id="endComplemento" type="text" placeholder="Apto, bloco, referência..."
                                     class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 mt-0.5">
@@ -794,7 +799,7 @@
             const container = document.getElementById('enderecosSalvos');
             container.innerHTML = '';
             _ckEnderecos.forEach((end, i) => {
-                const label = [end.rua, end.numero, end.bairro, end.complemento].filter(Boolean).join(', ');
+                const label = [end.rua, end.numero, end.bairro, end.cidade, end.complemento].filter(Boolean).join(', ');
                 const div = document.createElement('div');
                 div.className = 'flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition ' +
                     (i === 0 ? 'border-indigo-600 bg-indigo-50' : 'border-gray-200 bg-white');
@@ -854,11 +859,12 @@
             const rua = document.getElementById('endRua').value.trim();
             const numero = document.getElementById('endNumero').value.trim();
             const bairro = document.getElementById('endBairro').value.trim();
+            const cidade = document.getElementById('endCidade').value.trim();
             const complemento = document.getElementById('endComplemento').value.trim();
 
-            if (!rua || !numero || !bairro) { alert('Preencha rua, número e bairro.'); return; }
+            if (!rua || !numero || !bairro || !cidade) { alert('Preencha rua, número, bairro e cidade.'); return; }
 
-            const end = { rua, numero, bairro, complemento: complemento || null, apelido: 'Endereço',
+            const end = { rua, numero, bairro, cidade, complemento: complemento || null, apelido: 'Endereço',
                 lat: _ckGeoLat || null, lng: _ckGeoLng || null };
             _ckEnderecoSelecionado = end;
 
@@ -894,11 +900,12 @@
                 const rua = document.getElementById('endRua').value.trim();
                 const numero = document.getElementById('endNumero').value.trim();
                 const bairro = document.getElementById('endBairro').value.trim();
-                if (!rua || !numero || !bairro) {
+                const cidade = document.getElementById('endCidade').value.trim();
+                if (!rua || !numero || !bairro || !cidade) {
                     alert('Selecione ou preencha um endereço de entrega.');
                     return;
                 }
-                _ckEnderecoSelecionado = { rua, numero, bairro, complemento: document.getElementById('endComplemento').value.trim() || null };
+                _ckEnderecoSelecionado = { rua, numero, bairro, cidade, complemento: document.getElementById('endComplemento').value.trim() || null };
             }
 
             // Preencher step 3
@@ -914,7 +921,7 @@
                 entregaEl.innerHTML = '🏃 <strong>Retirada no local</strong>';
             } else {
                 const e = _ckEnderecoSelecionado;
-                let label = `📍 <strong>${[e.rua, e.numero, e.bairro, e.complemento].filter(Boolean).join(', ')}</strong>`;
+                let label = `📍 <strong>${[e.rua, e.numero, e.bairro, e.cidade, e.complemento].filter(Boolean).join(', ')}</strong>`;
                 if (e.lat && e.lng) label += ` <a href="https://www.google.com/maps?q=${e.lat},${e.lng}" target="_blank" class="text-indigo-600 underline text-xs ml-1">Ver mapa</a>`;
                 entregaEl.innerHTML = label;
             }
@@ -943,7 +950,7 @@
                 msg += `\n\n🏃 *Vou retirar no local*`;
             } else if (_ckEnderecoSelecionado) {
                 const e = _ckEnderecoSelecionado;
-                msg += `\n\n📍 *Endereço de entrega:*\n${[e.rua, e.numero, e.bairro, e.complemento].filter(Boolean).join(', ')}`;
+                msg += `\n\n📍 *Endereço de entrega:*\n${[e.rua, e.numero, e.bairro, e.cidade, e.complemento].filter(Boolean).join(', ')}`;
                 if (e.lat && e.lng) msg += `\nhttps://www.google.com/maps?q=${e.lat},${e.lng}`;
             }
 
