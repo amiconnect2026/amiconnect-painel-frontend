@@ -657,6 +657,7 @@
         let _ckEnderecos = [];         // endereços salvos do perfil
         let _ckEnderecoSelecionado = null;
         let _ckTipoEntrega = 'entrega';
+        let _ckPermiteRetirada = true;
         let _ckGeoLat = null;
         let _ckGeoLng = null;
         let _ckStep = 1;
@@ -749,10 +750,10 @@
 
             // Mostrar/ocultar opção retirada conforme configuração da empresa
             console.log('[Checkout Step 2] permite_retirada =', dadosEmpresa?.permite_retirada);
-            const permiteRetirada = dadosEmpresa?.permite_retirada !== false;
+            _ckPermiteRetirada = dadosEmpresa?.permite_retirada !== false;
             const grid = document.getElementById('tipoEntregaGrid');
             const btnRetirada = document.getElementById('btnRetirada');
-            if (permiteRetirada) {
+            if (_ckPermiteRetirada) {
                 grid.style.gridTemplateColumns = '1fr 1fr';
                 btnRetirada.classList.remove('hidden');
             } else {
@@ -775,10 +776,14 @@
 
             if (tipo === 'entrega') {
                 btnE.className = 'flex flex-col items-center justify-center py-4 rounded-xl border-2 border-indigo-600 bg-indigo-50 text-indigo-700 font-bold text-sm gap-1';
-                btnR.className = 'flex flex-col items-center justify-center py-4 rounded-xl border-2 border-gray-200 text-gray-500 font-bold text-sm gap-1';
+                if (_ckPermiteRetirada) {
+                    btnR.className = 'flex flex-col items-center justify-center py-4 rounded-xl border-2 border-gray-200 text-gray-500 font-bold text-sm gap-1';
+                }
                 sec.classList.remove('hidden');
             } else {
-                btnR.className = 'flex flex-col items-center justify-center py-4 rounded-xl border-2 border-indigo-600 bg-indigo-50 text-indigo-700 font-bold text-sm gap-1';
+                if (_ckPermiteRetirada) {
+                    btnR.className = 'flex flex-col items-center justify-center py-4 rounded-xl border-2 border-indigo-600 bg-indigo-50 text-indigo-700 font-bold text-sm gap-1';
+                }
                 btnE.className = 'flex flex-col items-center justify-center py-4 rounded-xl border-2 border-gray-200 text-gray-500 font-bold text-sm gap-1';
                 sec.classList.add('hidden');
                 _ckEnderecoSelecionado = null;
