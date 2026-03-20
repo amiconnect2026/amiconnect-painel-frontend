@@ -539,15 +539,30 @@ setInterval(() => { if (tabAtual === 'ativos') loadPedidos(); }, 30000);
 // ===== PEDIDO MANUAL =====
 let itensManuais = [];
 let produtosDisponiveis = [];
+let _pmTipoEntrega = 'entrega';
+let _pmPerfil = null;
+let _pmEnderecosSalvos = [];
+let _pmTaxas = [];
+let _pmTaxaPadrao = 0;
+let _pmEmpresaLat = null;
+let _pmEmpresaLng = null;
 
 async function abrirPedidoManual() {
     itensManuais = [];
+    _pmTipoEntrega = 'entrega';
+    _pmPerfil = null;
+    _pmEnderecosSalvos = [];
     document.getElementById('pm_nome').value = '';
     document.getElementById('pm_telefone').value = '';
     document.getElementById('pm_endereco').value = '';
+    document.getElementById('pm_endereco').classList.remove('hidden');
+    document.getElementById('pm_endereco_select').classList.add('hidden');
+    document.getElementById('pm_endereco_select').innerHTML = '';
+    document.getElementById('pm_perfil_status').classList.add('hidden');
     document.getElementById('pm_pagamento').value = '';
     document.getElementById('pm_troco').value = '';
     document.getElementById('pm_obs').value = '';
+    selecionarTipoEntregaManual('entrega');
     renderItensManual();
     atualizarTotaisManual();
     try {
@@ -561,9 +576,108 @@ async function abrirPedidoManual() {
     } catch(e) { console.error(e); }
     try {
         const res = await API.getEmpresa(empresaIdAtual);
-        document.getElementById('pm_taxa').textContent = `R$ ${parseFloat(res.empresa.taxa_entrega).toFixed(2)}`;
+        _pmTaxaPadrao = parseFloat(res.empresa.taxa_entrega) || 0;
+        _pmEmpresaLat = parseFloat(res.empresa.latitude) || null;
+        _pmEmpresaLng = parseFloat(res.empresa.longitude) || null;
+        setTaxaManual(_pmTaxaPadrao);
     } catch(e) {}
+    try {
+        const res = await apiRequest(`/empresas/${empresaIdAtual}/taxas-entrega`);
+        _pmTaxas = res.taxas || [];
+    } catch(e) { _pmTaxas = []; }
     document.getElementById('pedidoManualModal').classList.remove('hidden');
+}
+
+function selecionarTipoEntregaManual(tipo) {
+    _pmTipoEntrega = tipo;
+    const btnE = document.getElementById('pm_btn_entrega');
+    const btnR = document.getElementById('pm_btn_retirada');
+    const endSec = document.getElementById('pm_endereco_section');
+    const ativo = 'flex items-center justify-center gap-2 py-2.5 rounded-lg border-2 border-indigo-600 bg-indigo-50 text-indigo-700 font-semibold text-sm';
+    const inativo = 'flex items-center justify-center gap-2 py-2.5 rounded-lg border-2 border-gray-200 text-gray-500 font-semibold text-sm';
+    if (tipo === 'entrega') {
+        btnE.className = ativo; btnR.className = inativo;
+        endSec.classList.remove('hidden');
+        onEnderecoSelecionadoManual();
+    } else {
+        btnR.className = ativo; btnE.className = inativo;
+        endSec.classList.add('hidden');
+        setTaxaManual(0);
+    }
+}
+
+async function buscarPerfilManual() {
+    const tel = document.getElementById('pm_telefone').value.trim().replace(/\D/g, '');
+    if (tel.length < 10) return;
+    try {
+        const res = await apiRequest(`/perfis/buscar?q=${tel}`);
+        const perfis = res.perfis || [];
+        if (perfis.length === 0) return;
+        _pmPerfil = perfis[0];
+        _pmEnderecosSalvos = _pmPerfil.enderecos || [];
+        if (!document.getElementById('pm_nome').value) {
+            document.getElementById('pm_nome').value = _pmPerfil.nome;
+        }
+        const statusEl = document.getElementById('pm_perfil_status');
+        statusEl.textContent = `✅ Cliente encontrado: ${_pmPerfil.nome}`;
+        statusEl.classList.remove('hidden');
+        if (_pmEnderecosSalvos.length > 0) {
+            const sel = document.getElementById('pm_endereco_select');
+            sel.innerHTML = '';
+            _pmEnderecosSalvos.forEach((e, i) => {
+                const label = [e.rua, e.numero, e.bairro, e.cidade, e.complemento].filter(Boolean).join(', ');
+                sel.innerHTML += `<option value="${i}" data-lat="${e.lat || ''}" data-lng="${e.lng || ''}">${label}</option>`;
+            });
+            sel.innerHTML += `<option value="outro">+ Outro endereço</option>`;
+            sel.classList.remove('hidden');
+            document.getElementById('pm_endereco').classList.add('hidden');
+            document.getElementById('pm_endereco').value = '';
+            onEnderecoSelecionadoManual();
+        }
+    } catch(e) { console.warn('Erro ao buscar perfil:', e); }
+}
+
+function onEnderecoSelecionadoManual() {
+    if (_pmTipoEntrega === 'retirada') return;
+    const sel = document.getElementById('pm_endereco_select');
+    const input = document.getElementById('pm_endereco');
+    if (sel.classList.contains('hidden')) {
+        setTaxaManual(_pmTaxaPadrao);
+        return;
+    }
+    if (sel.value === 'outro') {
+        input.classList.remove('hidden');
+        input.value = '';
+        setTaxaManual(_pmTaxaPadrao);
+        return;
+    }
+    input.classList.add('hidden');
+    const opt = sel.options[sel.selectedIndex];
+    const lat = parseFloat(opt.dataset.lat);
+    const lng = parseFloat(opt.dataset.lng);
+    if (lat && lng && _pmEmpresaLat && _pmEmpresaLng && _pmTaxas.length > 0) {
+        setTaxaManual(calcularTaxaPorDistancia(lat, lng));
+    } else {
+        setTaxaManual(_pmTaxaPadrao);
+    }
+}
+
+function calcularTaxaPorDistancia(lat, lng) {
+    const R = 6371;
+    const dLat = (lat - _pmEmpresaLat) * Math.PI / 180;
+    const dLng = (lng - _pmEmpresaLng) * Math.PI / 180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(_pmEmpresaLat * Math.PI/180) * Math.cos(lat * Math.PI/180) * Math.sin(dLng/2)**2;
+    const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const taxas = [..._pmTaxas].sort((a, b) => a.distancia_ate_km - b.distancia_ate_km);
+    for (const faixa of taxas) {
+        if (dist <= faixa.distancia_ate_km) return parseFloat(faixa.taxa);
+    }
+    return taxas.length > 0 ? parseFloat(taxas[taxas.length-1].taxa) : _pmTaxaPadrao;
+}
+
+function setTaxaManual(valor) {
+    document.getElementById('pm_taxa').textContent = `R$ ${parseFloat(valor).toFixed(2)}`;
+    atualizarTotaisManual();
 }
 
 function fecharPedidoManual() {
@@ -613,20 +727,34 @@ function atualizarTotaisManual() {
 async function salvarPedidoManual() {
     const nome = document.getElementById('pm_nome').value.trim();
     const telefone = document.getElementById('pm_telefone').value.trim();
-    const endereco = document.getElementById('pm_endereco').value.trim();
     const pagamento = document.getElementById('pm_pagamento').value.trim();
     const troco = parseFloat(document.getElementById('pm_troco').value) || null;
     const obs = document.getElementById('pm_obs').value.trim();
-    if (!nome || !telefone || !endereco || !pagamento) return alert('Preencha nome, telefone, endereço e forma de pagamento!');
+    const retirada = _pmTipoEntrega === 'retirada';
+
+    // Resolver endereço
+    let endereco = '';
+    if (!retirada) {
+        const sel = document.getElementById('pm_endereco_select');
+        if (!sel.classList.contains('hidden') && sel.value !== 'outro') {
+            endereco = sel.options[sel.selectedIndex].text;
+        } else {
+            endereco = document.getElementById('pm_endereco').value.trim();
+        }
+    }
+
+    if (!nome || !telefone || !pagamento) return alert('Preencha nome, telefone e forma de pagamento!');
+    if (!retirada && !endereco) return alert('Preencha o endereço de entrega!');
     if (itensManuais.length === 0) return alert('Adicione pelo menos um item!');
+
     const taxaTexto = document.getElementById('pm_taxa').textContent.replace('R$ ', '').replace(',', '.');
     const taxa = parseFloat(taxaTexto) || 0;
     const subtotal = itensManuais.reduce((acc, i) => acc + i.preco * i.quantidade, 0);
     const total = subtotal + taxa;
     try {
-        await apiRequest('/pedidos', {
+        await apiRequest('/pedidos/manual', {
             method: 'POST',
-            body: JSON.stringify({ empresa_id: empresaIdAtual, cliente_nome: nome, cliente_telefone: telefone, cliente_endereco: endereco, itens: itensManuais.map(i => ({ nome: i.nome, quantidade: i.quantidade, preco: i.preco })), subtotal, taxa_entrega: taxa, total, forma_pagamento: pagamento, troco_para: troco, observacoes: obs, status: 'pendente' })
+            body: JSON.stringify({ empresa_id: empresaIdAtual, cliente_nome: nome, cliente_telefone: telefone, cliente_endereco: endereco, itens: itensManuais.map(i => ({ nome: i.nome, quantidade: i.quantidade, preco: i.preco })), subtotal, taxa_entrega: taxa, total, forma_pagamento: pagamento, troco_para: troco, observacoes: obs, retirada })
         });
         fecharPedidoManual();
         loadPedidos();
