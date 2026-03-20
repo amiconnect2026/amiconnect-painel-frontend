@@ -621,7 +621,7 @@ let _pmAnchorId = 'pm_nome'; // campo que disparou a busca
 function pmDebounce(q, fieldId) {
     _pmAnchorId = fieldId || 'pm_nome';
     clearTimeout(_pmDebounceTimer);
-    if (!q || q.length < 2) { pmFecharDropdown(); return; }
+    if (!q || q.length < 1) { pmFecharDropdown(); return; }
     _pmDebounceTimer = setTimeout(() => pmBuscarDropdown(q), 300);
 }
 
