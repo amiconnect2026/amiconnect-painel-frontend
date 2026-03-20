@@ -189,7 +189,7 @@
                 </div>
                 <div class="bg-gray-50 rounded-lg p-4 space-y-1 text-sm">
                     <div class="flex justify-between"><span class="text-gray-600">Subtotal</span><span id="pm_subtotal" class="font-semibold">R$ 0,00</span></div>
-                    <div class="flex justify-between"><span class="text-gray-600">Taxa de entrega</span><span id="pm_taxa" class="font-semibold">R$ 0,00</span></div>
+                    <div class="flex justify-between items-center"><span class="text-gray-600">Taxa de entrega</span><div class="flex items-center gap-1"><span class="text-gray-400 text-xs">R$</span><input type="number" id="pm_taxa" value="0" min="0" step="0.50" class="w-20 text-right font-semibold border border-gray-300 rounded px-2 py-0.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400" oninput="atualizarTotaisManual()"></div></div>
                     <div class="flex justify-between text-base font-bold border-t pt-2 mt-2"><span>Total</span><span id="pm_total" class="text-green-600">R$ 0,00</span></div>
                 </div>
                 <button onclick="salvarPedidoManual()" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-xl transition text-lg">
@@ -206,7 +206,7 @@
     <script src="js/pausa.js?v=3"></script>
     <script src="js/auth.js?v=3"></script>
     <script src="js/alertas.js?v=20"></script>
-    <script src="js/pedidos.js?v=22"></script>
+    <script src="js/pedidos.js?v=23"></script>
     <script>
         iniciarAlertas();
         (function() { const u = JSON.parse(localStorage.getItem('user') || '{}'); if (u.role !== 'admin') { const el = document.getElementById('navCategorias'); if (el) el.remove(); } if (u.role === 'admin') { const el = document.getElementById('navEmpresas'); if (el) el.classList.remove('hidden'); } })();

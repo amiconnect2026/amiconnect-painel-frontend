@@ -751,7 +751,7 @@ function calcularTaxaPorDistancia(lat, lng) {
 }
 
 function setTaxaManual(valor) {
-    document.getElementById('pm_taxa').textContent = `R$ ${parseFloat(valor).toFixed(2)}`;
+    document.getElementById('pm_taxa').value = parseFloat(valor).toFixed(2);
     atualizarTotaisManual();
 }
 
@@ -793,8 +793,7 @@ function renderItensManual() {
 
 function atualizarTotaisManual() {
     const subtotal = itensManuais.reduce((acc, i) => acc + i.preco * i.quantidade, 0);
-    const taxaTexto = document.getElementById('pm_taxa').textContent.replace('R$ ', '').replace(',', '.');
-    const taxa = parseFloat(taxaTexto) || 0;
+    const taxa = parseFloat(document.getElementById('pm_taxa').value) || 0;
     document.getElementById('pm_subtotal').textContent = `R$ ${subtotal.toFixed(2)}`;
     document.getElementById('pm_total').textContent = `R$ ${(subtotal + taxa).toFixed(2)}`;
 }
@@ -822,8 +821,7 @@ async function salvarPedidoManual() {
     if (!retirada && !endereco) return alert('Preencha o endereço de entrega!');
     if (itensManuais.length === 0) return alert('Adicione pelo menos um item!');
 
-    const taxaTexto = document.getElementById('pm_taxa').textContent.replace('R$ ', '').replace(',', '.');
-    const taxa = parseFloat(taxaTexto) || 0;
+    const taxa = parseFloat(document.getElementById('pm_taxa').value) || 0;
     const subtotal = itensManuais.reduce((acc, i) => acc + i.preco * i.quantidade, 0);
     const total = subtotal + taxa;
     try {
