@@ -567,27 +567,30 @@ async function abrirPedidoManual() {
     selecionarTipoEntregaManual('entrega');
     renderItensManual();
     atualizarTotaisManual();
-    try {
-        const res = await API.getProdutos(empresaIdAtual);
-        produtosDisponiveis = (res.produtos || []).filter(p => p.disponivel);
+    // Abrir modal imediatamente, carregar dados em paralelo
+    document.getElementById('pedidoManualModal').classList.remove('hidden');
+
+    const [prodRes, empresaRes, taxasRes] = await Promise.allSettled([
+        API.getProdutos(empresaIdAtual),
+        API.getEmpresa(empresaIdAtual),
+        apiRequest(`/empresas/${empresaIdAtual}/taxas-entrega`)
+    ]);
+
+    if (prodRes.status === 'fulfilled') {
+        produtosDisponiveis = (prodRes.value.produtos || []).filter(p => p.disponivel);
         const select = document.getElementById('pm_produto_select');
         select.innerHTML = '<option value="">Selecione um produto...</option>';
         produtosDisponiveis.forEach(p => {
             select.innerHTML += `<option value="${p.id}" data-preco="${p.preco}" data-nome="${p.nome}">${p.nome} - R$ ${parseFloat(p.preco).toFixed(2)}</option>`;
         });
-    } catch(e) { console.error(e); }
-    try {
-        const res = await API.getEmpresa(empresaIdAtual);
-        _pmTaxaPadrao = parseFloat(res.empresa.taxa_entrega) || 0;
-        _pmEmpresaLat = parseFloat(res.empresa.latitude) || null;
-        _pmEmpresaLng = parseFloat(res.empresa.longitude) || null;
+    }
+    if (empresaRes.status === 'fulfilled') {
+        _pmTaxaPadrao = parseFloat(empresaRes.value.empresa.taxa_entrega) || 0;
+        _pmEmpresaLat = parseFloat(empresaRes.value.empresa.latitude) || null;
+        _pmEmpresaLng = parseFloat(empresaRes.value.empresa.longitude) || null;
         setTaxaManual(_pmTaxaPadrao);
-    } catch(e) {}
-    try {
-        const res = await apiRequest(`/empresas/${empresaIdAtual}/taxas-entrega`);
-        _pmTaxas = res.taxas || [];
-    } catch(e) { _pmTaxas = []; }
-    document.getElementById('pedidoManualModal').classList.remove('hidden');
+    }
+    _pmTaxas = taxasRes.status === 'fulfilled' ? (taxasRes.value.taxas || []) : [];
 }
 
 function selecionarTipoEntregaManual(tipo) {
@@ -638,7 +641,7 @@ function pmRenderDropdown(perfis) {
     const anchor = document.getElementById(_pmAnchorId);
     if (anchor) {
         const rect = anchor.getBoundingClientRect();
-        dropdown.style.top  = (rect.bottom + window.scrollY + 4) + 'px';
+        dropdown.style.top  = (rect.bottom + 4) + 'px';
         dropdown.style.left = rect.left + 'px';
         dropdown.style.width = rect.width + 'px';
     }
