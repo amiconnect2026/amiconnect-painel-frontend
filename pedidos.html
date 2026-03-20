@@ -121,21 +121,20 @@
             </div>
             <div class="p-6 space-y-4">
                 <div class="grid grid-cols-2 gap-4">
-                    <div class="relative">
+                    <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Nome do Cliente</label>
                         <input type="text" id="pm_nome" autocomplete="off"
                             class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             placeholder="Nome completo"
-                            oninput="pmDebounce(this.value)"
+                            oninput="pmDebounce(this.value, 'pm_nome')"
                             onblur="setTimeout(pmFecharDropdown, 150)">
-                        <div id="pm_dropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-50 max-h-48 overflow-y-auto"></div>
                     </div>
-                    <div class="relative">
+                    <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Telefone</label>
                         <input type="text" id="pm_telefone" autocomplete="off"
                             class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             placeholder="55419999999"
-                            oninput="pmDebounce(this.value)"
+                            oninput="pmDebounce(this.value, 'pm_telefone')"
                             onblur="setTimeout(pmFecharDropdown, 150)">
                     </div>
                 </div>
@@ -200,11 +199,14 @@
         </div>
     </div>
 
+    <!-- Dropdown autocomplete de perfil (fora da modal para não ser cortado pelo overflow) -->
+    <div id="pm_dropdown" class="hidden fixed bg-white border border-gray-200 rounded-xl shadow-2xl z-[200] max-h-52 overflow-y-auto" style="min-width:200px"></div>
+
     <script src="js/api.js?v=3"></script>
     <script src="js/pausa.js?v=3"></script>
     <script src="js/auth.js?v=3"></script>
     <script src="js/alertas.js?v=20"></script>
-    <script src="js/pedidos.js?v=21"></script>
+    <script src="js/pedidos.js?v=22"></script>
     <script>
         iniciarAlertas();
         (function() { const u = JSON.parse(localStorage.getItem('user') || '{}'); if (u.role !== 'admin') { const el = document.getElementById('navCategorias'); if (el) el.remove(); } if (u.role === 'admin') { const el = document.getElementById('navEmpresas'); if (el) el.classList.remove('hidden'); } })();

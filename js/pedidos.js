@@ -613,7 +613,10 @@ function selecionarTipoEntregaManual(tipo) {
 let _pmDebounceTimer = null;
 let _pmResultados = []; // cache dos últimos resultados do dropdown
 
-function pmDebounce(q) {
+let _pmAnchorId = 'pm_nome'; // campo que disparou a busca
+
+function pmDebounce(q, fieldId) {
+    _pmAnchorId = fieldId || 'pm_nome';
     clearTimeout(_pmDebounceTimer);
     if (!q || q.length < 2) { pmFecharDropdown(); return; }
     _pmDebounceTimer = setTimeout(() => pmBuscarDropdown(q), 300);
@@ -629,7 +632,17 @@ async function pmBuscarDropdown(q) {
 
 function pmRenderDropdown(perfis) {
     const dropdown = document.getElementById('pm_dropdown');
-    if (!perfis.length) { dropdown.classList.add('hidden'); return; }
+    if (!perfis.length) { pmFecharDropdown(); return; }
+
+    // Posicionar abaixo do campo que disparou
+    const anchor = document.getElementById(_pmAnchorId);
+    if (anchor) {
+        const rect = anchor.getBoundingClientRect();
+        dropdown.style.top  = (rect.bottom + window.scrollY + 4) + 'px';
+        dropdown.style.left = rect.left + 'px';
+        dropdown.style.width = rect.width + 'px';
+    }
+
     dropdown.innerHTML = perfis.map((p, i) => `
         <div class="px-4 py-2.5 hover:bg-indigo-50 cursor-pointer border-b border-gray-100 last:border-0"
              onmousedown="pmSelecionarPerfil(${i})">
