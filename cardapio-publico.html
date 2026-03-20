@@ -276,7 +276,7 @@
 
                         <!-- Dica de localização + botão em destaque -->
                         <div id="geoDicaBox" class="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-3">
-                            <p class="text-xs text-amber-800 leading-relaxed mb-2">📍 <strong>Dica:</strong> compartilhe sua localização para facilitar a entrega! Principalmente se você não souber o endereço exato, como em casas de veraneio ou locais novos.</p>
+                            <p class="text-xs text-amber-800 font-semibold mb-2">📍 Compartilhe sua localização para facilitar a entrega!</p>
                             <button id="btnGeolocalizacao" onclick="usarLocalizacaoAtual()"
                                 class="w-full bg-amber-400 hover:bg-amber-500 text-amber-900 font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2 active:scale-95">
                                 <span>📍</span> Usar minha localização atual
@@ -663,6 +663,7 @@
 
         function abrirModalPedido() {
             if (carrinho.length === 0) return;
+            console.log('[Checkout] dadosEmpresa.permite_retirada =', dadosEmpresa?.permite_retirada, '| tipo:', typeof dadosEmpresa?.permite_retirada);
             fecharCarrinho();
             // reset state
             _ckPerfil = null; _ckEnderecos = []; _ckEnderecoSelecionado = null;
@@ -747,6 +748,7 @@
             renderEnderecosSalvos();
 
             // Mostrar/ocultar opção retirada conforme configuração da empresa
+            console.log('[Checkout Step 2] permite_retirada =', dadosEmpresa?.permite_retirada);
             const permiteRetirada = dadosEmpresa?.permite_retirada !== false;
             const grid = document.getElementById('tipoEntregaGrid');
             const btnRetirada = document.getElementById('btnRetirada');
