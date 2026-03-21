@@ -906,7 +906,7 @@
                         alert('Preencha rua, número, bairro e cidade para continuar.');
                         return;
                     }
-                    _ckEnderecoSelecionado = { rua, numero, bairro, cidade, complemento: document.getElementById('endComplemento').value.trim() || null };
+                    _ckEnderecoSelecionado = { rua, numero, bairro, cidade, complemento: document.getElementById('endComplemento').value.trim() || null, lat: _ckGeoLat || null, lng: _ckGeoLng || null };
                 }
                 // Validar campos obrigatórios do endereço selecionado
                 const e = _ckEnderecoSelecionado;
