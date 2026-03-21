@@ -966,7 +966,9 @@
             } else if (_ckEnderecoSelecionado) {
                 const e = _ckEnderecoSelecionado;
                 msg += `\n\n📍 *Endereço de entrega:*\n${[e.rua, e.numero, e.bairro, e.cidade, e.complemento].filter(Boolean).join(', ')}`;
-                if (e.lat && e.lng) msg += `\nhttps://www.google.com/maps?q=${e.lat},${e.lng}`;
+                const lat = _ckGeoLat || e.lat;
+                const lng = _ckGeoLng || e.lng;
+                if (lat && lng) msg += `\nhttps://www.google.com/maps?q=${lat},${lng}`;
             }
 
             if (obs) msg += `\n\n💬 Obs: ${obs}`;
