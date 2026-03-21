@@ -570,14 +570,15 @@ function renderGrupoBlock(g) {
     return `<div class="border border-gray-200 rounded-xl overflow-hidden" id="grupo-block-${g.id}">
         <div class="bg-gray-50 p-3 flex items-center gap-3 flex-wrap">
             <input type="text" value="${g.nome}" placeholder="Nome do grupo" class="flex-1 min-w-[120px] border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400" id="g-nome-${g.id}">
-            <label class="flex items-center gap-1 text-sm text-gray-600 cursor-pointer whitespace-nowrap">
-                <input type="checkbox" ${g.obrigatorio ? 'checked' : ''} id="g-obrig-${g.id}" class="w-4 h-4 accent-indigo-600"> Obrigatório
-            </label>
+            <select id="g-tipo-${g.id}" class="border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400">
+                <option value="obrigatorio" ${g.tipo === 'obrigatorio' ? 'selected' : ''}>Obrigatório</option>
+                <option value="adicional" ${g.tipo !== 'obrigatorio' ? 'selected' : ''}>Adicional</option>
+            </select>
             <div class="flex items-center gap-1 text-sm text-gray-600">
                 <span>Mín:</span>
-                <input type="number" min="0" value="${g.min_opcoes || 0}" class="w-14 border border-gray-300 rounded-lg px-2 py-1 text-sm focus:outline-none" id="g-min-${g.id}">
+                <input type="number" min="0" value="${g.min_escolhas ?? 0}" class="w-14 border border-gray-300 rounded-lg px-2 py-1 text-sm focus:outline-none" id="g-min-${g.id}">
                 <span>Máx:</span>
-                <input type="number" min="1" value="${g.max_opcoes || 1}" class="w-14 border border-gray-300 rounded-lg px-2 py-1 text-sm focus:outline-none" id="g-max-${g.id}">
+                <input type="number" min="1" value="${g.max_escolhas ?? 1}" class="w-14 border border-gray-300 rounded-lg px-2 py-1 text-sm focus:outline-none" id="g-max-${g.id}">
             </div>
             <button onclick="salvarGrupo(${g.id})" class="text-sm bg-green-100 hover:bg-green-200 text-green-700 font-semibold px-3 py-1.5 rounded-lg transition">💾</button>
             <button onclick="excluirGrupo(${g.id})" class="text-sm bg-red-100 hover:bg-red-200 text-red-700 font-semibold px-2 py-1.5 rounded-lg transition">🗑️</button>
@@ -635,7 +636,7 @@ async function excluirTamanho(id) {
 
 async function adicionarGrupo() {
     try {
-        const res = await API.createGrupo(_compProdutoId, { nome: 'Novo grupo', obrigatorio: false, min_opcoes: 0, max_opcoes: 1, ordem: 0 });
+        const res = await API.createGrupo(_compProdutoId, { nome: 'Novo grupo', tipo: 'adicional', min_escolhas: 0, max_escolhas: 1 });
         _compData.grupos.push(res.grupo);
         const list = document.getElementById('compGruposList');
         if (list) {
@@ -650,10 +651,9 @@ async function salvarGrupo(id) {
     try {
         await API.updateGrupo(id, {
             nome: document.getElementById(`g-nome-${id}`).value,
-            obrigatorio: document.getElementById(`g-obrig-${id}`).checked,
-            min_opcoes: parseInt(document.getElementById(`g-min-${id}`).value) || 0,
-            max_opcoes: parseInt(document.getElementById(`g-max-${id}`).value) || 1,
-            ordem: 0
+            tipo: document.getElementById(`g-tipo-${id}`).value,
+            min_escolhas: parseInt(document.getElementById(`g-min-${id}`).value) || 0,
+            max_escolhas: parseInt(document.getElementById(`g-max-${id}`).value) || 1
         });
     } catch (e) { alert('Erro: ' + e.message); }
 }

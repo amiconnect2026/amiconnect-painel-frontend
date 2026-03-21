@@ -1108,9 +1108,9 @@
 
             _cmp.grupos.forEach(g => {
                 const selecionados = _cmp.selecoes[g.id] || [];
-                const obrigLabel = g.obrigatorio ? '<span class="text-red-500">*</span>' : '';
-                const limiteLabel = g.max_opcoes > 1 ? `Escolha até ${g.max_opcoes}` : `Escolha 1`;
-                const isMulti = g.max_opcoes > 1;
+                const obrigLabel = g.tipo === 'obrigatorio' ? '<span class="text-red-500">*</span>' : '';
+                const limiteLabel = g.max_escolhas > 1 ? `Escolha até ${g.max_escolhas}` : `Escolha 1`;
+                const isMulti = g.max_escolhas > 1;
 
                 html += `<div class="mb-5" id="cmpGrupo-${g.id}">
                     <p class="font-extrabold text-gray-800 mb-0.5">${g.nome} ${obrigLabel}</p>
@@ -1122,7 +1122,7 @@
                             if (isMulti) {
                                 return `<label class="flex items-center justify-between p-3 rounded-xl border-2 cursor-pointer transition ${checked ? 'border-indigo-600 bg-indigo-50' : 'border-gray-200'}">
                                     <span class="flex items-center gap-3">
-                                        <input type="checkbox" data-grupo="${g.id}" data-opcao-id="${o.id}" data-opcao-nome="${o.nome.replace(/"/g,'&quot;')}" data-preco="${o.preco_adicional || 0}" ${checked ? 'checked' : ''} class="w-4 h-4 accent-indigo-600" onchange="toggleOpcao(${g.id}, ${o.id}, '${o.nome.replace(/'/g,"\\'")}', ${o.preco_adicional || 0}, ${g.max_opcoes})">
+                                        <input type="checkbox" data-grupo="${g.id}" data-opcao-id="${o.id}" data-opcao-nome="${o.nome.replace(/"/g,'&quot;')}" data-preco="${o.preco_adicional || 0}" ${checked ? 'checked' : ''} class="w-4 h-4 accent-indigo-600" onchange="toggleOpcao(${g.id}, ${o.id}, '${o.nome.replace(/'/g,"\\'")}', ${o.preco_adicional || 0}, ${g.max_escolhas})">
                                         <span class="font-semibold text-gray-900">${o.nome}</span>
                                     </span>
                                     <span class="text-sm font-bold text-gray-500">${precoLabel}</span>
@@ -1214,7 +1214,7 @@
         function confirmarCmpEAdicionar() {
             // Validar obrigatórios
             for (const g of _cmp.grupos) {
-                if (g.obrigatorio && (_cmp.selecoes[g.id] || []).length < (g.min_opcoes || 1)) {
+                if (g.tipo === 'obrigatorio' && (_cmp.selecoes[g.id] || []).length < (g.min_escolhas || 1)) {
                     alert(`Selecione uma opção em: ${g.nome}`);
                     return;
                 }
