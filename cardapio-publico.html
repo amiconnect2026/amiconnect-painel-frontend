@@ -895,17 +895,32 @@
         }
 
         function irParaStep3() {
-            if (_ckTipoEntrega === 'entrega' && !_ckEnderecoSelecionado) {
-                // Tenta pegar do form
-                const rua = document.getElementById('endRua').value.trim();
-                const numero = document.getElementById('endNumero').value.trim();
-                const bairro = document.getElementById('endBairro').value.trim();
-                const cidade = document.getElementById('endCidade').value.trim();
-                if (!rua || !numero || !bairro || !cidade) {
-                    alert('Selecione ou preencha um endereço de entrega.');
+            if (_ckTipoEntrega === 'entrega') {
+                // Se não tem endereço selecionado, tenta pegar do form
+                if (!_ckEnderecoSelecionado) {
+                    const rua = document.getElementById('endRua').value.trim();
+                    const numero = document.getElementById('endNumero').value.trim();
+                    const bairro = document.getElementById('endBairro').value.trim();
+                    const cidade = document.getElementById('endCidade').value.trim();
+                    if (!rua || !numero || !bairro || !cidade) {
+                        alert('Preencha rua, número, bairro e cidade para continuar.');
+                        return;
+                    }
+                    _ckEnderecoSelecionado = { rua, numero, bairro, cidade, complemento: document.getElementById('endComplemento').value.trim() || null };
+                }
+                // Validar campos obrigatórios do endereço selecionado
+                const e = _ckEnderecoSelecionado;
+                const faltando = [];
+                if (!e.rua)    faltando.push('rua');
+                if (!e.numero) faltando.push('número');
+                if (!e.bairro) faltando.push('bairro');
+                if (!e.cidade) faltando.push('cidade');
+                if (faltando.length > 0) {
+                    alert(`Endereço incompleto. Preencha: ${faltando.join(', ')}.`);
+                    _ckEnderecoSelecionado = null;
+                    mostrarFormEndereco();
                     return;
                 }
-                _ckEnderecoSelecionado = { rua, numero, bairro, cidade, complemento: document.getElementById('endComplemento').value.trim() || null };
             }
 
             // Preencher step 3
