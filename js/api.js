@@ -226,5 +226,37 @@ const API = {
     },
     async deleteOpcao(id) {
         return await apiRequest(`/produtos/opcoes/${id}`, { method: 'DELETE' });
+    },
+    // Biblioteca de complementos
+    async getBiblioteca(empresaId) {
+        const q = empresaId ? `?empresa_id=${empresaId}` : '';
+        return await apiRequest(`/biblioteca${q}`);
+    },
+    async createBibliotecaGrupo(data) {
+        return await apiRequest('/biblioteca', { method: 'POST', body: JSON.stringify(data) });
+    },
+    async updateBibliotecaGrupo(id, data) {
+        return await apiRequest(`/biblioteca/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    },
+    async deleteBibliotecaGrupo(id) {
+        return await apiRequest(`/biblioteca/${id}`, { method: 'DELETE' });
+    },
+    async createBibliotecaOpcao(grupoId, data) {
+        return await apiRequest(`/biblioteca/${grupoId}/opcoes`, { method: 'POST', body: JSON.stringify(data) });
+    },
+    async updateBibliotecaOpcao(id, data) {
+        return await apiRequest(`/biblioteca/opcoes/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    },
+    async deleteBibliotecaOpcao(id) {
+        return await apiRequest(`/biblioteca/opcoes/${id}`, { method: 'DELETE' });
+    },
+    async aplicarBibliotecaGrupo(grupoId, produtoIds) {
+        return await apiRequest(`/biblioteca/${grupoId}/aplicar`, { method: 'POST', body: JSON.stringify({ produto_ids: produtoIds }) });
+    },
+    async copiarComplementosProduto(origemId, destinoIds) {
+        return await apiRequest('/biblioteca/copiar-produto', { method: 'POST', body: JSON.stringify({ origem_id: origemId, destino_ids: destinoIds }) });
+    },
+    async aplicarComplementosCategoria(categoriaId, grupoIds, empresaId) {
+        return await apiRequest('/biblioteca/aplicar-categoria', { method: 'POST', body: JSON.stringify({ categoria_id: categoriaId, grupo_ids: grupoIds, empresa_id: empresaId }) });
     }
 };

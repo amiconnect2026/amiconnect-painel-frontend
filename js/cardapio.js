@@ -494,6 +494,258 @@ document.getElementById('produtoForm').addEventListener('submit', async (e) => {
     }
 });
 
+// ── Biblioteca de complementos ────────────────────────────────────────────────
+
+let _bib = { grupos: [] };
+
+async function abrirBiblioteca() {
+    if (!empresaSelecionadaId) { alert('Selecione um restaurante primeiro.'); return; }
+    document.getElementById('bibModalBody').innerHTML = '<div class="text-center py-8 text-gray-400">Carregando...</div>';
+    document.getElementById('bibliotecaModal').classList.remove('hidden');
+    try {
+        const res = await API.getBiblioteca(empresaSelecionadaId);
+        _bib.grupos = res.grupos || [];
+        renderBibliotecaModal();
+    } catch (e) {
+        document.getElementById('bibModalBody').innerHTML = `<p class="text-red-500">Erro: ${e.message}</p>`;
+    }
+}
+
+function fecharBiblioteca() {
+    document.getElementById('bibliotecaModal').classList.add('hidden');
+}
+
+function renderBibliotecaModal() {
+    const container = document.getElementById('bibModalBody');
+    let html = `<div class="flex justify-end mb-4">
+        <button onclick="adicionarGrupoBiblioteca()" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-4 py-2 rounded-lg text-sm transition">+ Novo grupo</button>
+    </div>`;
+    if (_bib.grupos.length === 0) {
+        html += '<p class="text-gray-400 text-sm text-center py-8">Nenhum grupo na biblioteca. Crie o primeiro!</p>';
+    } else {
+        html += '<div class="space-y-4">' + _bib.grupos.map(g => renderBibGrupoBlock(g)).join('') + '</div>';
+    }
+    container.innerHTML = html;
+}
+
+function renderBibGrupoBlock(g) {
+    return `<div class="border border-gray-200 rounded-xl overflow-hidden" id="bib-grupo-${g.id}">
+        <div class="bg-gray-50 p-3 flex items-center gap-3 flex-wrap">
+            <input type="text" value="${g.nome}" placeholder="Nome do grupo" class="flex-1 min-w-[120px] border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-purple-400" id="bg-nome-${g.id}">
+            <select id="bg-tipo-${g.id}" class="border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none">
+                <option value="obrigatorio" ${g.tipo === 'obrigatorio' ? 'selected' : ''}>Obrigatório</option>
+                <option value="adicional" ${g.tipo !== 'obrigatorio' ? 'selected' : ''}>Adicional</option>
+            </select>
+            <div class="flex items-center gap-1 text-sm text-gray-600">
+                <span>Mín:</span>
+                <input type="number" min="0" value="${g.min_escolhas ?? 0}" class="w-14 border border-gray-300 rounded-lg px-2 py-1 text-sm focus:outline-none" id="bg-min-${g.id}">
+                <span>Máx:</span>
+                <input type="number" min="1" value="${g.max_escolhas ?? 1}" class="w-14 border border-gray-300 rounded-lg px-2 py-1 text-sm focus:outline-none" id="bg-max-${g.id}">
+            </div>
+            <button onclick="salvarGrupoBiblioteca(${g.id})" class="text-sm bg-green-100 hover:bg-green-200 text-green-700 font-semibold px-3 py-1.5 rounded-lg transition">💾</button>
+            <button onclick="excluirGrupoBiblioteca(${g.id})" class="text-sm bg-red-100 hover:bg-red-200 text-red-700 font-semibold px-2 py-1.5 rounded-lg transition">🗑️</button>
+        </div>
+        <div class="p-3 space-y-2" id="bib-opcoes-${g.id}">
+            ${(g.opcoes || []).map(o => renderBibOpcaoRow(o)).join('')}
+            <button onclick="adicionarOpcaoBiblioteca(${g.id})" class="w-full text-sm border-2 border-dashed border-gray-300 hover:border-purple-400 text-gray-500 hover:text-purple-600 font-semibold py-2 rounded-lg transition">+ Opção</button>
+        </div>
+    </div>`;
+}
+
+function renderBibOpcaoRow(o) {
+    return `<div class="flex items-center gap-2" id="bib-opcao-${o.id}">
+        <input type="text" value="${o.nome}" placeholder="Nome" class="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-purple-400" id="bo-nome-${o.id}">
+        <input type="number" value="${parseFloat(o.preco_adicional || 0).toFixed(2)}" step="0.01" placeholder="+R$" class="w-24 border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none" id="bo-preco-${o.id}">
+        <label class="flex items-center gap-1 text-sm text-gray-600 cursor-pointer">
+            <input type="checkbox" ${o.disponivel !== false ? 'checked' : ''} id="bo-disp-${o.id}" class="w-4 h-4 accent-purple-600"> Disp.
+        </label>
+        <button onclick="salvarOpcaoBiblioteca(${o.id})" class="text-sm bg-green-100 hover:bg-green-200 text-green-700 font-semibold px-2 py-1.5 rounded-lg transition">💾</button>
+        <button onclick="excluirOpcaoBiblioteca(${o.id})" class="text-sm bg-red-100 hover:bg-red-200 text-red-700 font-semibold px-2 py-1.5 rounded-lg transition">🗑️</button>
+    </div>`;
+}
+
+async function adicionarGrupoBiblioteca() {
+    try {
+        const res = await API.createBibliotecaGrupo({ empresa_id: empresaSelecionadaId, nome: 'Novo grupo', tipo: 'adicional', min_escolhas: 0, max_escolhas: 1 });
+        _bib.grupos.push(res.grupo);
+        renderBibliotecaModal();
+    } catch (e) { alert('Erro: ' + e.message); }
+}
+
+async function salvarGrupoBiblioteca(id) {
+    try {
+        await API.updateBibliotecaGrupo(id, {
+            nome: document.getElementById(`bg-nome-${id}`).value,
+            tipo: document.getElementById(`bg-tipo-${id}`).value,
+            min_escolhas: parseInt(document.getElementById(`bg-min-${id}`).value) || 0,
+            max_escolhas: parseInt(document.getElementById(`bg-max-${id}`).value) || 1
+        });
+    } catch (e) { alert('Erro: ' + e.message); }
+}
+
+async function excluirGrupoBiblioteca(id) {
+    if (!confirm('Excluir este grupo da biblioteca?')) return;
+    try {
+        await API.deleteBibliotecaGrupo(id);
+        _bib.grupos = _bib.grupos.filter(g => g.id !== id);
+        renderBibliotecaModal();
+    } catch (e) { alert('Erro: ' + e.message); }
+}
+
+async function adicionarOpcaoBiblioteca(grupoId) {
+    try {
+        const res = await API.createBibliotecaOpcao(grupoId, { nome: 'Nova opção', preco_adicional: 0, disponivel: true });
+        const container = document.getElementById(`bib-opcoes-${grupoId}`);
+        if (container) {
+            const addBtn = container.lastElementChild;
+            const tmp = document.createElement('div');
+            tmp.innerHTML = renderBibOpcaoRow(res.opcao);
+            const novoEl = tmp.firstChild;
+            if (addBtn && addBtn.parentNode === container) {
+                container.insertBefore(novoEl, addBtn);
+            } else {
+                container.appendChild(novoEl);
+            }
+        }
+    } catch (e) { alert('Erro: ' + e.message); }
+}
+
+async function salvarOpcaoBiblioteca(id) {
+    try {
+        await API.updateBibliotecaOpcao(id, {
+            nome: document.getElementById(`bo-nome-${id}`).value,
+            preco_adicional: parseFloat(document.getElementById(`bo-preco-${id}`).value) || 0,
+            disponivel: document.getElementById(`bo-disp-${id}`).checked
+        });
+    } catch (e) { alert('Erro: ' + e.message); }
+}
+
+async function excluirOpcaoBiblioteca(id) {
+    if (!confirm('Excluir esta opção?')) return;
+    try {
+        await API.deleteBibliotecaOpcao(id);
+        document.getElementById(`bib-opcao-${id}`)?.remove();
+    } catch (e) { alert('Erro: ' + e.message); }
+}
+
+// ── "Da biblioteca" — painel inline no modal de complementos ──────────────────
+
+async function abrirDaBibliotecaPanel() {
+    const panel = document.getElementById('bibPickerPanel');
+    const lista = document.getElementById('bibPickerLista');
+    lista.innerHTML = '<p class="text-sm text-purple-600">Carregando...</p>';
+    panel.classList.remove('hidden');
+    try {
+        const res = await API.getBiblioteca(empresaSelecionadaId);
+        _bib.grupos = res.grupos || [];
+        if (_bib.grupos.length === 0) {
+            lista.innerHTML = '<p class="text-sm text-purple-700">Nenhum grupo na biblioteca. Crie um primeiro em "📚 Biblioteca".</p>';
+            return;
+        }
+        lista.innerHTML = _bib.grupos.map(g => `
+            <div class="flex items-center justify-between bg-white border border-purple-200 rounded-xl px-3 py-2">
+                <div>
+                    <p class="font-semibold text-gray-900 text-sm">${g.nome}</p>
+                    <p class="text-xs text-gray-500">${g.tipo} · ${g.opcoes?.length || 0} opções · máx ${g.max_escolhas}</p>
+                </div>
+                <button onclick="aplicarGrupoBibAoProduto(${g.id})" class="text-sm bg-purple-600 hover:bg-purple-700 text-white font-semibold px-3 py-1.5 rounded-lg transition">+ Adicionar</button>
+            </div>`).join('');
+    } catch (e) {
+        lista.innerHTML = `<p class="text-sm text-red-500">Erro: ${e.message}</p>`;
+    }
+}
+
+function fecharDaBibliotecaPanel() {
+    document.getElementById('bibPickerPanel').classList.add('hidden');
+}
+
+async function aplicarGrupoBibAoProduto(grupoId) {
+    try {
+        await API.aplicarBibliotecaGrupo(grupoId, [_compProdutoId]);
+        fecharDaBibliotecaPanel();
+        _compData = await API.getComplementos(_compProdutoId);
+        renderComplementosModal();
+    } catch (e) { alert('Erro: ' + e.message); }
+}
+
+// ── Copiar para outros produtos ────────────────────────────────────────────────
+
+function abrirCopiarParaProdutosModal() {
+    const lista = document.getElementById('copiarProdutosLista');
+    const outrosProdutos = produtos.filter(p => p.id !== _compProdutoId);
+    if (outrosProdutos.length === 0) {
+        alert('Não há outros produtos para copiar.');
+        return;
+    }
+    lista.innerHTML = outrosProdutos.map(p => `
+        <label class="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer">
+            <input type="checkbox" value="${p.id}" class="w-4 h-4 accent-blue-600">
+            <span class="text-sm font-semibold text-gray-900">${p.nome}</span>
+            <span class="text-xs text-gray-400">${p.categoria_nome || ''}</span>
+        </label>`).join('');
+    document.getElementById('copiarProdutosModal').classList.remove('hidden');
+}
+
+function fecharCopiarProdutosModal() {
+    document.getElementById('copiarProdutosModal').classList.add('hidden');
+}
+
+async function confirmarCopiarParaProdutos() {
+    const selecionados = [...document.querySelectorAll('#copiarProdutosLista input[type=checkbox]:checked')].map(c => parseInt(c.value));
+    if (selecionados.length === 0) { alert('Selecione ao menos um produto.'); return; }
+    try {
+        const res = await API.copiarComplementosProduto(_compProdutoId, selecionados);
+        fecharCopiarProdutosModal();
+        alert(`✅ Complementos copiados para ${res.copiados} produto(s)!`);
+    } catch (e) { alert('Erro: ' + e.message); }
+}
+
+// ── Aplicar à categoria ────────────────────────────────────────────────────────
+
+async function abrirAplicarCategoriaModal() {
+    // Preencher select de categorias
+    const catSelect = document.getElementById('aplicarCatSelect');
+    catSelect.innerHTML = categorias.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+
+    // Carregar biblioteca
+    const gruposLista = document.getElementById('aplicarCatGruposLista');
+    gruposLista.innerHTML = '<p class="text-xs text-gray-400">Carregando...</p>';
+    document.getElementById('aplicarCatModal').classList.remove('hidden');
+
+    try {
+        const res = await API.getBiblioteca(empresaSelecionadaId);
+        _bib.grupos = res.grupos || [];
+        if (_bib.grupos.length === 0) {
+            gruposLista.innerHTML = '<p class="text-xs text-gray-500">Nenhum grupo na biblioteca. Crie grupos em "📚 Biblioteca" primeiro.</p>';
+        } else {
+            gruposLista.innerHTML = _bib.grupos.map(g => `
+                <label class="flex items-center gap-3 p-2 rounded-lg hover:bg-orange-50 cursor-pointer">
+                    <input type="checkbox" value="${g.id}" class="w-4 h-4 accent-orange-500">
+                    <span class="text-sm font-semibold text-gray-900">${g.nome}</span>
+                    <span class="text-xs text-gray-400">${g.opcoes?.length || 0} opções</span>
+                </label>`).join('');
+        }
+    } catch (e) {
+        gruposLista.innerHTML = `<p class="text-red-500 text-xs">Erro: ${e.message}</p>`;
+    }
+}
+
+function fecharAplicarCatModal() {
+    document.getElementById('aplicarCatModal').classList.add('hidden');
+}
+
+async function confirmarAplicarCategoria() {
+    const categoriaId = parseInt(document.getElementById('aplicarCatSelect').value);
+    const grupoIds = [...document.querySelectorAll('#aplicarCatGruposLista input[type=checkbox]:checked')].map(c => parseInt(c.value));
+    if (!categoriaId) { alert('Selecione uma categoria.'); return; }
+    if (grupoIds.length === 0) { alert('Selecione ao menos um grupo da biblioteca.'); return; }
+    try {
+        const res = await API.aplicarComplementosCategoria(categoriaId, grupoIds, empresaSelecionadaId);
+        fecharAplicarCatModal();
+        alert(`✅ Grupos aplicados a ${res.produtos_afetados} produto(s) da categoria!`);
+    } catch (e) { alert('Erro: ' + e.message); }
+}
+
 // ── Complementos management ───────────────────────────────────────────────────
 
 let _compProdutoId = null;

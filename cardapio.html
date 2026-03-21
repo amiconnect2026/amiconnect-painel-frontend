@@ -61,6 +61,9 @@
                 <button onclick="verCardapioPublico()" class="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg transition">
                     👁️ Ver Cardápio Público
                 </button>
+                <button onclick="abrirBiblioteca()" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-6 py-3 rounded-lg transition">
+                    📚 Biblioteca
+                </button>
                 <button id="btnModoSelecao" onclick="toggleModoSelecao()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-6 py-3 rounded-lg transition">
                     ☑️ Selecionar produtos
                 </button>
@@ -183,15 +186,92 @@
     <!-- Modal Complementos -->
     <div id="complementosModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div class="p-6 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white z-10">
-                <div>
-                    <h3 class="text-xl font-bold text-gray-900">🧩 Complementos</h3>
-                    <p class="text-sm text-gray-500" id="compModalSubtitle"></p>
+            <div class="p-4 border-b border-gray-200 sticky top-0 bg-white z-10">
+                <div class="flex items-center justify-between mb-3">
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900">🧩 Complementos</h3>
+                        <p class="text-sm text-gray-500" id="compModalSubtitle"></p>
+                    </div>
+                    <button onclick="fecharComplementos()" class="text-gray-400 hover:text-gray-600 text-3xl leading-none">&times;</button>
                 </div>
-                <button onclick="fecharComplementos()" class="text-gray-400 hover:text-gray-600 text-3xl leading-none">&times;</button>
+                <!-- Barra de ações em massa -->
+                <div class="flex gap-2 flex-wrap">
+                    <button onclick="abrirDaBibliotecaPanel()" class="flex items-center gap-1 text-xs bg-purple-100 hover:bg-purple-200 text-purple-700 font-semibold px-3 py-1.5 rounded-lg transition">
+                        📚 Da biblioteca
+                    </button>
+                    <button onclick="abrirCopiarParaProdutosModal()" class="flex items-center gap-1 text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 font-semibold px-3 py-1.5 rounded-lg transition">
+                        📋 Copiar para outros
+                    </button>
+                    <button onclick="abrirAplicarCategoriaModal()" class="flex items-center gap-1 text-xs bg-orange-100 hover:bg-orange-200 text-orange-700 font-semibold px-3 py-1.5 rounded-lg transition">
+                        🏷️ Aplicar à categoria
+                    </button>
+                </div>
+            </div>
+            <!-- Painel "Da biblioteca" (inline expansível) -->
+            <div id="bibPickerPanel" class="hidden border-b border-purple-100 bg-purple-50 px-4 py-3">
+                <div class="flex items-center justify-between mb-2">
+                    <p class="text-sm font-bold text-purple-800">📚 Selecione um grupo da biblioteca para adicionar ao produto</p>
+                    <button onclick="fecharDaBibliotecaPanel()" class="text-purple-400 hover:text-purple-600 text-xl leading-none">&times;</button>
+                </div>
+                <div id="bibPickerLista" class="space-y-2 max-h-48 overflow-y-auto"></div>
             </div>
             <div class="p-6 space-y-6" id="compModalBody">
                 <div class="text-center py-8 text-gray-400">Carregando...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Biblioteca (gestão completa) -->
+    <div id="bibliotecaModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white z-10">
+                <div>
+                    <h3 class="text-xl font-bold text-gray-900">📚 Biblioteca de Complementos</h3>
+                    <p class="text-sm text-gray-500">Grupos reutilizáveis para aplicar a qualquer produto</p>
+                </div>
+                <button onclick="fecharBiblioteca()" class="text-gray-400 hover:text-gray-600 text-3xl leading-none">&times;</button>
+            </div>
+            <div class="p-6" id="bibModalBody">
+                <div class="text-center py-8 text-gray-400">Carregando...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Copiar para Produtos -->
+    <div id="copiarProdutosModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col">
+            <div class="p-5 border-b border-gray-200 flex items-center justify-between">
+                <h3 class="text-lg font-bold text-gray-900">📋 Copiar complementos para...</h3>
+                <button onclick="fecharCopiarProdutosModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-4 space-y-2" id="copiarProdutosLista"></div>
+            <div class="p-4 border-t border-gray-100 flex gap-3">
+                <button onclick="fecharCopiarProdutosModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2.5 rounded-xl transition">Cancelar</button>
+                <button onclick="confirmarCopiarParaProdutos()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl transition">Copiar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Aplicar à Categoria -->
+    <div id="aplicarCatModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col">
+            <div class="p-5 border-b border-gray-200 flex items-center justify-between">
+                <h3 class="text-lg font-bold text-gray-900">🏷️ Aplicar grupos à categoria</h3>
+                <button onclick="fecharAplicarCatModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-4 space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Categoria</label>
+                    <select id="aplicarCatSelect" class="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm"></select>
+                </div>
+                <div>
+                    <p class="text-sm font-semibold text-gray-700 mb-2">Grupos da biblioteca a aplicar</p>
+                    <div id="aplicarCatGruposLista" class="space-y-2"></div>
+                </div>
+            </div>
+            <div class="p-4 border-t border-gray-100 flex gap-3">
+                <button onclick="fecharAplicarCatModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2.5 rounded-xl transition">Cancelar</button>
+                <button onclick="confirmarAplicarCategoria()" class="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2.5 rounded-xl transition">Aplicar</button>
             </div>
         </div>
     </div>
