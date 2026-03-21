@@ -66,6 +66,9 @@
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #c7d2fe; border-radius: 4px; }
+        @media (max-width: 640px) {
+            #cmpModal > div { border-radius: 1.5rem 1.5rem 0 0; height: 100%; max-height: 100%; }
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -215,17 +218,41 @@
 
     <!-- Modal Complementos (cliente) -->
     <div id="cmpModal" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-        <div class="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-3xl shadow-2xl flex flex-col max-h-[90vh]">
+        <div class="bg-white w-full sm:max-w-lg sm:rounded-2xl rounded-t-3xl shadow-2xl flex flex-col h-full sm:h-auto sm:max-h-[92vh]">
+            <!-- Header -->
             <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
-                <h2 class="text-lg font-extrabold text-gray-900" id="cmpModalNome"></h2>
-                <button onclick="fecharCmpModal()" class="text-gray-400 hover:text-gray-600 text-3xl leading-none">&times;</button>
+                <div>
+                    <h2 class="text-lg font-extrabold text-gray-900" id="cmpModalNome"></h2>
+                    <p class="text-xs text-gray-400 mt-0.5" id="cmpModalSubtitle"></p>
+                </div>
+                <button onclick="fecharCmpModal()" class="text-gray-400 hover:text-gray-600 text-3xl leading-none ml-4">&times;</button>
             </div>
-            <div id="cmpModalBody" class="flex-1 overflow-y-auto px-6 py-4"></div>
+            <!-- Progress bar (pizza only) -->
+            <div id="cmpProgress" class="hidden px-6 pt-4 pb-0 flex-shrink-0">
+                <div class="flex items-center justify-center gap-2" id="cmpProgressDots"></div>
+            </div>
+            <!-- Body -->
+            <div id="cmpModalBody" class="flex-1 overflow-y-auto px-6 py-4 min-h-0"></div>
+            <!-- Footer -->
             <div id="cmpModalFooter" class="hidden border-t border-gray-100 px-6 py-4 flex-shrink-0 bg-white">
-                <button onclick="confirmarCmpEAdicionar()"
-                    class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-4 rounded-2xl flex items-center justify-center gap-2 text-base transition active:scale-95">
-                    Adicionar — <span id="cmpPreco">R$ 0,00</span>
-                </button>
+                <!-- pizza footer -->
+                <div id="cmpFooterPizza" class="hidden">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-sm text-gray-500" id="cmpFooterLabel"></span>
+                        <span class="text-lg font-extrabold text-indigo-600" id="cmpPreco">R$ 0,00</span>
+                    </div>
+                    <div class="flex gap-3">
+                        <button id="cmpBtnVoltar" onclick="pizzaVoltar()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-extrabold py-3.5 rounded-2xl transition active:scale-95">← Voltar</button>
+                        <button id="cmpBtnProximo" onclick="pizzaProximo()" class="flex-2 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-3.5 rounded-2xl flex-1 transition active:scale-95" style="flex:2">Próximo →</button>
+                    </div>
+                </div>
+                <!-- default footer (non-pizza) -->
+                <div id="cmpFooterDefault" class="hidden">
+                    <button onclick="confirmarCmpEAdicionar()"
+                        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-4 rounded-2xl flex items-center justify-center gap-2 text-base transition active:scale-95">
+                        Adicionar — <span id="cmpPrecoDefault">R$ 0,00</span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -1057,27 +1084,53 @@
             tamanhos: [],
             grupos: [],
             tamanhoSelecionado: null,
-            selecoes: {}, // grupoId -> [{ id, nome, preco_adicional }]
+            selecoes: {},
             precoBase: 0,
-            tipoOriginal: 'simples'
+            tipoOriginal: 'simples',
+            // pizza step flow
+            etapa: 1,        // 1=tamanho, 2=sabores, 3=complementos, 4=resumo
+            etapas: [],      // etapas ativas ex: [1,2,4] ou [1,2,3,4]
+            grupoSabores: null,  // primeiro grupo de pizza
+            gruposExtra: []  // demais grupos (borda, adicionais)
         };
 
         async function abrirComplementosCliente(id, nome, preco, tipo) {
-            _cmp = { produto: { id, nome, preco }, tamanhos: [], grupos: [], tamanhoSelecionado: null, selecoes: {}, precoBase: preco, tipoOriginal: tipo };
+            _cmp = { produto: { id, nome, preco }, tamanhos: [], grupos: [], tamanhoSelecionado: null,
+                     selecoes: {}, precoBase: preco, tipoOriginal: tipo,
+                     etapa: 1, etapas: [], grupoSabores: null, gruposExtra: [] };
             document.getElementById('cmpModalNome').textContent = nome;
+            document.getElementById('cmpModalSubtitle').textContent = '';
             document.getElementById('cmpModalBody').innerHTML = '<div class="text-center py-8 text-gray-400">Carregando...</div>';
             document.getElementById('cmpModalFooter').classList.add('hidden');
+            document.getElementById('cmpProgress').classList.add('hidden');
             document.getElementById('cmpModal').classList.remove('hidden');
             document.body.style.overflow = 'hidden';
 
             try {
                 const data = await fetch(`https://painel.amiconnect.com.br/api/produtos/publico/${id}/complementos`).then(r => r.json());
+                if (data.error) throw new Error(data.error);
                 _cmp.tamanhos = data.tamanhos || [];
                 _cmp.grupos = data.grupos || [];
                 _cmp.grupos.forEach(g => { _cmp.selecoes[g.id] = []; });
-                renderCmpModal();
+
+                const isPizza = tipo === 'pizza' || tipo === 'combo_pizza';
+                if (isPizza) {
+                    _cmp.grupoSabores = _cmp.grupos[0] || null;
+                    _cmp.gruposExtra = _cmp.grupos.slice(1);
+                    // montar etapas ativas
+                    const etapas = [];
+                    if (_cmp.tamanhos.length > 0) etapas.push(1);
+                    if (_cmp.grupoSabores) etapas.push(2);
+                    if (_cmp.gruposExtra.length > 0) etapas.push(3);
+                    etapas.push(4);
+                    _cmp.etapas = etapas;
+                    _cmp.etapa = etapas[0];
+                    renderPizzaModal();
+                } else {
+                    renderCmpModal();
+                }
             } catch (e) {
-                document.getElementById('cmpModalBody').innerHTML = '<p class="text-red-500 text-center">Erro ao carregar complementos.</p>';
+                document.getElementById('cmpModalBody').innerHTML = `<p class="text-red-500 text-center py-8">Erro ao carregar: ${e.message}</p>`;
             }
         }
 
@@ -1086,25 +1139,351 @@
             document.body.style.overflow = '';
         }
 
-        function renderCmpModal() {
-            const isPizza = _cmp.tipoOriginal === 'pizza' || _cmp.tipoOriginal === 'combo_pizza';
-            let html = '';
+        // ── PIZZA: fluxo por etapas ───────────────────────────────────────────
 
-            if (isPizza && _cmp.tamanhos.length > 0) {
-                html += `<div class="mb-5">
-                    <p class="font-extrabold text-gray-800 mb-2">📏 Escolha o tamanho <span class="text-red-500">*</span></p>
+        function renderPizzaModal() {
+            const progress = document.getElementById('cmpProgress');
+            const dots = document.getElementById('cmpProgressDots');
+            const labels = { 1: 'Tamanho', 2: 'Sabores', 3: 'Complementos', 4: 'Resumo' };
+            progress.classList.remove('hidden');
+            dots.innerHTML = _cmp.etapas.map(e => {
+                const ativo = e === _cmp.etapa;
+                const passado = _cmp.etapas.indexOf(e) < _cmp.etapas.indexOf(_cmp.etapa);
+                return `<div class="flex flex-col items-center gap-1">
+                    <div class="w-2.5 h-2.5 rounded-full transition-all ${ativo ? 'bg-indigo-600 scale-125' : passado ? 'bg-indigo-300' : 'bg-gray-200'}"></div>
+                    <span class="text-[10px] font-semibold ${ativo ? 'text-indigo-600' : 'text-gray-400'}">${labels[e]}</span>
+                </div>
+                ${e !== _cmp.etapas[_cmp.etapas.length - 1] ? '<div class="w-8 h-px bg-gray-200 mb-3"></div>' : ''}`;
+            }).join('');
+
+            document.getElementById('cmpModalFooter').classList.remove('hidden');
+            document.getElementById('cmpFooterDefault').classList.add('hidden');
+            document.getElementById('cmpFooterPizza').classList.remove('hidden');
+
+            const idxAtual = _cmp.etapas.indexOf(_cmp.etapa);
+            const btnVoltar = document.getElementById('cmpBtnVoltar');
+            btnVoltar.classList.toggle('hidden', idxAtual === 0);
+
+            const isLast = idxAtual === _cmp.etapas.length - 1;
+            const btnProximo = document.getElementById('cmpBtnProximo');
+            btnProximo.textContent = isLast ? '' : 'Próximo →';
+
+            document.getElementById('cmpModalBody').scrollTop = 0;
+
+            if (_cmp.etapa === 1) renderEtapaTamanho();
+            else if (_cmp.etapa === 2) renderEtapaSabores();
+            else if (_cmp.etapa === 3) renderEtapaComplementos();
+            else if (_cmp.etapa === 4) renderEtapaResumo();
+
+            atualizarPrecoPizza();
+        }
+
+        function pizzaProximo() {
+            const idxAtual = _cmp.etapas.indexOf(_cmp.etapa);
+            // validar etapa atual
+            if (_cmp.etapa === 1) {
+                if (!_cmp.tamanhoSelecionado) {
+                    mostrarErroEtapa('Selecione um tamanho para continuar.');
+                    return;
+                }
+            }
+            if (_cmp.etapa === 2) {
+                const g = _cmp.grupoSabores;
+                if (g) {
+                    const sel = _cmp.selecoes[g.id] || [];
+                    const min = g.min_escolhas || 1;
+                    if (sel.length < min) {
+                        mostrarErroEtapa(`Selecione ao menos ${min} sabor${min > 1 ? 'es' : ''}.`);
+                        return;
+                    }
+                }
+            }
+            if (_cmp.etapa === 3) {
+                for (const g of _cmp.gruposExtra) {
+                    if (g.tipo === 'obrigatorio' && (_cmp.selecoes[g.id] || []).length < (g.min_escolhas || 1)) {
+                        mostrarErroEtapa(`Selecione uma opção em: ${g.nome}`);
+                        return;
+                    }
+                }
+            }
+            if (_cmp.etapa === 4) {
+                confirmarCmpEAdicionar();
+                return;
+            }
+            _cmp.etapa = _cmp.etapas[idxAtual + 1];
+            renderPizzaModal();
+        }
+
+        function pizzaVoltar() {
+            const idxAtual = _cmp.etapas.indexOf(_cmp.etapa);
+            if (idxAtual > 0) {
+                _cmp.etapa = _cmp.etapas[idxAtual - 1];
+                renderPizzaModal();
+            }
+        }
+
+        function mostrarErroEtapa(msg) {
+            let el = document.getElementById('cmpEtapaErro');
+            if (!el) {
+                el = document.createElement('p');
+                el.id = 'cmpEtapaErro';
+                el.className = 'text-red-500 text-sm font-semibold text-center mt-3 animate-pulse';
+                document.getElementById('cmpModalBody').appendChild(el);
+            }
+            el.textContent = msg;
+            setTimeout(() => { el.textContent = ''; }, 3000);
+        }
+
+        function renderEtapaTamanho() {
+            document.getElementById('cmpModalSubtitle').textContent = 'Etapa 1 — Escolha o tamanho';
+            document.getElementById('cmpFooterLabel').textContent = 'Selecione um tamanho';
+            const html = `<div class="space-y-3 pb-2">
+                ${_cmp.tamanhos.map(t => {
+                    const sel = _cmp.tamanhoSelecionado?.id === t.id;
+                    const maxSab = _cmp.grupoSabores?.max_escolhas || 1;
+                    return `<button onclick="selecionarTamanho(${t.id})"
+                        class="w-full text-left p-4 rounded-2xl border-2 transition active:scale-98 ${sel ? 'border-indigo-600 bg-indigo-50' : 'border-gray-200 hover:border-indigo-300'}">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${sel ? 'border-indigo-600' : 'border-gray-300'}">
+                                    ${sel ? '<div class="w-2.5 h-2.5 rounded-full bg-indigo-600"></div>' : ''}
+                                </div>
+                                <div>
+                                    <p class="font-extrabold text-gray-900">${t.nome}</p>
+                                    ${_cmp.grupoSabores ? `<p class="text-xs text-gray-500 mt-0.5">até ${maxSab} sabor${maxSab > 1 ? 'es' : ''}</p>` : ''}
+                                </div>
+                            </div>
+                            <span class="text-lg font-extrabold text-indigo-600">R$ ${parseFloat(t.preco).toFixed(2)}</span>
+                        </div>
+                    </button>`;
+                }).join('')}
+            </div>`;
+            document.getElementById('cmpModalBody').innerHTML = html;
+            const btnProximo = document.getElementById('cmpBtnProximo');
+            btnProximo.disabled = !_cmp.tamanhoSelecionado;
+            btnProximo.className = `flex-1 font-extrabold py-3.5 rounded-2xl transition active:scale-95 ${_cmp.tamanhoSelecionado ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`;
+            btnProximo.style.flex = '2';
+        }
+
+        function selecionarTamanho(id) {
+            _cmp.tamanhoSelecionado = _cmp.tamanhos.find(t => t.id === id);
+            atualizarPrecoPizza();
+            // re-render só os cards sem re-render completo
+            renderEtapaTamanho();
+            document.getElementById('cmpEtapaErro')?.remove();
+        }
+
+        function renderEtapaSabores() {
+            const g = _cmp.grupoSabores;
+            if (!g) { document.getElementById('cmpModalBody').innerHTML = ''; return; }
+            const selecionados = _cmp.selecoes[g.id] || [];
+            const max = g.max_escolhas || 1;
+            const min = g.min_escolhas || 1;
+            const atingiu = selecionados.length >= max;
+            document.getElementById('cmpModalSubtitle').textContent = `Etapa 2 — ${g.nome}`;
+            document.getElementById('cmpFooterLabel').textContent = `${selecionados.length} de ${max} selecionado${max > 1 ? 's' : ''}`;
+            // busca salva
+            const termoBusca = _cmp._termoBuscaSabor || '';
+
+            const html = `<div class="mb-3 sticky top-0 bg-white pb-2 z-10">
+                <div class="flex items-center justify-between mb-2">
+                    <p class="font-extrabold text-gray-900">Escolha ${max === 1 ? 'o' : 'os'} sabor${max > 1 ? 'es' : ''}</p>
+                    <span class="text-sm font-bold px-3 py-1 rounded-full ${selecionados.length >= min ? 'bg-green-100 text-green-700' : 'bg-indigo-100 text-indigo-700'}">${selecionados.length}/${max}</span>
+                </div>
+                <input type="text" id="buscaSabor" value="${termoBusca}" placeholder="Buscar sabor..." oninput="_cmp._termoBuscaSabor=this.value; renderEtapaSabores()"
+                    class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
+            </div>
+            <div class="space-y-2 pb-2" id="listaSabores">
+                ${(g.opcoes || []).filter(o => !termoBusca || o.nome.toLowerCase().includes(termoBusca.toLowerCase())).map(o => {
+                    const checked = selecionados.some(s => s.id === o.id);
+                    const disabled = atingiu && !checked;
+                    const preco = parseFloat(o.preco_adicional) || 0;
+                    const precoLabel = preco > 0 ? `+R$ ${preco.toFixed(2)}` : '';
+                    return `<button onclick="${disabled ? '' : `toggleSabor(${g.id},${o.id},'${o.nome.replace(/'/g,"\\'")}',${preco},${max})`}"
+                        class="w-full text-left p-3.5 rounded-xl border-2 transition ${checked ? 'border-indigo-600 bg-indigo-50' : disabled ? 'border-gray-100 bg-gray-50 opacity-40 cursor-not-allowed' : 'border-gray-200 hover:border-indigo-300'}" ${disabled ? 'disabled' : ''}>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${checked ? 'border-indigo-600 bg-indigo-600' : 'border-gray-300'}">
+                                    ${checked ? '<svg class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>' : ''}
+                                </div>
+                                <span class="font-semibold text-gray-900 text-sm">${o.nome}</span>
+                            </div>
+                            ${precoLabel ? `<span class="text-sm font-bold text-indigo-600">${precoLabel}</span>` : ''}
+                        </div>
+                    </button>`;
+                }).join('')}
+            </div>`;
+            document.getElementById('cmpModalBody').innerHTML = html;
+            const btnProximo = document.getElementById('cmpBtnProximo');
+            const ok = selecionados.length >= min;
+            btnProximo.disabled = !ok;
+            btnProximo.className = `flex-1 font-extrabold py-3.5 rounded-2xl transition active:scale-95 ${ok ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`;
+            btnProximo.style.flex = '2';
+            // manter foco no campo de busca
+            if (termoBusca) setTimeout(() => { const el = document.getElementById('buscaSabor'); if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); } }, 0);
+        }
+
+        function toggleSabor(grupoId, opcaoId, nome, preco, max) {
+            const arr = _cmp.selecoes[grupoId];
+            const idx = arr.findIndex(s => s.id === opcaoId);
+            if (idx !== -1) {
+                arr.splice(idx, 1);
+            } else {
+                if (arr.length >= max) return; // já bloqueado visualmente
+                arr.push({ id: opcaoId, nome, preco_adicional: preco });
+            }
+            atualizarPrecoPizza();
+            renderEtapaSabores();
+            document.getElementById('cmpEtapaErro')?.remove();
+        }
+
+        function renderEtapaComplementos() {
+            document.getElementById('cmpModalSubtitle').textContent = 'Etapa 3 — Complementos';
+            document.getElementById('cmpFooterLabel').textContent = 'Personalize sua pizza';
+            let html = '<div class="space-y-5 pb-2">';
+            _cmp.gruposExtra.forEach(g => {
+                const selecionados = _cmp.selecoes[g.id] || [];
+                const isMulti = g.max_escolhas > 1;
+                const obrig = g.tipo === 'obrigatorio';
+                html += `<div>
+                    <div class="flex items-center justify-between mb-2">
+                        <p class="font-extrabold text-gray-900">${g.nome}</p>
+                        <span class="text-xs px-2 py-0.5 rounded-full font-semibold ${obrig ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500'}">${obrig ? 'Obrigatório' : 'Opcional'}</span>
+                    </div>
+                    <p class="text-xs text-gray-400 mb-2">${isMulti ? `Escolha até ${g.max_escolhas}` : 'Escolha 1'}</p>
                     <div class="space-y-2">
-                        ${_cmp.tamanhos.map(t => `
-                        <label class="flex items-center justify-between p-3 rounded-xl border-2 cursor-pointer transition ${_cmp.tamanhoSelecionado?.id === t.id ? 'border-indigo-600 bg-indigo-50' : 'border-gray-200'}">
-                            <span class="flex items-center gap-3">
-                                <input type="radio" name="cmpTamanho" value="${t.id}" ${_cmp.tamanhoSelecionado?.id === t.id ? 'checked' : ''} class="w-4 h-4 accent-indigo-600" onchange="selecionarTamanho(${t.id})">
-                                <span class="font-semibold text-gray-900">${t.nome}</span>
-                            </span>
-                            <span class="font-extrabold text-indigo-600">R$ ${parseFloat(t.preco).toFixed(2)}</span>
-                        </label>`).join('')}
+                        ${(g.opcoes || []).map(o => {
+                            const checked = selecionados.some(s => s.id === o.id);
+                            const atingiu = selecionados.length >= g.max_escolhas;
+                            const disabled = atingiu && !checked;
+                            const preco = parseFloat(o.preco_adicional) || 0;
+                            const precoLabel = preco > 0 ? `+R$ ${preco.toFixed(2)}` : 'Grátis';
+                            if (isMulti) {
+                                return `<label class="flex items-center justify-between p-3 rounded-xl border-2 cursor-pointer transition ${checked ? 'border-indigo-600 bg-indigo-50' : disabled ? 'border-gray-100 opacity-40' : 'border-gray-200'}">
+                                    <span class="flex items-center gap-3">
+                                        <input type="checkbox" ${checked ? 'checked' : ''} ${disabled ? 'disabled' : ''} class="w-4 h-4 accent-indigo-600" onchange="toggleOpcaoExtra(${g.id},${o.id},'${o.nome.replace(/'/g,"\\'")}',${preco},${g.max_escolhas})">
+                                        <span class="font-semibold text-gray-900 text-sm">${o.nome}</span>
+                                    </span>
+                                    <span class="text-sm font-bold text-gray-500">${precoLabel}</span>
+                                </label>`;
+                            } else {
+                                return `<label class="flex items-center justify-between p-3 rounded-xl border-2 cursor-pointer transition ${checked ? 'border-indigo-600 bg-indigo-50' : 'border-gray-200'}">
+                                    <span class="flex items-center gap-3">
+                                        <input type="radio" name="extra-${g.id}" ${checked ? 'checked' : ''} class="w-4 h-4 accent-indigo-600" onchange="toggleOpcaoExtra(${g.id},${o.id},'${o.nome.replace(/'/g,"\\'")}',${preco},1)">
+                                        <span class="font-semibold text-gray-900 text-sm">${o.nome}</span>
+                                    </span>
+                                    <span class="text-sm font-bold text-gray-500">${precoLabel}</span>
+                                </label>`;
+                            }
+                        }).join('')}
                     </div>
                 </div>`;
+            });
+            html += '</div>';
+            document.getElementById('cmpModalBody').innerHTML = html;
+            const btnProximo = document.getElementById('cmpBtnProximo');
+            btnProximo.disabled = false;
+            btnProximo.className = 'flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-3.5 rounded-2xl transition active:scale-95';
+            btnProximo.style.flex = '2';
+        }
+
+        function toggleOpcaoExtra(grupoId, opcaoId, nome, preco, max) {
+            const arr = _cmp.selecoes[grupoId];
+            const idx = arr.findIndex(s => s.id === opcaoId);
+            if (max === 1) {
+                _cmp.selecoes[grupoId] = idx !== -1 ? [] : [{ id: opcaoId, nome, preco_adicional: preco }];
+            } else {
+                if (idx !== -1) arr.splice(idx, 1);
+                else if (arr.length < max) arr.push({ id: opcaoId, nome, preco_adicional: preco });
             }
+            atualizarPrecoPizza();
+            renderEtapaComplementos();
+        }
+
+        function renderEtapaResumo() {
+            document.getElementById('cmpModalSubtitle').textContent = 'Etapa 4 — Confirme seu pedido';
+            document.getElementById('cmpFooterLabel').textContent = 'Total';
+            const preco = calcularPrecoCmp();
+
+            let linhas = [];
+            if (_cmp.tamanhoSelecionado) {
+                linhas.push({ label: 'Tamanho', valor: `${_cmp.tamanhoSelecionado.nome} — R$ ${parseFloat(_cmp.tamanhoSelecionado.preco).toFixed(2)}` });
+            }
+            if (_cmp.grupoSabores) {
+                const sels = _cmp.selecoes[_cmp.grupoSabores.id] || [];
+                linhas.push({ label: _cmp.grupoSabores.nome, valor: sels.map(s => {
+                    const p = parseFloat(s.preco_adicional) || 0;
+                    return p > 0 ? `${s.nome} (+R$ ${p.toFixed(2)})` : s.nome;
+                }).join(' • ') || '—' });
+            }
+            _cmp.gruposExtra.forEach(g => {
+                const sels = _cmp.selecoes[g.id] || [];
+                if (sels.length > 0) linhas.push({ label: g.nome, valor: sels.map(s => {
+                    const p = parseFloat(s.preco_adicional) || 0;
+                    return p > 0 ? `${s.nome} (+R$ ${p.toFixed(2)})` : s.nome;
+                }).join(', ') });
+            });
+
+            const html = `<div class="space-y-3 pb-2">
+                <div class="bg-indigo-50 rounded-2xl p-4 space-y-3">
+                    ${linhas.map(l => `<div class="flex gap-2">
+                        <span class="text-xs font-bold text-indigo-500 uppercase tracking-wide w-24 flex-shrink-0 pt-0.5">${l.label}</span>
+                        <span class="text-sm font-semibold text-gray-900">${l.valor}</span>
+                    </div>`).join('')}
+                    <div class="flex gap-2 pt-2 border-t border-indigo-100">
+                        <span class="text-xs font-bold text-indigo-500 uppercase tracking-wide w-24 flex-shrink-0">Total</span>
+                        <span class="text-lg font-extrabold text-indigo-600">R$ ${preco.toFixed(2)}</span>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">Observação <span class="font-normal text-gray-400">(opcional)</span></label>
+                    <textarea id="cmpObs" rows="2" placeholder="Ex: sem cebola, bem assada..." class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-300"></textarea>
+                </div>
+            </div>`;
+            document.getElementById('cmpModalBody').innerHTML = html;
+
+            const btnProximo = document.getElementById('cmpBtnProximo');
+            btnProximo.disabled = false;
+            btnProximo.textContent = `Adicionar ao carrinho — R$ ${preco.toFixed(2)}`;
+            btnProximo.className = 'flex-1 bg-green-600 hover:bg-green-700 text-white font-extrabold py-3.5 rounded-2xl transition active:scale-95 text-sm';
+            btnProximo.style.flex = '2';
+        }
+
+        function calcularPrecoCmp() {
+            const isPizza = _cmp.tipoOriginal === 'pizza' || _cmp.tipoOriginal === 'combo_pizza';
+            if (isPizza) {
+                const base = _cmp.tamanhoSelecionado ? parseFloat(_cmp.tamanhoSelecionado.preco) : parseFloat(_cmp.precoBase);
+                let maxSabor = 0;
+                if (_cmp.grupoSabores) {
+                    const sels = _cmp.selecoes[_cmp.grupoSabores.id] || [];
+                    maxSabor = sels.length > 0 ? Math.max(...sels.map(s => parseFloat(s.preco_adicional) || 0)) : 0;
+                }
+                let extras = 0;
+                _cmp.gruposExtra.forEach(g => {
+                    (_cmp.selecoes[g.id] || []).forEach(s => { extras += parseFloat(s.preco_adicional) || 0; });
+                });
+                return base + maxSabor + extras;
+            } else {
+                let total = _cmp.precoBase;
+                _cmp.grupos.forEach(g => {
+                    (_cmp.selecoes[g.id] || []).forEach(s => { total += parseFloat(s.preco_adicional) || 0; });
+                });
+                return total;
+            }
+        }
+
+        function atualizarPrecoPizza() {
+            const preco = calcularPrecoCmp();
+            const el = document.getElementById('cmpPreco');
+            if (el) el.textContent = `R$ ${preco.toFixed(2)}`;
+        }
+
+        // ── Não-pizza: modal original em página única ─────────────────────────
+
+        function renderCmpModal() {
+            document.getElementById('cmpProgress').classList.add('hidden');
+            document.getElementById('cmpModalSubtitle').textContent = '';
+            let html = '';
 
             _cmp.grupos.forEach(g => {
                 const selecionados = _cmp.selecoes[g.id] || [];
@@ -1113,16 +1492,20 @@
                 const isMulti = g.max_escolhas > 1;
 
                 html += `<div class="mb-5" id="cmpGrupo-${g.id}">
-                    <p class="font-extrabold text-gray-800 mb-0.5">${g.nome} ${obrigLabel}</p>
-                    <p class="text-xs text-gray-400 mb-2">${limiteLabel}</p>
+                    <div class="flex items-center justify-between mb-1">
+                        <p class="font-extrabold text-gray-800">${g.nome} ${obrigLabel}</p>
+                        <span class="text-xs text-gray-400">${limiteLabel}</span>
+                    </div>
                     <div class="space-y-2">
                         ${(g.opcoes || []).map(o => {
                             const checked = selecionados.some(s => s.id === o.id);
+                            const atingiu = selecionados.length >= g.max_escolhas;
+                            const disabled = atingiu && !checked;
                             const precoLabel = parseFloat(o.preco_adicional) > 0 ? `+R$ ${parseFloat(o.preco_adicional).toFixed(2)}` : 'Grátis';
                             if (isMulti) {
-                                return `<label class="flex items-center justify-between p-3 rounded-xl border-2 cursor-pointer transition ${checked ? 'border-indigo-600 bg-indigo-50' : 'border-gray-200'}">
+                                return `<label class="flex items-center justify-between p-3 rounded-xl border-2 cursor-pointer transition ${checked ? 'border-indigo-600 bg-indigo-50' : disabled ? 'border-gray-100 opacity-40' : 'border-gray-200'}">
                                     <span class="flex items-center gap-3">
-                                        <input type="checkbox" data-grupo="${g.id}" data-opcao-id="${o.id}" data-opcao-nome="${o.nome.replace(/"/g,'&quot;')}" data-preco="${o.preco_adicional || 0}" ${checked ? 'checked' : ''} class="w-4 h-4 accent-indigo-600" onchange="toggleOpcao(${g.id}, ${o.id}, '${o.nome.replace(/'/g,"\\'")}', ${o.preco_adicional || 0}, ${g.max_escolhas})">
+                                        <input type="checkbox" ${checked ? 'checked' : ''} ${disabled ? 'disabled' : ''} class="w-4 h-4 accent-indigo-600" onchange="toggleOpcao(${g.id},${o.id},'${o.nome.replace(/'/g,"\\'")}',${o.preco_adicional||0},${g.max_escolhas})">
                                         <span class="font-semibold text-gray-900">${o.nome}</span>
                                     </span>
                                     <span class="text-sm font-bold text-gray-500">${precoLabel}</span>
@@ -1130,7 +1513,7 @@
                             } else {
                                 return `<label class="flex items-center justify-between p-3 rounded-xl border-2 cursor-pointer transition ${checked ? 'border-indigo-600 bg-indigo-50' : 'border-gray-200'}">
                                     <span class="flex items-center gap-3">
-                                        <input type="radio" name="cmpGrupo-${g.id}" data-grupo="${g.id}" data-opcao-id="${o.id}" data-opcao-nome="${o.nome.replace(/"/g,'&quot;')}" data-preco="${o.preco_adicional || 0}" ${checked ? 'checked' : ''} class="w-4 h-4 accent-indigo-600" onchange="selecionarOpcaoRadio(${g.id}, ${o.id}, '${o.nome.replace(/'/g,"\\'")}', ${o.preco_adicional || 0})">
+                                        <input type="radio" name="cmpGrupo-${g.id}" ${checked ? 'checked' : ''} class="w-4 h-4 accent-indigo-600" onchange="selecionarOpcaoRadio(${g.id},${o.id},'${o.nome.replace(/'/g,"\\'")}',${o.preco_adicional||0})">
                                         <span class="font-semibold text-gray-900">${o.nome}</span>
                                     </span>
                                     <span class="text-sm font-bold text-gray-500">${precoLabel}</span>
@@ -1142,101 +1525,62 @@
             });
 
             html += `<div class="mt-2">
-                <label class="block text-sm font-semibold text-gray-700 mb-1">Observação (opcional)</label>
-                <textarea id="cmpObs" rows="2" placeholder="Ex: sem cebola, ponto da carne..." class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-300"></textarea>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Observação <span class="font-normal text-gray-400">(opcional)</span></label>
+                <textarea id="cmpObs" rows="2" placeholder="Ex: sem cebola, ponto da carne..." class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-300"></textarea>
             </div>`;
 
             document.getElementById('cmpModalBody').innerHTML = html;
             document.getElementById('cmpModalFooter').classList.remove('hidden');
-            atualizarPrecoCmp();
+            document.getElementById('cmpFooterPizza').classList.add('hidden');
+            document.getElementById('cmpFooterDefault').classList.remove('hidden');
+            atualizarPrecoDefault();
         }
 
-        function selecionarTamanho(id) {
-            _cmp.tamanhoSelecionado = _cmp.tamanhos.find(t => t.id === id);
-            atualizarPrecoCmp();
-            renderCmpModal();
-        }
-
-        function toggleOpcao(grupoId, opcaoId, opcaoNome, precoAdicional, maxOpcoes) {
-            const arr = _cmp.selecoes[grupoId];
-            const idx = arr.findIndex(s => s.id === opcaoId);
-            if (idx !== -1) {
-                arr.splice(idx, 1);
-            } else {
-                if (arr.length >= maxOpcoes) {
-                    alert(`Máximo de ${maxOpcoes} opções para este grupo.`);
-                    // re-render to uncheck visually
-                    renderCmpModal();
-                    return;
-                }
-                arr.push({ id: opcaoId, nome: opcaoNome, preco_adicional: precoAdicional });
-            }
-            atualizarPrecoCmp();
-        }
-
-        function selecionarOpcaoRadio(grupoId, opcaoId, opcaoNome, precoAdicional) {
-            _cmp.selecoes[grupoId] = [{ id: opcaoId, nome: opcaoNome, preco_adicional: precoAdicional }];
-            atualizarPrecoCmp();
-        }
-
-        function calcularPrecoCmp() {
-            const isPizza = _cmp.tipoOriginal === 'pizza' || _cmp.tipoOriginal === 'combo_pizza';
-            if (isPizza) {
-                if (!_cmp.tamanhoSelecionado) return 0;
-                // Para pizza: tamanho.preco + max(preco_adicional dos sabores do primeiro grupo)
-                let maxSabor = 0;
-                const primeiroGrupo = _cmp.grupos[0];
-                if (primeiroGrupo) {
-                    const sels = _cmp.selecoes[primeiroGrupo.id] || [];
-                    maxSabor = sels.length > 0 ? Math.max(...sels.map(s => parseFloat(s.preco_adicional) || 0)) : 0;
-                }
-                // Demais grupos: soma preco_adicional
-                let extras = 0;
-                _cmp.grupos.slice(1).forEach(g => {
-                    (_cmp.selecoes[g.id] || []).forEach(s => { extras += parseFloat(s.preco_adicional) || 0; });
-                });
-                return parseFloat(_cmp.tamanhoSelecionado.preco) + maxSabor + extras;
-            } else {
-                let total = _cmp.precoBase;
-                _cmp.grupos.forEach(g => {
-                    (_cmp.selecoes[g.id] || []).forEach(s => { total += parseFloat(s.preco_adicional) || 0; });
-                });
-                return total;
-            }
-        }
-
-        function atualizarPrecoCmp() {
+        function atualizarPrecoDefault() {
             const preco = calcularPrecoCmp();
-            const el = document.getElementById('cmpPreco');
+            const el = document.getElementById('cmpPrecoDefault');
             if (el) el.textContent = `R$ ${preco.toFixed(2)}`;
         }
 
+        function toggleOpcao(grupoId, opcaoId, nome, preco, max) {
+            const arr = _cmp.selecoes[grupoId];
+            const idx = arr.findIndex(s => s.id === opcaoId);
+            if (idx !== -1) arr.splice(idx, 1);
+            else if (arr.length < max) arr.push({ id: opcaoId, nome, preco_adicional: preco });
+            atualizarPrecoDefault();
+            renderCmpModal();
+        }
+
+        function selecionarOpcaoRadio(grupoId, opcaoId, nome, preco) {
+            _cmp.selecoes[grupoId] = [{ id: opcaoId, nome, preco_adicional: preco }];
+            atualizarPrecoDefault();
+        }
+
+        // ── Confirmar e adicionar ao carrinho (compartilhado) ─────────────────
+
         function confirmarCmpEAdicionar() {
-            // Validar obrigatórios
-            for (const g of _cmp.grupos) {
-                if (g.tipo === 'obrigatorio' && (_cmp.selecoes[g.id] || []).length < (g.min_escolhas || 1)) {
-                    alert(`Selecione uma opção em: ${g.nome}`);
-                    return;
-                }
-            }
             const isPizza = _cmp.tipoOriginal === 'pizza' || _cmp.tipoOriginal === 'combo_pizza';
-            if (isPizza && !_cmp.tamanhoSelecionado) {
-                alert('Selecione o tamanho.');
-                return;
+
+            if (!isPizza) {
+                for (const g of _cmp.grupos) {
+                    if (g.tipo === 'obrigatorio' && (_cmp.selecoes[g.id] || []).length < (g.min_escolhas || 1)) {
+                        mostrarErroEtapa(`Selecione uma opção em: ${g.nome}`);
+                        return;
+                    }
+                }
             }
 
             const preco = calcularPrecoCmp();
             const obs = document.getElementById('cmpObs')?.value.trim() || '';
 
-            // Montar linhas de complemento para exibição
             const complementos = [];
             _cmp.grupos.forEach(g => {
                 const sels = _cmp.selecoes[g.id] || [];
                 if (sels.length > 0) {
-                    const descricao = sels.map(s => {
-                        return parseFloat(s.preco_adicional) > 0 ? `${s.nome} (+R$ ${parseFloat(s.preco_adicional).toFixed(2)})` : s.nome;
-                    }).join(', ');
-                    complementos.push({ grupoNome: g.nome, descricao });
+                    complementos.push({ grupoNome: g.nome, descricao: sels.map(s => {
+                        const p = parseFloat(s.preco_adicional) || 0;
+                        return p > 0 ? `${s.nome} (+R$ ${p.toFixed(2)})` : s.nome;
+                    }).join(', ') });
                 }
             });
 
