@@ -189,5 +189,42 @@ const API = {
             method: 'POST',
             body: JSON.stringify({ empresa_id, senha })
         });
+    },
+    // Complementos
+    async getComplementos(produtoId) {
+        return await apiRequest(`/produtos/${produtoId}/complementos`);
+    },
+    async getTamanhos(produtoId) {
+        return await apiRequest(`/produtos/${produtoId}/tamanhos`);
+    },
+    async createTamanho(produtoId, data) {
+        return await apiRequest(`/produtos/${produtoId}/tamanhos`, { method: 'POST', body: JSON.stringify(data) });
+    },
+    async updateTamanho(id, data) {
+        return await apiRequest(`/produtos/tamanhos/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    },
+    async deleteTamanho(id) {
+        return await apiRequest(`/produtos/tamanhos/${id}`, { method: 'DELETE' });
+    },
+    async getGrupos(produtoId) {
+        return await apiRequest(`/produtos/${produtoId}/grupos`);
+    },
+    async createGrupo(produtoId, data) {
+        return await apiRequest(`/produtos/${produtoId}/grupos`, { method: 'POST', body: JSON.stringify(data) });
+    },
+    async updateGrupo(id, data) {
+        return await apiRequest(`/produtos/grupos/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    },
+    async deleteGrupo(id) {
+        return await apiRequest(`/produtos/grupos/${id}`, { method: 'DELETE' });
+    },
+    async createOpcao(grupoId, data) {
+        return await apiRequest(`/produtos/grupos/${grupoId}/opcoes`, { method: 'POST', body: JSON.stringify(data) });
+    },
+    async updateOpcao(id, data) {
+        return await apiRequest(`/produtos/opcoes/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    },
+    async deleteOpcao(id) {
+        return await apiRequest(`/produtos/opcoes/${id}`, { method: 'DELETE' });
     }
 };

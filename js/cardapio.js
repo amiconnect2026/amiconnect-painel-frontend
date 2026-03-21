@@ -155,6 +155,9 @@ function renderProdutos() {
                                         ${p.disponivel ? '✅ Disponível' : '❌ Indisponível'}
                                     </button>
                                     <button onclick="editProduto(${p.id})" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Editar">✏️</button>
+                                    ${p.tipo && p.tipo !== 'simples' ? `
+                                        <button onclick="abrirComplementos(${p.id}, '${p.nome.replace(/'/g, "\\'")}')" class="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition" title="Gerenciar Complementos">🧩</button>
+                                    ` : ''}
                                     ${canAdminActions ? `
                                         <button onclick="deleteProduto(${p.id}, '${p.nome.replace(/'/g, "\\'")}')" class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition" title="Deletar">🗑️</button>
                                     ` : ''}
@@ -222,6 +225,7 @@ async function saveProductField(productId, fields) {
     formData.append('preco', produto.preco);
     formData.append('disponivel', produto.disponivel);
     formData.append('remover_imagem', 'false');
+    formData.append('tipo', produto.tipo || 'simples');
     formData.append('is_novo', fields.is_novo !== undefined ? fields.is_novo : (produto.is_novo || false));
     formData.append('destaque', fields.destaque !== undefined ? fields.destaque : (produto.destaque || false));
     formData.append('tipo_destaque', fields.tipo_destaque !== undefined ? fields.tipo_destaque : (produto.tipo_destaque || 'mais_pedido'));
@@ -374,6 +378,7 @@ async function openAddModal() {
     document.getElementById('produtoId').value = '';
     document.getElementById('removerImagemFlag').value = 'false';
     document.getElementById('produtoDisponivel').checked = true;
+    document.getElementById('produtoTipo').value = 'simples';
     document.getElementById('imagemPreviewContainer').classList.add('hidden');
     document.getElementById('imagemPlaceholder').classList.remove('hidden');
     document.getElementById('produtoModal').classList.remove('hidden');
@@ -393,6 +398,7 @@ function editProduto(id) {
     document.getElementById('produtoDescricao').value = produto.descricao || '';
     document.getElementById('produtoPreco').value = produto.preco;
     document.getElementById('produtoCategoria').value = produto.categoria_id;
+    document.getElementById('produtoTipo').value = produto.tipo || 'simples';
     document.getElementById('produtoDisponivel').checked = produto.disponivel;
 
     if (produto.imagem_url) {
@@ -456,6 +462,7 @@ document.getElementById('produtoForm').addEventListener('submit', async (e) => {
     formData.append('descricao', document.getElementById('produtoDescricao').value);
     formData.append('preco', document.getElementById('produtoPreco').value);
     formData.append('disponivel', document.getElementById('produtoDisponivel').checked);
+    formData.append('tipo', document.getElementById('produtoTipo').value || 'simples');
 
     if (selectedImageFile) {
         formData.append('imagem', selectedImageFile);
@@ -486,5 +493,209 @@ document.getElementById('produtoForm').addEventListener('submit', async (e) => {
         alert('Erro ao salvar produto: ' + error.message);
     }
 });
+
+// ── Complementos management ───────────────────────────────────────────────────
+
+let _compProdutoId = null;
+let _compData = null;
+
+async function abrirComplementos(produtoId, produtoNome) {
+    _compProdutoId = produtoId;
+    document.getElementById('compModalSubtitle').textContent = produtoNome;
+    document.getElementById('compModalBody').innerHTML = '<div class="text-center py-8 text-gray-400">Carregando...</div>';
+    document.getElementById('complementosModal').classList.remove('hidden');
+
+    try {
+        _compData = await API.getComplementos(produtoId);
+        renderComplementosModal();
+    } catch (e) {
+        document.getElementById('compModalBody').innerHTML = `<p class="text-red-500">Erro ao carregar: ${e.message}</p>`;
+    }
+}
+
+function fecharComplementos() {
+    document.getElementById('complementosModal').classList.add('hidden');
+    _compProdutoId = null;
+    _compData = null;
+}
+
+function renderComplementosModal() {
+    const { produto, tamanhos, grupos } = _compData;
+    const isPizza = produto.tipo === 'pizza' || produto.tipo === 'combo_pizza';
+    let html = '';
+
+    // Tamanhos (só para pizza/combo_pizza)
+    if (isPizza) {
+        html += `
+        <div>
+            <div class="flex items-center justify-between mb-3">
+                <h4 class="font-bold text-gray-800">📏 Tamanhos</h4>
+                <button onclick="adicionarTamanho()" class="text-sm bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-3 py-1.5 rounded-lg transition">+ Novo tamanho</button>
+            </div>
+            <div id="compTamanhosList" class="space-y-2">
+                ${tamanhos.length === 0 ? '<p class="text-sm text-gray-400">Nenhum tamanho cadastrado.</p>' : tamanhos.map(t => renderTamanhoRow(t)).join('')}
+            </div>
+        </div>
+        <hr class="border-gray-200">`;
+    }
+
+    // Grupos
+    html += `
+    <div>
+        <div class="flex items-center justify-between mb-3">
+            <h4 class="font-bold text-gray-800">📋 Grupos de complementos</h4>
+            <button onclick="adicionarGrupo()" class="text-sm bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-3 py-1.5 rounded-lg transition">+ Novo grupo</button>
+        </div>
+        <div id="compGruposList" class="space-y-4">
+            ${grupos.length === 0 ? '<p class="text-sm text-gray-400">Nenhum grupo cadastrado.</p>' : grupos.map(g => renderGrupoBlock(g)).join('')}
+        </div>
+    </div>`;
+
+    document.getElementById('compModalBody').innerHTML = html;
+}
+
+function renderTamanhoRow(t) {
+    return `<div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg" id="tamanho-row-${t.id}">
+        <input type="text" value="${t.nome}" placeholder="Nome" class="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400" id="t-nome-${t.id}">
+        <input type="number" value="${parseFloat(t.preco).toFixed(2)}" step="0.01" placeholder="Preço" class="w-28 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400" id="t-preco-${t.id}">
+        <label class="flex items-center gap-1 text-sm text-gray-600 cursor-pointer">
+            <input type="checkbox" ${t.ativo ? 'checked' : ''} id="t-ativo-${t.id}" class="w-4 h-4 accent-indigo-600"> Ativo
+        </label>
+        <button onclick="salvarTamanho(${t.id})" class="text-sm bg-green-100 hover:bg-green-200 text-green-700 font-semibold px-3 py-1.5 rounded-lg transition">💾</button>
+        <button onclick="excluirTamanho(${t.id})" class="text-sm bg-red-100 hover:bg-red-200 text-red-700 font-semibold px-3 py-1.5 rounded-lg transition">🗑️</button>
+    </div>`;
+}
+
+function renderGrupoBlock(g) {
+    return `<div class="border border-gray-200 rounded-xl overflow-hidden" id="grupo-block-${g.id}">
+        <div class="bg-gray-50 p-3 flex items-center gap-3 flex-wrap">
+            <input type="text" value="${g.nome}" placeholder="Nome do grupo" class="flex-1 min-w-[120px] border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400" id="g-nome-${g.id}">
+            <label class="flex items-center gap-1 text-sm text-gray-600 cursor-pointer whitespace-nowrap">
+                <input type="checkbox" ${g.obrigatorio ? 'checked' : ''} id="g-obrig-${g.id}" class="w-4 h-4 accent-indigo-600"> Obrigatório
+            </label>
+            <div class="flex items-center gap-1 text-sm text-gray-600">
+                <span>Mín:</span>
+                <input type="number" min="0" value="${g.min_opcoes || 0}" class="w-14 border border-gray-300 rounded-lg px-2 py-1 text-sm focus:outline-none" id="g-min-${g.id}">
+                <span>Máx:</span>
+                <input type="number" min="1" value="${g.max_opcoes || 1}" class="w-14 border border-gray-300 rounded-lg px-2 py-1 text-sm focus:outline-none" id="g-max-${g.id}">
+            </div>
+            <button onclick="salvarGrupo(${g.id})" class="text-sm bg-green-100 hover:bg-green-200 text-green-700 font-semibold px-3 py-1.5 rounded-lg transition">💾</button>
+            <button onclick="excluirGrupo(${g.id})" class="text-sm bg-red-100 hover:bg-red-200 text-red-700 font-semibold px-2 py-1.5 rounded-lg transition">🗑️</button>
+        </div>
+        <div class="p-3 space-y-2" id="grupo-opcoes-${g.id}">
+            ${(g.opcoes || []).map(o => renderOpcaoRow(o)).join('')}
+            <button onclick="adicionarOpcao(${g.id})" class="w-full text-sm border-2 border-dashed border-gray-300 hover:border-indigo-400 text-gray-500 hover:text-indigo-600 font-semibold py-2 rounded-lg transition">+ Opção</button>
+        </div>
+    </div>`;
+}
+
+function renderOpcaoRow(o) {
+    return `<div class="flex items-center gap-2" id="opcao-row-${o.id}">
+        <input type="text" value="${o.nome}" placeholder="Nome da opção" class="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400" id="o-nome-${o.id}">
+        <input type="number" value="${parseFloat(o.preco_adicional || 0).toFixed(2)}" step="0.01" placeholder="+R$" class="w-24 border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400" id="o-preco-${o.id}">
+        <label class="flex items-center gap-1 text-sm text-gray-600 cursor-pointer">
+            <input type="checkbox" ${o.disponivel !== false ? 'checked' : ''} id="o-disp-${o.id}" class="w-4 h-4 accent-indigo-600"> Disp.
+        </label>
+        <button onclick="salvarOpcao(${o.id})" class="text-sm bg-green-100 hover:bg-green-200 text-green-700 font-semibold px-2 py-1.5 rounded-lg transition">💾</button>
+        <button onclick="excluirOpcao(${o.id})" class="text-sm bg-red-100 hover:bg-red-200 text-red-700 font-semibold px-2 py-1.5 rounded-lg transition">🗑️</button>
+    </div>`;
+}
+
+async function adicionarTamanho() {
+    try {
+        const res = await API.createTamanho(_compProdutoId, { nome: 'Novo tamanho', preco: 0, ativo: true, ordem: 0 });
+        _compData.tamanhos.push(res.tamanho);
+        const list = document.getElementById('compTamanhosList');
+        if (list) {
+            const tmp = document.createElement('div');
+            tmp.innerHTML = renderTamanhoRow(res.tamanho);
+            list.appendChild(tmp.firstChild);
+        }
+    } catch (e) { alert('Erro: ' + e.message); }
+}
+
+async function salvarTamanho(id) {
+    try {
+        await API.updateTamanho(id, {
+            nome: document.getElementById(`t-nome-${id}`).value,
+            preco: parseFloat(document.getElementById(`t-preco-${id}`).value) || 0,
+            ativo: document.getElementById(`t-ativo-${id}`).checked,
+            ordem: 0
+        });
+    } catch (e) { alert('Erro: ' + e.message); }
+}
+
+async function excluirTamanho(id) {
+    if (!confirm('Excluir este tamanho?')) return;
+    try {
+        await API.deleteTamanho(id);
+        document.getElementById(`tamanho-row-${id}`)?.remove();
+    } catch (e) { alert('Erro: ' + e.message); }
+}
+
+async function adicionarGrupo() {
+    try {
+        const res = await API.createGrupo(_compProdutoId, { nome: 'Novo grupo', obrigatorio: false, min_opcoes: 0, max_opcoes: 1, ordem: 0 });
+        _compData.grupos.push(res.grupo);
+        const list = document.getElementById('compGruposList');
+        if (list) {
+            const tmp = document.createElement('div');
+            tmp.innerHTML = renderGrupoBlock(res.grupo);
+            list.appendChild(tmp.firstChild);
+        }
+    } catch (e) { alert('Erro: ' + e.message); }
+}
+
+async function salvarGrupo(id) {
+    try {
+        await API.updateGrupo(id, {
+            nome: document.getElementById(`g-nome-${id}`).value,
+            obrigatorio: document.getElementById(`g-obrig-${id}`).checked,
+            min_opcoes: parseInt(document.getElementById(`g-min-${id}`).value) || 0,
+            max_opcoes: parseInt(document.getElementById(`g-max-${id}`).value) || 1,
+            ordem: 0
+        });
+    } catch (e) { alert('Erro: ' + e.message); }
+}
+
+async function excluirGrupo(id) {
+    if (!confirm('Excluir este grupo e suas opções?')) return;
+    try {
+        await API.deleteGrupo(id);
+        document.getElementById(`grupo-block-${id}`)?.remove();
+    } catch (e) { alert('Erro: ' + e.message); }
+}
+
+async function adicionarOpcao(grupoId) {
+    try {
+        const res = await API.createOpcao(grupoId, { nome: 'Nova opção', preco_adicional: 0, disponivel: true, ordem: 0 });
+        const container = document.getElementById(`grupo-opcoes-${grupoId}`);
+        if (container) {
+            const addBtn = container.querySelector('button');
+            const tmp = document.createElement('div');
+            tmp.innerHTML = renderOpcaoRow(res.opcao);
+            container.insertBefore(tmp.firstChild, addBtn);
+        }
+    } catch (e) { alert('Erro: ' + e.message); }
+}
+
+async function salvarOpcao(id) {
+    try {
+        await API.updateOpcao(id, {
+            nome: document.getElementById(`o-nome-${id}`).value,
+            preco_adicional: parseFloat(document.getElementById(`o-preco-${id}`).value) || 0,
+            disponivel: document.getElementById(`o-disp-${id}`).checked,
+            ordem: 0
+        });
+    } catch (e) { alert('Erro: ' + e.message); }
+}
+
+async function excluirOpcao(id) {
+    if (!confirm('Excluir esta opção?')) return;
+    try {
+        await API.deleteOpcao(id);
+        document.getElementById(`opcao-row-${id}`)?.remove();
+    } catch (e) { alert('Erro: ' + e.message); }
+}
 
 init();
