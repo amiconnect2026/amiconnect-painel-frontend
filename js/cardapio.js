@@ -581,27 +581,8 @@ function fecharComplementos() {
 }
 
 function renderComplementosModal() {
-    const { produto, tamanhos, grupos } = _compData;
-    const isPizza = produto.tipo === 'pizza' || produto.tipo === 'combo_pizza';
-    let html = '';
-
-    // Tamanhos (só para pizza/combo_pizza)
-    if (isPizza) {
-        html += `
-        <div>
-            <div class="flex items-center justify-between mb-3">
-                <h4 class="font-bold text-gray-800">📏 Tamanhos</h4>
-                <button onclick="adicionarTamanho()" class="text-sm bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-3 py-1.5 rounded-lg transition">+ Novo tamanho</button>
-            </div>
-            <div id="compTamanhosList" class="space-y-2">
-                ${tamanhos.length === 0 ? '<p class="text-sm text-gray-400">Nenhum tamanho cadastrado.</p>' : tamanhos.map(t => renderTamanhoRow(t)).join('')}
-            </div>
-        </div>
-        <hr class="border-gray-200">`;
-    }
-
-    // Grupos
-    html += `
+    const { grupos } = _compData;
+    let html = `
     <div>
         <div class="flex items-center justify-between mb-3">
             <h4 class="font-bold text-gray-800">📋 Grupos de complementos</h4>
@@ -613,18 +594,6 @@ function renderComplementosModal() {
     </div>`;
 
     document.getElementById('compModalBody').innerHTML = html;
-}
-
-function renderTamanhoRow(t) {
-    return `<div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg" id="tamanho-row-${t.id}">
-        <input type="text" value="${t.nome}" placeholder="Nome" class="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400" id="t-nome-${t.id}">
-        <input type="number" value="${parseFloat(t.preco).toFixed(2)}" step="0.01" placeholder="Preço" class="w-28 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400" id="t-preco-${t.id}">
-        <label class="flex items-center gap-1 text-sm text-gray-600 cursor-pointer">
-            <input type="checkbox" ${t.ativo ? 'checked' : ''} id="t-ativo-${t.id}" class="w-4 h-4 accent-indigo-600"> Ativo
-        </label>
-        <button onclick="salvarTamanho(${t.id})" class="text-sm bg-green-100 hover:bg-green-200 text-green-700 font-semibold px-3 py-1.5 rounded-lg transition">💾</button>
-        <button onclick="excluirTamanho(${t.id})" class="text-sm bg-red-100 hover:bg-red-200 text-red-700 font-semibold px-3 py-1.5 rounded-lg transition">🗑️</button>
-    </div>`;
 }
 
 function renderGrupoBlock(g) {
@@ -661,38 +630,6 @@ function renderOpcaoRow(o) {
         <button onclick="salvarOpcao(${o.id})" class="text-sm bg-green-100 hover:bg-green-200 text-green-700 font-semibold px-2 py-1.5 rounded-lg transition">💾</button>
         <button onclick="excluirOpcao(${o.id})" class="text-sm bg-red-100 hover:bg-red-200 text-red-700 font-semibold px-2 py-1.5 rounded-lg transition">🗑️</button>
     </div>`;
-}
-
-async function adicionarTamanho() {
-    try {
-        const res = await API.createTamanho(_compProdutoId, { nome: 'Novo tamanho', preco: 0, ativo: true, ordem: 0 });
-        _compData.tamanhos.push(res.tamanho);
-        const list = document.getElementById('compTamanhosList');
-        if (list) {
-            const tmp = document.createElement('div');
-            tmp.innerHTML = renderTamanhoRow(res.tamanho);
-            list.appendChild(tmp.firstChild);
-        }
-    } catch (e) { alert('Erro: ' + e.message); }
-}
-
-async function salvarTamanho(id) {
-    try {
-        await API.updateTamanho(id, {
-            nome: document.getElementById(`t-nome-${id}`).value,
-            preco: parseFloat(document.getElementById(`t-preco-${id}`).value) || 0,
-            ativo: document.getElementById(`t-ativo-${id}`).checked,
-            ordem: 0
-        });
-    } catch (e) { alert('Erro: ' + e.message); }
-}
-
-async function excluirTamanho(id) {
-    if (!confirm('Excluir este tamanho?')) return;
-    try {
-        await API.deleteTamanho(id);
-        document.getElementById(`tamanho-row-${id}`)?.remove();
-    } catch (e) { alert('Erro: ' + e.message); }
 }
 
 async function adicionarGrupo() {
@@ -750,8 +687,7 @@ async function salvarOpcao(id) {
         await API.updateOpcao(id, {
             nome: document.getElementById(`o-nome-${id}`).value,
             preco_adicional: parseFloat(document.getElementById(`o-preco-${id}`).value) || 0,
-            disponivel: document.getElementById(`o-disp-${id}`).checked,
-            ordem: 0
+            disponivel: document.getElementById(`o-disp-${id}`).checked
         });
     } catch (e) { alert('Erro: ' + e.message); }
 }

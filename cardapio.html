@@ -253,11 +253,11 @@
         </div>
     </div>
 
-    <script src="js/api.js?v=3"></script>
+    <script src="js/api.js?v=4"></script>
     <script src="js/pausa.js?v=2"></script>
     <script src="js/auth.js?v=2"></script>
     <script src="js/alertas.js?v=20"></script>
-    <script src="js/cardapio.js?v=6"></script>
+    <script src="js/cardapio.js?v=7"></script>
     <script>
         iniciarAlertas();
         (function() { const u = JSON.parse(localStorage.getItem('user') || '{}'); if (u.role !== 'admin') { const el = document.getElementById('navCategorias'); if (el) el.remove(); } if (u.role === 'admin') { const el = document.getElementById('navEmpresas'); if (el) el.classList.remove('hidden'); } })();

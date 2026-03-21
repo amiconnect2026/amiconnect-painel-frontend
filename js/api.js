@@ -194,18 +194,6 @@ const API = {
     async getComplementos(produtoId) {
         return await apiRequest(`/produtos/${produtoId}/complementos`);
     },
-    async getTamanhos(produtoId) {
-        return await apiRequest(`/produtos/${produtoId}/tamanhos`);
-    },
-    async createTamanho(produtoId, data) {
-        return await apiRequest(`/produtos/${produtoId}/tamanhos`, { method: 'POST', body: JSON.stringify(data) });
-    },
-    async updateTamanho(id, data) {
-        return await apiRequest(`/produtos/tamanhos/${id}`, { method: 'PUT', body: JSON.stringify(data) });
-    },
-    async deleteTamanho(id) {
-        return await apiRequest(`/produtos/tamanhos/${id}`, { method: 'DELETE' });
-    },
     async getGrupos(produtoId) {
         return await apiRequest(`/produtos/${produtoId}/grupos`);
     },
