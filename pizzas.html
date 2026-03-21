@@ -254,6 +254,11 @@
         }
 
         async function carregarTudo() {
+            // Salvar tipo_negocio para o nav de outras páginas
+            try {
+                const emp = await API.getEmpresa(empresaSelecionadaId);
+                if (emp.empresa?.tipo_negocio) localStorage.setItem('empresaTipoNegocio', emp.empresa.tipo_negocio);
+            } catch(e) {}
             await Promise.all([
                 carregarTamanhos(),
                 carregarSubcategorias(),

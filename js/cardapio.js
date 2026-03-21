@@ -81,6 +81,7 @@ async function carregarProdutos(empresaId) {
         categorias = categoriasRes.categorias;
         produtos = produtosRes.produtos;
         empresaAtual = empresaRes.empresa;
+        localStorage.setItem('empresaTipoNegocio', empresaAtual.tipo_negocio || 'restaurante');
 
         const selectCategoria = document.getElementById('produtoCategoria');
         selectCategoria.innerHTML = '<option value="">Selecione...</option>';

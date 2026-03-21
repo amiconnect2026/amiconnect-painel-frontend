@@ -49,6 +49,8 @@ async function carregarConfiguracoes(empresaId) {
         document.getElementById('latitude').value = empresa.latitude || '';
         document.getElementById('longitude').value = empresa.longitude || '';
         document.getElementById('permite_retirada').checked = empresa.permite_retirada !== false;
+        document.getElementById('tipo_negocio').value = empresa.tipo_negocio || 'restaurante';
+        localStorage.setItem('empresaTipoNegocio', empresa.tipo_negocio || 'restaurante');
         carregarTaxas(empresaId);
         if (empresa.foto_capa) {
             document.getElementById('fotoCapa_preview').src = empresa.foto_capa;
@@ -120,9 +122,11 @@ async function salvarConfiguracoes() {
             raio_entrega_km: parseFloat(document.getElementById('raio_entrega_km').value) || null,
             latitude: parseFloat(document.getElementById('latitude').value) || null,
             longitude: parseFloat(document.getElementById('longitude').value) || null,
-            permite_retirada: document.getElementById('permite_retirada').checked
+            permite_retirada: document.getElementById('permite_retirada').checked,
+            tipo_negocio: document.getElementById('tipo_negocio').value
         };
         await API.atualizarEmpresa(empresaIdAtual, dados);
+        localStorage.setItem('empresaTipoNegocio', dados.tipo_negocio);
         const msg = document.getElementById('mensagem');
         msg.textContent = 'Configuracoes salvas com sucesso!';
         msg.className = 'text-center py-3 rounded-lg font-medium bg-green-100 text-green-700';

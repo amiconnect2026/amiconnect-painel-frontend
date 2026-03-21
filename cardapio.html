@@ -21,7 +21,7 @@
                     <a id="navCategorias" href="categorias.html" class="text-gray-600 hover:text-indigo-600 transition">Categorias</a>
                     <a href="conversas.html" class="text-gray-600 hover:text-indigo-600 transition">Conversas</a>
                     <a href="configuracoes.html" class="text-gray-600 hover:text-indigo-600 transition">Minha Loja</a>
-                    <a href="pizzas.html" class="text-gray-600 hover:text-indigo-600 transition">🍕 Pizzas</a>
+                    <a id="navPizzas" href="pizzas.html" class="hidden text-gray-600 hover:text-indigo-600 transition">🍕 Pizzas</a>
                     <a href="pedidos.html" class="text-gray-600 hover:text-indigo-600 transition">Pedidos</a>
                     <a href="relatorios.html" class="text-gray-600 hover:text-indigo-600 transition">Relatórios</a>
                     <a id="navEmpresas" href="empresas.html" class="hidden text-gray-600 hover:text-indigo-600 transition">Empresas</a>
@@ -284,7 +284,17 @@
     <script src="js/cardapio.js?v=8"></script>
     <script>
         iniciarAlertas();
-        (function() { const u = JSON.parse(localStorage.getItem('user') || '{}'); if (u.role !== 'admin') { const el = document.getElementById('navCategorias'); if (el) el.remove(); } if (u.role === 'admin') { const el = document.getElementById('navEmpresas'); if (el) el.classList.remove('hidden'); } })();
+        (function() {
+            const u = JSON.parse(localStorage.getItem('user') || '{}');
+            if (u.role !== 'admin') { const el = document.getElementById('navCategorias'); if (el) el.remove(); }
+            if (u.role === 'admin') { const el = document.getElementById('navEmpresas'); if (el) el.classList.remove('hidden'); }
+            // Mostrar Pizzas somente para pizzaria ou admin
+            const navPizzas = document.getElementById('navPizzas');
+            if (navPizzas) {
+                const tipo = localStorage.getItem('empresaTipoNegocio') || 'restaurante';
+                if (u.role === 'admin' || tipo === 'pizzaria') navPizzas.classList.remove('hidden');
+            }
+        })();
         function verCardapioPublico() {
             window.open(`cardapio-publico.html?id=${empresaSelecionadaId}`, '_blank');
         }
