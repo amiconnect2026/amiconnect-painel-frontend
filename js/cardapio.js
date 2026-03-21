@@ -671,10 +671,15 @@ async function adicionarOpcao(grupoId) {
         const res = await API.createOpcao(grupoId, { nome: 'Nova opção', preco_adicional: 0, disponivel: true, ordem: 0 });
         const container = document.getElementById(`grupo-opcoes-${grupoId}`);
         if (container) {
-            const addBtn = container.querySelector('button');
+            const addBtn = container.lastElementChild; // botão "+ Opção" é sempre o último filho direto
             const tmp = document.createElement('div');
             tmp.innerHTML = renderOpcaoRow(res.opcao);
-            container.insertBefore(tmp.firstChild, addBtn);
+            const novoEl = tmp.firstChild;
+            if (addBtn && addBtn.parentNode === container) {
+                container.insertBefore(novoEl, addBtn);
+            } else {
+                container.appendChild(novoEl);
+            }
         }
     } catch (e) { alert('Erro: ' + e.message); }
 }
