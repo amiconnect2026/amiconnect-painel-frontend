@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciar Pizzas - AmiConnect</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <nav class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center gap-3">
+                    <h1 class="text-2xl font-bold text-indigo-600"><div style="display:flex;align-items:center;gap:8px;"><img src="img/icon.png" alt="AmiConnect" style="height:40px;"><span style="font-size:1.3rem;font-weight:700;"><span style="color:#1e3a5f;">Ami</span><span style="color:#5cb85c;">Connect</span></span></div></h1>
+                    <span class="text-gray-400">|</span>
+                    <span class="text-gray-600" id="userName">Carregando...</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <a href="dashboard.html" class="text-gray-600 hover:text-indigo-600 transition">Início</a>
+                    <a href="cardapio.html" class="text-gray-600 hover:text-indigo-600 transition">Cardápio</a>
+                    <a href="pizzas.html" class="text-indigo-600 font-medium">🍕 Pizzas</a>
+                    <a href="pedidos.html" class="text-gray-600 hover:text-indigo-600 transition">Pedidos</a>
+                    <button onclick="logout()" class="text-red-600 hover:text-red-700 font-medium transition">Sair</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- Seletor de empresa (apenas admin) -->
+        <div id="seletorEmpresa" class="hidden bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">🏪 Gerenciando restaurante:</label>
+            <select id="selectEmpresa" class="w-full md:w-96 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                <option value="">Selecione um restaurante...</option>
+            </select>
+        </div>
+
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h2 class="text-3xl font-bold text-gray-900">🍕 Gerenciar Pizzas</h2>
+                <p class="text-gray-600 mt-1">Tamanhos, sabores e bordas</p>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
+            <div class="flex border-b border-gray-200">
+                <button id="tabTamanhos" onclick="mudarTab('tamanhos')" class="px-6 py-4 font-semibold text-indigo-600 border-b-2 border-indigo-600">📐 Tamanhos</button>
+                <button id="tabSabores" onclick="mudarTab('sabores')" class="px-6 py-4 font-semibold text-gray-500 hover:text-gray-700">🍕 Sabores</button>
+                <button id="tabBordas" onclick="mudarTab('bordas')" class="px-6 py-4 font-semibold text-gray-500 hover:text-gray-700">🫓 Bordas</button>
+            </div>
+        </div>
+
+        <!-- Tab: Tamanhos -->
+        <div id="secaoTamanhos">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-800">Tamanhos</h3>
+                <button onclick="abrirModalTamanho()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-lg transition">+ Novo Tamanho</button>
+            </div>
+            <div id="listaTamanhos" class="bg-white rounded-xl shadow-sm border border-gray-200 divide-y divide-gray-100">
+                <div class="p-8 text-center text-gray-400">Carregando...</div>
+            </div>
+        </div>
+
+        <!-- Tab: Sabores -->
+        <div id="secaoSabores" class="hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-800">Sabores</h3>
+                <div class="flex gap-2">
+                    <button onclick="abrirModalSubcategoria()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-4 py-2 rounded-lg transition text-sm">+ Categoria</button>
+                    <button onclick="abrirModalSabor()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-lg transition">+ Novo Sabor</button>
+                </div>
+            </div>
+            <div id="listaSabores" class="space-y-4">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center text-gray-400">Carregando...</div>
+            </div>
+        </div>
+
+        <!-- Tab: Bordas -->
+        <div id="secaoBordas" class="hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-800">Bordas Recheadas</h3>
+                <button onclick="abrirModalBorda()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-lg transition">+ Nova Borda</button>
+            </div>
+            <div id="listaBordas" class="bg-white rounded-xl shadow-sm border border-gray-200 divide-y divide-gray-100">
+                <div class="p-8 text-center text-gray-400">Carregando...</div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Tamanho -->
+    <div id="modalTamanho" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div class="p-5 border-b border-gray-200 flex items-center justify-between">
+                <h3 class="text-lg font-bold text-gray-900" id="modalTamanhoTitulo">Novo Tamanho</h3>
+                <button onclick="fecharModalTamanho()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+            <div class="p-5 space-y-4">
+                <input type="hidden" id="tamanhoId">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+                    <input type="text" id="tamanhoNome" placeholder="Ex: Pequena, Média, Grande" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Preço base (R$)</label>
+                        <input type="number" id="tamanhoPreco" step="0.01" min="0" placeholder="0.00" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Máx. sabores</label>
+                        <input type="number" id="tamanhoMaxSabores" min="1" value="2" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                </div>
+            </div>
+            <div class="p-4 border-t border-gray-100 flex gap-3">
+                <button onclick="fecharModalTamanho()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2.5 rounded-xl transition">Cancelar</button>
+                <button onclick="salvarTamanho()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 rounded-xl transition">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Subcategoria -->
+    <div id="modalSubcategoria" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm">
+            <div class="p-5 border-b border-gray-200 flex items-center justify-between">
+                <h3 class="text-lg font-bold text-gray-900" id="modalSubcategoriaTitulo">Nova Categoria de Sabores</h3>
+                <button onclick="fecharModalSubcategoria()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+            <div class="p-5">
+                <input type="hidden" id="subcategoriaId">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Nome da categoria</label>
+                <input type="text" id="subcategoriaNome" placeholder="Ex: Tradicionais, Especiais, Premium" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none">
+            </div>
+            <div class="p-4 border-t border-gray-100 flex gap-3">
+                <button onclick="fecharModalSubcategoria()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2.5 rounded-xl transition">Cancelar</button>
+                <button onclick="salvarSubcategoria()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 rounded-xl transition">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Sabor -->
+    <div id="modalSabor" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div class="p-5 border-b border-gray-200 flex items-center justify-between">
+                <h3 class="text-lg font-bold text-gray-900" id="modalSaborTitulo">Novo Sabor</h3>
+                <button onclick="fecharModalSabor()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+            <div class="p-5 space-y-4">
+                <input type="hidden" id="saborId">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
+                    <select id="saborSubcategoria" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <option value="">Sem categoria</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nome do sabor</label>
+                    <input type="text" id="saborNome" placeholder="Ex: Mussarela, Calabresa, Frango..." class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Descrição <span class="font-normal text-gray-400">(opcional)</span></label>
+                    <input type="text" id="saborDescricao" placeholder="Ingredientes, detalhes..." class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-3 items-end">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Preço adicional (R$)</label>
+                        <input type="number" id="saborPrecoAdicional" step="0.01" min="0" value="0" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                    <label class="flex items-center gap-2 cursor-pointer pb-2">
+                        <input type="checkbox" id="saborDisponivel" checked class="w-4 h-4 text-indigo-600">
+                        <span class="text-sm font-medium text-gray-700">Disponível</span>
+                    </label>
+                </div>
+            </div>
+            <div class="p-4 border-t border-gray-100 flex gap-3">
+                <button onclick="fecharModalSabor()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2.5 rounded-xl transition">Cancelar</button>
+                <button onclick="salvarSabor()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 rounded-xl transition">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Borda -->
+    <div id="modalBorda" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div class="p-5 border-b border-gray-200 flex items-center justify-between">
+                <h3 class="text-lg font-bold text-gray-900" id="modalBordaTitulo">Nova Borda</h3>
+                <button onclick="fecharModalBorda()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+            <div class="p-5 space-y-4">
+                <input type="hidden" id="bordaId">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nome da borda</label>
+                    <input type="text" id="bordaNome" placeholder="Ex: Catupiry, Cheddar, Chocolate..." class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-3 items-end">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Preço adicional (R$)</label>
+                        <input type="number" id="bordaPrecoAdicional" step="0.01" min="0" value="0" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                    <label class="flex items-center gap-2 cursor-pointer pb-2">
+                        <input type="checkbox" id="bordaDisponivel" checked class="w-4 h-4 text-indigo-600">
+                        <span class="text-sm font-medium text-gray-700">Disponível</span>
+                    </label>
+                </div>
+            </div>
+            <div class="p-4 border-t border-gray-100 flex gap-3">
+                <button onclick="fecharModalBorda()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2.5 rounded-xl transition">Cancelar</button>
+                <button onclick="salvarBorda()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 rounded-xl transition">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js?v=5"></script>
+    <script src="js/auth.js?v=2"></script>
+    <script>
+        const user = checkAuth();
+        if (!user) window.location.href = 'index.html';
+        document.getElementById('userName').textContent = user.nome;
+
+        const isAdmin = user.role === 'admin';
+        let empresaSelecionadaId = isAdmin
+            ? (parseInt(localStorage.getItem('adminEmpresaId')) || null)
+            : user.empresa_id;
+
+        let subcategorias = [];
+        let tabAtiva = 'tamanhos';
+
+        async function init() {
+            if (isAdmin) {
+                await carregarSeletorEmpresas();
+            }
+            if (empresaSelecionadaId) {
+                await carregarTudo();
+            }
+        }
+
+        async function carregarSeletorEmpresas() {
+            const res = await apiRequest('/empresas');
+            const empresas = res.empresas || [];
+            document.getElementById('seletorEmpresa').classList.remove('hidden');
+            const select = document.getElementById('selectEmpresa');
+            select.innerHTML = '<option value="">Selecione...</option>';
+            empresas.forEach(e => {
+                select.innerHTML += `<option value="${e.id}" ${e.id == empresaSelecionadaId ? 'selected' : ''}>${e.nome}</option>`;
+            });
+            select.addEventListener('change', async (ev) => {
+                const id = parseInt(ev.target.value);
+                if (!id) return;
+                localStorage.setItem('adminEmpresaId', id);
+                empresaSelecionadaId = id;
+                await carregarTudo();
+            });
+        }
+
+        async function carregarTudo() {
+            await Promise.all([
+                carregarTamanhos(),
+                carregarSubcategorias(),
+                carregarSabores(),
+                carregarBordas()
+            ]);
+        }
+
+        // ── Tabs ──────────────────────────────────────────────────────────────
+
+        function mudarTab(tab) {
+            tabAtiva = tab;
+            ['tamanhos', 'sabores', 'bordas'].forEach(t => {
+                document.getElementById(`secao${capitalize(t)}`).classList.toggle('hidden', t !== tab);
+                const btn = document.getElementById(`tab${capitalize(t)}`);
+                if (t === tab) {
+                    btn.classList.add('text-indigo-600', 'border-b-2', 'border-indigo-600');
+                    btn.classList.remove('text-gray-500');
+                } else {
+                    btn.classList.remove('text-indigo-600', 'border-b-2', 'border-indigo-600');
+                    btn.classList.add('text-gray-500');
+                }
+            });
+        }
+
+        function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+        // ── Tamanhos ──────────────────────────────────────────────────────────
+
+        let tamanhos = [];
+        let editTamanhoId = null;
+
+        async function carregarTamanhos() {
+            if (!empresaSelecionadaId) return;
+            try {
+                const res = await API.getPizzaTamanhos(isAdmin ? empresaSelecionadaId : null);
+                tamanhos = res.tamanhos || [];
+                renderTamanhos();
+            } catch (e) { console.error(e); }
+        }
+
+        function renderTamanhos() {
+            const el = document.getElementById('listaTamanhos');
+            if (tamanhos.length === 0) {
+                el.innerHTML = '<div class="p-8 text-center text-gray-400">Nenhum tamanho cadastrado</div>';
+                return;
+            }
+            el.innerHTML = tamanhos.map(t => `
+                <div class="flex items-center justify-between px-5 py-3">
+                    <div>
+                        <span class="font-semibold text-gray-900">${t.nome}</span>
+                        <span class="ml-3 text-sm text-gray-500">até ${t.max_sabores || 1} sabor(es)</span>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <span class="font-bold text-indigo-600">R$ ${parseFloat(t.preco).toFixed(2)}</span>
+                        <button onclick="editarTamanho(${t.id})" class="text-blue-600 hover:text-blue-800 text-sm font-medium">✏️ Editar</button>
+                        <button onclick="excluirTamanho(${t.id})" class="text-red-500 hover:text-red-700 text-sm font-medium">🗑️</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function abrirModalTamanho() {
+            editTamanhoId = null;
+            document.getElementById('modalTamanhoTitulo').textContent = 'Novo Tamanho';
+            document.getElementById('tamanhoId').value = '';
+            document.getElementById('tamanhoNome').value = '';
+            document.getElementById('tamanhoPreco').value = '';
+            document.getElementById('tamanhoMaxSabores').value = '2';
+            document.getElementById('modalTamanho').classList.remove('hidden');
+        }
+
+        function editarTamanho(id) {
+            const t = tamanhos.find(x => x.id === id);
+            if (!t) return;
+            editTamanhoId = id;
+            document.getElementById('modalTamanhoTitulo').textContent = 'Editar Tamanho';
+            document.getElementById('tamanhoId').value = t.id;
+            document.getElementById('tamanhoNome').value = t.nome;
+            document.getElementById('tamanhoPreco').value = t.preco;
+            document.getElementById('tamanhoMaxSabores').value = t.max_sabores || 2;
+            document.getElementById('modalTamanho').classList.remove('hidden');
+        }
+
+        function fecharModalTamanho() {
+            document.getElementById('modalTamanho').classList.add('hidden');
+        }
+
+        async function salvarTamanho() {
+            const nome = document.getElementById('tamanhoNome').value.trim();
+            const preco = parseFloat(document.getElementById('tamanhoPreco').value);
+            const max_sabores = parseInt(document.getElementById('tamanhoMaxSabores').value) || 2;
+            if (!nome || isNaN(preco)) return alert('Preencha nome e preço.');
+            try {
+                if (editTamanhoId) {
+                    await API.updatePizzaTamanho(editTamanhoId, { nome, preco, max_sabores });
+                } else {
+                    await API.createPizzaTamanho({ nome, preco, max_sabores }, isAdmin ? empresaSelecionadaId : null);
+                }
+                fecharModalTamanho();
+                await carregarTamanhos();
+            } catch (e) { alert('Erro: ' + e.message); }
+        }
+
+        async function excluirTamanho(id) {
+            if (!confirm('Excluir este tamanho?')) return;
+            try {
+                await API.deletePizzaTamanho(id);
+                await carregarTamanhos();
+            } catch (e) { alert('Erro: ' + e.message); }
+        }
+
+        // ── Subcategorias ─────────────────────────────────────────────────────
+
+        let editSubcategoriaId = null;
+
+        async function carregarSubcategorias() {
+            if (!empresaSelecionadaId) return;
+            try {
+                const res = await API.getPizzaSubcategorias(isAdmin ? empresaSelecionadaId : null);
+                subcategorias = res.subcategorias || [];
+                atualizarSelectSubcategorias();
+            } catch (e) { console.error(e); }
+        }
+
+        function atualizarSelectSubcategorias() {
+            const sel = document.getElementById('saborSubcategoria');
+            const val = sel.value;
+            sel.innerHTML = '<option value="">Sem categoria</option>';
+            subcategorias.forEach(s => {
+                sel.innerHTML += `<option value="${s.id}" ${s.id == val ? 'selected' : ''}>${s.nome}</option>`;
+            });
+        }
+
+        function abrirModalSubcategoria() {
+            editSubcategoriaId = null;
+            document.getElementById('modalSubcategoriaTitulo').textContent = 'Nova Categoria de Sabores';
+            document.getElementById('subcategoriaId').value = '';
+            document.getElementById('subcategoriaNome').value = '';
+            document.getElementById('modalSubcategoria').classList.remove('hidden');
+        }
+
+        function fecharModalSubcategoria() {
+            document.getElementById('modalSubcategoria').classList.add('hidden');
+        }
+
+        async function salvarSubcategoria() {
+            const nome = document.getElementById('subcategoriaNome').value.trim();
+            if (!nome) return alert('Informe o nome.');
+            try {
+                if (editSubcategoriaId) {
+                    await API.updatePizzaSubcategoria(editSubcategoriaId, { nome });
+                } else {
+                    await API.createPizzaSubcategoria({ nome }, isAdmin ? empresaSelecionadaId : null);
+                }
+                fecharModalSubcategoria();
+                await carregarSubcategorias();
+                await carregarSabores();
+            } catch (e) { alert('Erro: ' + e.message); }
+        }
+
+        // ── Sabores ───────────────────────────────────────────────────────────
+
+        let sabores = [];
+        let editSaborId = null;
+
+        async function carregarSabores() {
+            if (!empresaSelecionadaId) return;
+            try {
+                const res = await API.getPizzaSabores(isAdmin ? empresaSelecionadaId : null);
+                sabores = res.sabores || [];
+                renderSabores();
+            } catch (e) { console.error(e); }
+        }
+
+        function renderSabores() {
+            const el = document.getElementById('listaSabores');
+            if (sabores.length === 0) {
+                el.innerHTML = '<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center text-gray-400">Nenhum sabor cadastrado</div>';
+                return;
+            }
+
+            // Group by subcategoria
+            const grupos = {};
+            sabores.forEach(s => {
+                const key = s.subcategoria_nome || 'Sem categoria';
+                if (!grupos[key]) grupos[key] = [];
+                grupos[key].push(s);
+            });
+
+            el.innerHTML = Object.entries(grupos).map(([cat, itens]) => `
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                    <div class="px-5 py-3 border-b border-gray-100 bg-gray-50 rounded-t-xl flex items-center justify-between">
+                        <h4 class="font-bold text-gray-700">${cat}</h4>
+                        ${cat !== 'Sem categoria' ? `
+                            <div class="flex gap-2">
+                                <button onclick="editarSubcategoria('${cat}')" class="text-xs text-blue-600 hover:text-blue-800">✏️ Renomear</button>
+                                <button onclick="excluirSubcategoriaPorNome('${cat}')" class="text-xs text-red-500 hover:text-red-700">🗑️ Excluir</button>
+                            </div>
+                        ` : ''}
+                    </div>
+                    <div class="divide-y divide-gray-100">
+                        ${itens.map(s => `
+                            <div class="flex items-center justify-between px-5 py-3">
+                                <div>
+                                    <span class="font-semibold text-gray-900">${s.nome}</span>
+                                    ${s.descricao ? `<span class="ml-2 text-sm text-gray-400">${s.descricao}</span>` : ''}
+                                    ${!s.disponivel ? '<span class="ml-2 text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">Indisponível</span>' : ''}
+                                </div>
+                                <div class="flex items-center gap-4">
+                                    <span class="font-semibold text-indigo-600 text-sm">${parseFloat(s.preco_adicional) > 0 ? '+R$ ' + parseFloat(s.preco_adicional).toFixed(2) : 'Padrão'}</span>
+                                    <button onclick="editarSabor(${s.id})" class="text-blue-600 hover:text-blue-800 text-sm">✏️</button>
+                                    <button onclick="excluirSabor(${s.id})" class="text-red-500 hover:text-red-700 text-sm">🗑️</button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function editarSubcategoria(nome) {
+            const sc = subcategorias.find(s => s.nome === nome);
+            if (!sc) return;
+            editSubcategoriaId = sc.id;
+            document.getElementById('modalSubcategoriaTitulo').textContent = 'Renomear Categoria';
+            document.getElementById('subcategoriaId').value = sc.id;
+            document.getElementById('subcategoriaNome').value = sc.nome;
+            document.getElementById('modalSubcategoria').classList.remove('hidden');
+        }
+
+        async function excluirSubcategoriaPorNome(nome) {
+            const sc = subcategorias.find(s => s.nome === nome);
+            if (!sc) return;
+            if (!confirm(`Excluir categoria "${nome}"? Os sabores vinculados ficarão sem categoria.`)) return;
+            try {
+                await API.deletePizzaSubcategoria(sc.id);
+                await carregarSubcategorias();
+                await carregarSabores();
+            } catch (e) { alert('Erro: ' + e.message); }
+        }
+
+        function abrirModalSabor() {
+            editSaborId = null;
+            document.getElementById('modalSaborTitulo').textContent = 'Novo Sabor';
+            document.getElementById('saborId').value = '';
+            document.getElementById('saborNome').value = '';
+            document.getElementById('saborDescricao').value = '';
+            document.getElementById('saborPrecoAdicional').value = '0';
+            document.getElementById('saborDisponivel').checked = true;
+            document.getElementById('saborSubcategoria').value = '';
+            document.getElementById('modalSabor').classList.remove('hidden');
+        }
+
+        function editarSabor(id) {
+            const s = sabores.find(x => x.id === id);
+            if (!s) return;
+            editSaborId = id;
+            document.getElementById('modalSaborTitulo').textContent = 'Editar Sabor';
+            document.getElementById('saborId').value = s.id;
+            document.getElementById('saborNome').value = s.nome;
+            document.getElementById('saborDescricao').value = s.descricao || '';
+            document.getElementById('saborPrecoAdicional').value = s.preco_adicional || 0;
+            document.getElementById('saborDisponivel').checked = s.disponivel;
+            document.getElementById('saborSubcategoria').value = s.subcategoria_id || '';
+            document.getElementById('modalSabor').classList.remove('hidden');
+        }
+
+        function fecharModalSabor() {
+            document.getElementById('modalSabor').classList.add('hidden');
+        }
+
+        async function salvarSabor() {
+            const nome = document.getElementById('saborNome').value.trim();
+            if (!nome) return alert('Informe o nome do sabor.');
+            const data = {
+                nome,
+                descricao: document.getElementById('saborDescricao').value.trim() || null,
+                preco_adicional: parseFloat(document.getElementById('saborPrecoAdicional').value) || 0,
+                disponivel: document.getElementById('saborDisponivel').checked,
+                subcategoria_id: document.getElementById('saborSubcategoria').value || null
+            };
+            try {
+                if (editSaborId) {
+                    await API.updatePizzaSabor(editSaborId, data);
+                } else {
+                    await API.createPizzaSabor(data, isAdmin ? empresaSelecionadaId : null);
+                }
+                fecharModalSabor();
+                await carregarSabores();
+            } catch (e) { alert('Erro: ' + e.message); }
+        }
+
+        async function excluirSabor(id) {
+            if (!confirm('Excluir este sabor?')) return;
+            try {
+                await API.deletePizzaSabor(id);
+                await carregarSabores();
+            } catch (e) { alert('Erro: ' + e.message); }
+        }
+
+        // ── Bordas ────────────────────────────────────────────────────────────
+
+        let bordas = [];
+        let editBordaId = null;
+
+        async function carregarBordas() {
+            if (!empresaSelecionadaId) return;
+            try {
+                const res = await API.getPizzaBordas(isAdmin ? empresaSelecionadaId : null);
+                bordas = res.bordas || [];
+                renderBordas();
+            } catch (e) { console.error(e); }
+        }
+
+        function renderBordas() {
+            const el = document.getElementById('listaBordas');
+            if (bordas.length === 0) {
+                el.innerHTML = '<div class="p-8 text-center text-gray-400">Nenhuma borda cadastrada</div>';
+                return;
+            }
+            el.innerHTML = bordas.map(b => `
+                <div class="flex items-center justify-between px-5 py-3">
+                    <div>
+                        <span class="font-semibold text-gray-900">${b.nome}</span>
+                        ${!b.disponivel ? '<span class="ml-2 text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">Indisponível</span>' : ''}
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <span class="font-bold text-indigo-600">${parseFloat(b.preco_adicional) > 0 ? '+R$ ' + parseFloat(b.preco_adicional).toFixed(2) : 'Grátis'}</span>
+                        <button onclick="editarBorda(${b.id})" class="text-blue-600 hover:text-blue-800 text-sm font-medium">✏️ Editar</button>
+                        <button onclick="excluirBorda(${b.id})" class="text-red-500 hover:text-red-700 text-sm font-medium">🗑️</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function abrirModalBorda() {
+            editBordaId = null;
+            document.getElementById('modalBordaTitulo').textContent = 'Nova Borda';
+            document.getElementById('bordaId').value = '';
+            document.getElementById('bordaNome').value = '';
+            document.getElementById('bordaPrecoAdicional').value = '0';
+            document.getElementById('bordaDisponivel').checked = true;
+            document.getElementById('modalBorda').classList.remove('hidden');
+        }
+
+        function editarBorda(id) {
+            const b = bordas.find(x => x.id === id);
+            if (!b) return;
+            editBordaId = id;
+            document.getElementById('modalBordaTitulo').textContent = 'Editar Borda';
+            document.getElementById('bordaId').value = b.id;
+            document.getElementById('bordaNome').value = b.nome;
+            document.getElementById('bordaPrecoAdicional').value = b.preco_adicional || 0;
+            document.getElementById('bordaDisponivel').checked = b.disponivel;
+            document.getElementById('modalBorda').classList.remove('hidden');
+        }
+
+        function fecharModalBorda() {
+            document.getElementById('modalBorda').classList.add('hidden');
+        }
+
+        async function salvarBorda() {
+            const nome = document.getElementById('bordaNome').value.trim();
+            if (!nome) return alert('Informe o nome da borda.');
+            const data = {
+                nome,
+                preco_adicional: parseFloat(document.getElementById('bordaPrecoAdicional').value) || 0,
+                disponivel: document.getElementById('bordaDisponivel').checked
+            };
+            try {
+                if (editBordaId) {
+                    await API.updatePizzaBorda(editBordaId, data);
+                } else {
+                    await API.createPizzaBorda(data, isAdmin ? empresaSelecionadaId : null);
+                }
+                fecharModalBorda();
+                await carregarBordas();
+            } catch (e) { alert('Erro: ' + e.message); }
+        }
+
+        async function excluirBorda(id) {
+            if (!confirm('Excluir esta borda?')) return;
+            try {
+                await API.deletePizzaBorda(id);
+                await carregarBordas();
+            } catch (e) { alert('Erro: ' + e.message); }
+        }
+
+        init();
+    </script>
+</body>
+</html>

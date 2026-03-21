@@ -21,6 +21,7 @@
                     <a id="navCategorias" href="categorias.html" class="text-gray-600 hover:text-indigo-600 transition">Categorias</a>
                     <a href="conversas.html" class="text-gray-600 hover:text-indigo-600 transition">Conversas</a>
                     <a href="configuracoes.html" class="text-gray-600 hover:text-indigo-600 transition">Minha Loja</a>
+                    <a href="pizzas.html" class="text-gray-600 hover:text-indigo-600 transition">🍕 Pizzas</a>
                     <a href="pedidos.html" class="text-gray-600 hover:text-indigo-600 transition">Pedidos</a>
                     <a href="relatorios.html" class="text-gray-600 hover:text-indigo-600 transition">Relatórios</a>
                     <a id="navEmpresas" href="empresas.html" class="hidden text-gray-600 hover:text-indigo-600 transition">Empresas</a>
@@ -253,11 +254,34 @@
         </div>
     </div>
 
-    <script src="js/api.js?v=4"></script>
+    <!-- Modal Config Pizza -->
+    <div id="pizzaConfigModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm">
+            <div class="p-5 border-b border-gray-200 flex items-center justify-between">
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900">⚙️ Config Pizza</h3>
+                    <p class="text-sm text-gray-500" id="pizzaConfigNome"></p>
+                </div>
+                <button onclick="fecharConfigPizza()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+            <div class="p-5 space-y-4">
+                <label class="flex items-center gap-3 cursor-pointer">
+                    <input type="checkbox" id="pizzaConfigTemBorda" class="w-5 h-5 text-orange-600 rounded focus:ring-orange-500">
+                    <span class="font-medium text-gray-700">Esta pizza tem opção de borda recheada</span>
+                </label>
+            </div>
+            <div class="p-4 border-t border-gray-100 flex gap-3">
+                <button onclick="fecharConfigPizza()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2.5 rounded-xl transition">Cancelar</button>
+                <button onclick="salvarConfigPizza()" class="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2.5 rounded-xl transition">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js?v=5"></script>
     <script src="js/pausa.js?v=2"></script>
     <script src="js/auth.js?v=2"></script>
     <script src="js/alertas.js?v=20"></script>
-    <script src="js/cardapio.js?v=7"></script>
+    <script src="js/cardapio.js?v=8"></script>
     <script>
         iniciarAlertas();
         (function() { const u = JSON.parse(localStorage.getItem('user') || '{}'); if (u.role !== 'admin') { const el = document.getElementById('navCategorias'); if (el) el.remove(); } if (u.role === 'admin') { const el = document.getElementById('navEmpresas'); if (el) el.classList.remove('hidden'); } })();

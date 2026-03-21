@@ -217,5 +217,72 @@ const API = {
     },
     async adicionarComplementoBulk(produtoIds, grupo) {
         return await apiRequest('/produtos/grupos/bulk', { method: 'POST', body: JSON.stringify({ produto_ids: produtoIds, grupo }) });
+    },
+    // Pizza
+    async getPizzaPublico(empresaId) {
+        return await apiRequest(`/pizzas/publico/${empresaId}`);
+    },
+    async getPizzaTamanhos(empresaId = null) {
+        const query = empresaId ? `?empresa_id=${empresaId}` : '';
+        return await apiRequest(`/pizzas/tamanhos${query}`);
+    },
+    async createPizzaTamanho(data, empresaId = null) {
+        const query = empresaId ? `?empresa_id=${empresaId}` : '';
+        return await apiRequest(`/pizzas/tamanhos${query}`, { method: 'POST', body: JSON.stringify(data) });
+    },
+    async updatePizzaTamanho(id, data) {
+        return await apiRequest(`/pizzas/tamanhos/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    },
+    async deletePizzaTamanho(id) {
+        return await apiRequest(`/pizzas/tamanhos/${id}`, { method: 'DELETE' });
+    },
+    async getPizzaSubcategorias(empresaId = null) {
+        const query = empresaId ? `?empresa_id=${empresaId}` : '';
+        return await apiRequest(`/pizzas/subcategorias${query}`);
+    },
+    async createPizzaSubcategoria(data, empresaId = null) {
+        const query = empresaId ? `?empresa_id=${empresaId}` : '';
+        return await apiRequest(`/pizzas/subcategorias${query}`, { method: 'POST', body: JSON.stringify(data) });
+    },
+    async updatePizzaSubcategoria(id, data) {
+        return await apiRequest(`/pizzas/subcategorias/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    },
+    async deletePizzaSubcategoria(id) {
+        return await apiRequest(`/pizzas/subcategorias/${id}`, { method: 'DELETE' });
+    },
+    async getPizzaSabores(empresaId = null, subcategoriaId = null) {
+        let query = empresaId ? `?empresa_id=${empresaId}` : '';
+        if (subcategoriaId) query += `${query ? '&' : '?'}subcategoria_id=${subcategoriaId}`;
+        return await apiRequest(`/pizzas/sabores${query}`);
+    },
+    async createPizzaSabor(data, empresaId = null) {
+        const query = empresaId ? `?empresa_id=${empresaId}` : '';
+        return await apiRequest(`/pizzas/sabores${query}`, { method: 'POST', body: JSON.stringify(data) });
+    },
+    async updatePizzaSabor(id, data) {
+        return await apiRequest(`/pizzas/sabores/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    },
+    async deletePizzaSabor(id) {
+        return await apiRequest(`/pizzas/sabores/${id}`, { method: 'DELETE' });
+    },
+    async getPizzaBordas(empresaId = null) {
+        const query = empresaId ? `?empresa_id=${empresaId}` : '';
+        return await apiRequest(`/pizzas/bordas${query}`);
+    },
+    async createPizzaBorda(data, empresaId = null) {
+        const query = empresaId ? `?empresa_id=${empresaId}` : '';
+        return await apiRequest(`/pizzas/bordas${query}`, { method: 'POST', body: JSON.stringify(data) });
+    },
+    async updatePizzaBorda(id, data) {
+        return await apiRequest(`/pizzas/bordas/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    },
+    async deletePizzaBorda(id) {
+        return await apiRequest(`/pizzas/bordas/${id}`, { method: 'DELETE' });
+    },
+    async getPizzaConfig(produtoId) {
+        return await apiRequest(`/pizzas/config/${produtoId}`);
+    },
+    async updatePizzaConfig(produtoId, data) {
+        return await apiRequest(`/pizzas/config/${produtoId}`, { method: 'PUT', body: JSON.stringify(data) });
     }
 };

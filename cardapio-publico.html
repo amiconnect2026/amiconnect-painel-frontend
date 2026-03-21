@@ -380,6 +380,7 @@
 
         let dadosEmpresa = null;
         let todosProdutos = [];
+        let pizzaData = null;
         let carrinho = []; // [{id, nome, preco, quantidade, complementos, instanceKey}]
 
         if (!empresaId) {
@@ -425,6 +426,13 @@
 
                 const produtosDisponiveis = produtos.filter(p => p.disponivel);
                 todosProdutos = produtosDisponiveis;
+
+                // Carregar dados de pizza (tamanhos, sabores, bordas, configs)
+                try {
+                    const pRes = await fetch(`https://painel.amiconnect.com.br/api/pizzas/publico/${empresaId}`);
+                    if (pRes.ok) pizzaData = await pRes.json();
+                } catch(e) { console.warn('Pizza data not loaded:', e); }
+
                 renderFeaturedSections(produtosDisponiveis);
 
                 if (produtosDisponiveis.length === 0) {
@@ -584,6 +592,10 @@
 
         function adicionarAoCarrinho(id, nome, preco, tipo) {
             tipo = tipo || (todosProdutos.find(p => p.id === id)?.tipo) || 'simples';
+            if (tipo === 'pizza') {
+                abrirPizzaModal(id, nome, preco);
+                return;
+            }
             if (tipo !== 'simples') {
                 abrirComplementosCliente(id, nome, preco, tipo);
                 return;
@@ -969,8 +981,15 @@
             const itensEl = document.getElementById('step3Itens');
             itensEl.innerHTML = carrinho.map(i => {
                 const nomeCompleto = i.tamanho ? `${i.nome} ${i.tamanho}` : i.nome;
-                const compLines = (i.complementos || []).map(c => `<p class="text-xs text-gray-400 ml-3">↳ ${c.grupoNome}: ${c.descricao}</p>`).join('');
-                return `<div class="flex justify-between"><span>${i.quantidade}x ${nomeCompleto}</span><span class="font-semibold">R$ ${(i.preco * i.quantidade).toFixed(2)}</span></div>${compLines}`;
+                let detailLines = '';
+                if (i.pizza) {
+                    if (i.pizza.tamanho) detailLines += `<p class="text-xs text-gray-400 ml-3">↳ Tamanho: ${i.pizza.tamanho}</p>`;
+                    if (i.pizza.sabores?.length) detailLines += `<p class="text-xs text-gray-400 ml-3">↳ Sabores: ${i.pizza.sabores.join(', ')}</p>`;
+                    if (i.pizza.borda) detailLines += `<p class="text-xs text-gray-400 ml-3">↳ Borda: ${i.pizza.borda}</p>`;
+                } else {
+                    detailLines = (i.complementos || []).map(c => `<p class="text-xs text-gray-400 ml-3">↳ ${c.grupoNome}: ${c.descricao}</p>`).join('');
+                }
+                return `<div class="flex justify-between"><span>${i.quantidade}x ${nomeCompleto}</span><span class="font-semibold">R$ ${(i.preco * i.quantidade).toFixed(2)}</span></div>${detailLines}`;
             }).join('');
             document.getElementById('step3Subtotal').textContent = `R$ ${subtotal.toFixed(2)}`;
 
@@ -1002,9 +1021,15 @@
             carrinho.forEach(item => {
                 const nomeCompleto = item.tamanho ? `${item.nome} ${item.tamanho}` : item.nome;
                 msg += `• ${item.quantidade}x ${nomeCompleto} — R$ ${(item.preco * item.quantidade).toFixed(2)}\n`;
-                (item.complementos || []).forEach(c => {
-                    msg += `  ${c.grupoNome}: ${c.descricao}\n`;
-                });
+                if (item.pizza) {
+                    if (item.pizza.tamanho) msg += `  Tamanho: ${item.pizza.tamanho}\n`;
+                    if (item.pizza.sabores?.length) msg += `  Sabores: ${item.pizza.sabores.join(', ')}\n`;
+                    if (item.pizza.borda) msg += `  Borda: ${item.pizza.borda}\n`;
+                } else {
+                    (item.complementos || []).forEach(c => {
+                        msg += `  ${c.grupoNome}: ${c.descricao}\n`;
+                    });
+                }
                 if (item.obs) msg += `  Obs: ${item.obs}\n`;
             });
             msg += `\n*Subtotal:* R$ ${subtotal.toFixed(2)}`;
@@ -1194,6 +1219,308 @@
                 obs
             });
             fecharCmpModal();
+        }
+    </script>
+
+    <!-- Modal Pizza (4 etapas) -->
+    <div id="pizzaModal" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-3xl shadow-2xl flex flex-col max-h-[92vh]">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
+                <div>
+                    <h2 class="text-lg font-extrabold text-gray-900" id="pizzaModalNome"></h2>
+                    <div class="flex items-center gap-1 mt-1">
+                        <span id="pzDot1" class="w-2 h-2 rounded-full bg-indigo-600"></span>
+                        <span id="pzDot2" class="w-2 h-2 rounded-full bg-gray-200"></span>
+                        <span id="pzDot3" class="w-2 h-2 rounded-full bg-gray-200"></span>
+                        <span id="pzDot4" class="w-2 h-2 rounded-full bg-gray-200"></span>
+                        <span class="text-xs text-gray-400 ml-2" id="pzStepLabel">Escolha o tamanho</span>
+                    </div>
+                </div>
+                <button onclick="fecharPizzaModal()" class="text-gray-400 hover:text-gray-600 text-3xl leading-none">&times;</button>
+            </div>
+            <div id="pizzaModalBody" class="flex-1 overflow-y-auto px-6 py-4"></div>
+            <div id="pizzaModalFooter" class="border-t border-gray-100 px-6 py-4 flex-shrink-0 bg-white flex gap-3">
+                <button id="pzBtnVoltar" onclick="pizzaVoltar()" class="hidden flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 rounded-2xl transition">← Voltar</button>
+                <button id="pzBtnProximo" onclick="pizzaProximo()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-3 rounded-2xl transition">Continuar →</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== PIZZA MODAL =====
+
+        let _pizza = {
+            produto: null,      // { id, nome, precoBase }
+            stepAtual: 1,       // 1=tamanho, 2=sabores, 3=borda, 4=resumo
+            tamanhoSel: null,   // { id, nome, preco, max_sabores }
+            saboresSel: [],     // [{ id, nome, preco_adicional }]
+            bordaSel: null,     // null | { id, nome, preco_adicional }
+            temBorda: false,    // config do produto
+            obs: ''
+        };
+
+        function calcPrecoTotal() {
+            if (!_pizza.tamanhoSel) return _pizza.produto?.precoBase || 0;
+            const maxSaborPreco = _pizza.saboresSel.reduce((max, s) => Math.max(max, parseFloat(s.preco_adicional) || 0), 0);
+            const bordaPreco = _pizza.bordaSel ? (parseFloat(_pizza.bordaSel.preco_adicional) || 0) : 0;
+            return parseFloat(_pizza.tamanhoSel.preco) + maxSaborPreco + bordaPreco;
+        }
+
+        async function abrirPizzaModal(id, nome, preco) {
+            if (!pizzaData || !pizzaData.tamanhos?.length) {
+                alert('Dados de pizza ainda não carregados. Tente novamente em instantes.');
+                return;
+            }
+            _pizza = {
+                produto: { id, nome, precoBase: preco },
+                stepAtual: 1,
+                tamanhoSel: null,
+                saboresSel: [],
+                bordaSel: null,
+                temBorda: pizzaData.configs?.[id] === true || pizzaData.configs?.[id] === 'true' || false,
+                obs: ''
+            };
+            document.getElementById('pizzaModalNome').textContent = nome;
+            document.getElementById('pizzaModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            renderPizzaStep();
+        }
+
+        function fecharPizzaModal() {
+            document.getElementById('pizzaModal').classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+
+        function pizzaSteps() {
+            const steps = [1, 2];
+            if (_pizza.temBorda && pizzaData.bordas?.length) steps.push(3);
+            steps.push(4);
+            return steps;
+        }
+
+        function pizzaProximo() {
+            const steps = pizzaSteps();
+            const idx = steps.indexOf(_pizza.stepAtual);
+            // Validate current step
+            if (_pizza.stepAtual === 1 && !_pizza.tamanhoSel) {
+                alert('Selecione um tamanho.');
+                return;
+            }
+            if (_pizza.stepAtual === 2 && _pizza.saboresSel.length === 0) {
+                alert('Selecione ao menos 1 sabor.');
+                return;
+            }
+            if (idx < steps.length - 1) {
+                _pizza.stepAtual = steps[idx + 1];
+                renderPizzaStep();
+            } else {
+                confirmarPizza();
+            }
+        }
+
+        function pizzaVoltar() {
+            const steps = pizzaSteps();
+            const idx = steps.indexOf(_pizza.stepAtual);
+            if (idx > 0) {
+                _pizza.stepAtual = steps[idx - 1];
+                renderPizzaStep();
+            }
+        }
+
+        function renderPizzaStep() {
+            const steps = pizzaSteps();
+            const idx = steps.indexOf(_pizza.stepAtual);
+            const totalSteps = steps.length;
+
+            // Dots
+            for (let i = 1; i <= 4; i++) {
+                const dot = document.getElementById(`pzDot${i}`);
+                if (dot) {
+                    const stepNum = steps[i - 1];
+                    dot.className = 'w-2 h-2 rounded-full ' + (stepNum ? (stepNum === _pizza.stepAtual ? 'bg-indigo-600' : (steps.indexOf(stepNum) < idx ? 'bg-indigo-300' : 'bg-gray-200')) : 'bg-gray-100');
+                }
+            }
+
+            const labels = { 1: 'Escolha o tamanho', 2: 'Escolha os sabores', 3: 'Escolha a borda', 4: 'Resumo' };
+            document.getElementById('pzStepLabel').textContent = labels[_pizza.stepAtual] || '';
+
+            // Botão voltar
+            document.getElementById('pzBtnVoltar').classList.toggle('hidden', idx === 0);
+
+            // Botão próximo
+            const btnProx = document.getElementById('pzBtnProximo');
+            if (_pizza.stepAtual === 4) {
+                btnProx.textContent = `Adicionar — R$ ${calcPrecoTotal().toFixed(2)}`;
+                btnProx.className = 'flex-1 bg-green-500 hover:bg-green-600 text-white font-extrabold py-3 rounded-2xl transition';
+            } else {
+                btnProx.textContent = 'Continuar →';
+                btnProx.className = 'flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-3 rounded-2xl transition';
+            }
+
+            // Render content
+            if (_pizza.stepAtual === 1) renderPizzaStep1();
+            else if (_pizza.stepAtual === 2) renderPizzaStep2();
+            else if (_pizza.stepAtual === 3) renderPizzaStep3();
+            else renderPizzaStep4();
+        }
+
+        function renderPizzaStep1() {
+            const tamanhos = pizzaData.tamanhos || [];
+            let html = '<p class="text-sm text-gray-500 mb-4">Qual tamanho você quer?</p>';
+            html += '<div class="space-y-2">';
+            tamanhos.forEach(t => {
+                const sel = _pizza.tamanhoSel?.id === t.id;
+                html += `<button onclick="selecionarTamanho(${t.id})" class="w-full flex items-center justify-between p-4 rounded-2xl border-2 transition font-semibold ${sel ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-800 hover:border-indigo-300'}">
+                    <span>${t.nome}</span>
+                    <div class="text-right">
+                        <span class="font-extrabold">R$ ${parseFloat(t.preco).toFixed(2)}</span>
+                        <span class="block text-xs font-normal text-gray-400">até ${t.max_sabores || 1} sabor(es)</span>
+                    </div>
+                </button>`;
+            });
+            html += '</div>';
+            document.getElementById('pizzaModalBody').innerHTML = html;
+        }
+
+        function selecionarTamanho(id) {
+            const t = pizzaData.tamanhos.find(x => x.id === id);
+            _pizza.tamanhoSel = t;
+            // Reset sabores if over new max
+            if (_pizza.saboresSel.length > t.max_sabores) {
+                _pizza.saboresSel = _pizza.saboresSel.slice(0, t.max_sabores);
+            }
+            renderPizzaStep1();
+        }
+
+        function renderPizzaStep2() {
+            const max = _pizza.tamanhoSel?.max_sabores || 1;
+            let html = `<p class="text-sm text-gray-500 mb-4">Escolha até <strong>${max}</strong> sabor(es)</p>`;
+
+            const subcats = pizzaData.subcategorias || [];
+            if (subcats.length === 0) {
+                html += '<p class="text-gray-400 text-center py-4">Nenhum sabor disponível.</p>';
+            } else {
+                subcats.forEach(sc => {
+                    if (!sc.sabores?.length) return;
+                    html += `<p class="font-bold text-gray-700 mb-2 mt-4">${sc.nome}</p>`;
+                    html += '<div class="space-y-2">';
+                    sc.sabores.forEach(s => {
+                        const sel = _pizza.saboresSel.some(x => x.id === s.id);
+                        const atingiu = _pizza.saboresSel.length >= max;
+                        const disabled = atingiu && !sel;
+                        const precoLabel = parseFloat(s.preco_adicional) > 0 ? `+R$ ${parseFloat(s.preco_adicional).toFixed(2)}` : 'Padrão';
+                        html += `<label class="flex items-center justify-between p-3 rounded-xl border-2 cursor-pointer transition ${sel ? 'border-indigo-600 bg-indigo-50' : disabled ? 'border-gray-100 opacity-40' : 'border-gray-200'}">
+                            <span class="flex items-center gap-3">
+                                <input type="checkbox" ${sel ? 'checked' : ''} ${disabled ? 'disabled' : ''} class="w-4 h-4 accent-indigo-600" onchange="toggleSaborPizza(${s.id})">
+                                <span>
+                                    <span class="font-semibold">${s.nome}</span>
+                                    ${s.descricao ? `<span class="block text-xs text-gray-400">${s.descricao}</span>` : ''}
+                                </span>
+                            </span>
+                            <span class="text-sm font-bold text-gray-500 ml-2">${precoLabel}</span>
+                        </label>`;
+                    });
+                    html += '</div>';
+                });
+            }
+            document.getElementById('pizzaModalBody').innerHTML = html;
+        }
+
+        function toggleSaborPizza(id) {
+            const max = _pizza.tamanhoSel?.max_sabores || 1;
+            const sc = pizzaData.subcategorias.flatMap(s => s.sabores).find(x => x.id === id);
+            if (!sc) return;
+            const idx = _pizza.saboresSel.findIndex(x => x.id === id);
+            if (idx !== -1) {
+                _pizza.saboresSel.splice(idx, 1);
+            } else if (_pizza.saboresSel.length < max) {
+                _pizza.saboresSel.push({ id: sc.id, nome: sc.nome, preco_adicional: sc.preco_adicional });
+            }
+            renderPizzaStep2();
+        }
+
+        function renderPizzaStep3() {
+            const bordas = pizzaData.bordas || [];
+            let html = '<p class="text-sm text-gray-500 mb-4">Escolha a borda (opcional)</p>';
+            html += '<div class="space-y-2">';
+
+            // Sem borda option
+            const semBordaSel = _pizza.bordaSel === null;
+            html += `<button onclick="selecionarBordaPizza(null)" class="w-full flex items-center justify-between p-4 rounded-2xl border-2 transition font-semibold ${semBordaSel ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-800 hover:border-indigo-300'}">
+                <span>Sem borda</span>
+                <span class="text-sm text-gray-400">Grátis</span>
+            </button>`;
+
+            bordas.forEach(b => {
+                const sel = _pizza.bordaSel?.id === b.id;
+                const precoLabel = parseFloat(b.preco_adicional) > 0 ? `+R$ ${parseFloat(b.preco_adicional).toFixed(2)}` : 'Grátis';
+                html += `<button onclick="selecionarBordaPizza(${b.id})" class="w-full flex items-center justify-between p-4 rounded-2xl border-2 transition font-semibold ${sel ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-800 hover:border-indigo-300'}">
+                    <span>${b.nome}</span>
+                    <span class="font-extrabold">${precoLabel}</span>
+                </button>`;
+            });
+            html += '</div>';
+            document.getElementById('pizzaModalBody').innerHTML = html;
+        }
+
+        function selecionarBordaPizza(id) {
+            if (id === null) {
+                _pizza.bordaSel = null;
+            } else {
+                _pizza.bordaSel = pizzaData.bordas.find(b => b.id === id);
+            }
+            renderPizzaStep3();
+        }
+
+        function renderPizzaStep4() {
+            const total = calcPrecoTotal();
+            let html = `
+                <div class="space-y-3 mb-4">
+                    <div class="bg-gray-50 rounded-xl p-4 space-y-2">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">Tamanho</span>
+                            <span class="font-semibold">${_pizza.tamanhoSel?.nome} — R$ ${parseFloat(_pizza.tamanhoSel?.preco || 0).toFixed(2)}</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">Sabores</span>
+                            <span class="font-semibold text-right max-w-xs">${_pizza.saboresSel.map(s => s.nome).join(', ') || '—'}</span>
+                        </div>
+                        ${_pizza.temBorda ? `
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">Borda</span>
+                            <span class="font-semibold">${_pizza.bordaSel ? _pizza.bordaSel.nome + (parseFloat(_pizza.bordaSel.preco_adicional) > 0 ? ` (+R$ ${parseFloat(_pizza.bordaSel.preco_adicional).toFixed(2)})` : '') : 'Sem borda'}</span>
+                        </div>` : ''}
+                        <div class="flex justify-between font-extrabold text-base pt-2 border-t border-gray-200">
+                            <span>Total</span>
+                            <span class="text-indigo-600">R$ ${total.toFixed(2)}</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Observação <span class="font-normal text-gray-400">(opcional)</span></label>
+                        <textarea id="pizzaObs" rows="2" placeholder="Ex: sem cebola, ponto da massa..." class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-300">${_pizza.obs}</textarea>
+                    </div>
+                </div>`;
+            document.getElementById('pizzaModalBody').innerHTML = html;
+        }
+
+        function confirmarPizza() {
+            _pizza.obs = document.getElementById('pizzaObs')?.value.trim() || '';
+            const preco = calcPrecoTotal();
+            adicionarAoCarrinhoComComplementos({
+                id: _pizza.produto.id,
+                nome: _pizza.produto.nome,
+                preco,
+                quantidade: 1,
+                instanceKey: `${_pizza.produto.id}_${Date.now()}`,
+                complementos: [],
+                pizza: {
+                    tamanho: _pizza.tamanhoSel?.nome,
+                    sabores: _pizza.saboresSel.map(s => s.nome),
+                    borda: _pizza.bordaSel ? _pizza.bordaSel.nome : null
+                },
+                obs: _pizza.obs
+            });
+            fecharPizzaModal();
         }
     </script>
 </body>

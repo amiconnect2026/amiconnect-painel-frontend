@@ -162,6 +162,9 @@ function renderProdutos() {
                                     ${p.tipo && p.tipo !== 'simples' ? `
                                         <button onclick="abrirComplementos(${p.id}, '${p.nome.replace(/'/g, "\\'")}')" class="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition" title="Gerenciar Complementos">🧩</button>
                                     ` : ''}
+                                    ${p.tipo === 'pizza' ? `
+                                        <button onclick="abrirConfigPizza(${p.id}, '${p.nome.replace(/'/g, "\\'")}')" class="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition" title="Config Pizza">⚙️</button>
+                                    ` : ''}
                                     ${canAdminActions ? `
                                         <button onclick="deleteProduto(${p.id}, '${p.nome.replace(/'/g, "\\'")}')" class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition" title="Deletar">🗑️</button>
                                     ` : ''}
@@ -698,6 +701,39 @@ async function excluirOpcao(id) {
         await API.deleteOpcao(id);
         document.getElementById(`opcao-row-${id}`)?.remove();
     } catch (e) { alert('Erro: ' + e.message); }
+}
+
+// ── Config Pizza ──────────────────────────────────────────────────────────────
+
+let _pizzaConfigProdutoId = null;
+
+async function abrirConfigPizza(produtoId, produtoNome) {
+    _pizzaConfigProdutoId = produtoId;
+    document.getElementById('pizzaConfigNome').textContent = produtoNome;
+    document.getElementById('pizzaConfigModal').classList.remove('hidden');
+    try {
+        const data = await API.getPizzaConfig(produtoId);
+        document.getElementById('pizzaConfigTemBorda').checked = data.config?.tem_borda || false;
+    } catch (e) {
+        alert('Erro ao carregar config: ' + e.message);
+    }
+}
+
+function fecharConfigPizza() {
+    document.getElementById('pizzaConfigModal').classList.add('hidden');
+    _pizzaConfigProdutoId = null;
+}
+
+async function salvarConfigPizza() {
+    if (!_pizzaConfigProdutoId) return;
+    const tem_borda = document.getElementById('pizzaConfigTemBorda').checked;
+    try {
+        await API.updatePizzaConfig(_pizzaConfigProdutoId, { tem_borda });
+        fecharConfigPizza();
+        alert('Configuração salva!');
+    } catch (e) {
+        alert('Erro ao salvar: ' + e.message);
+    }
 }
 
 init();
