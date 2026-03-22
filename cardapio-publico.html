@@ -1259,6 +1259,12 @@
             obs: ''
         };
 
+        function getPrecoSaborParaTamanho(sabor) {
+            if (!_pizza.tamanhoSel || !sabor.precos?.length) return parseFloat(sabor.preco_adicional) || 0;
+            const p = sabor.precos.find(x => x.tamanho_id == _pizza.tamanhoSel.id);
+            return p !== undefined ? (parseFloat(p.preco_adicional) || 0) : (parseFloat(sabor.preco_adicional) || 0);
+        }
+
         function calcPrecoTotal() {
             if (!_pizza.tamanhoSel) return _pizza.produto?.precoBase || 0;
             const maxSaborPreco = _pizza.saboresSel.reduce((max, s) => Math.max(max, parseFloat(s.preco_adicional) || 0), 0);
@@ -1385,10 +1391,14 @@
         function selecionarTamanho(id) {
             const t = pizzaData.tamanhos.find(x => x.id === id);
             _pizza.tamanhoSel = t;
-            // Reset sabores if over new max
             if (_pizza.saboresSel.length > t.max_sabores) {
                 _pizza.saboresSel = _pizza.saboresSel.slice(0, t.max_sabores);
             }
+            // Recalculate per-tamanho prices for already selected sabores
+            _pizza.saboresSel = _pizza.saboresSel.map(s => {
+                const saborFull = pizzaData.subcategorias.flatMap(sc => sc.sabores).find(x => x.id === s.id);
+                return { ...s, preco_adicional: saborFull ? getPrecoSaborParaTamanho(saborFull) : s.preco_adicional };
+            });
             renderPizzaStep1();
         }
 
@@ -1408,7 +1418,8 @@
                         const sel = _pizza.saboresSel.some(x => x.id === s.id);
                         const atingiu = _pizza.saboresSel.length >= max;
                         const disabled = atingiu && !sel;
-                        const precoLabel = parseFloat(s.preco_adicional) > 0 ? `+R$ ${parseFloat(s.preco_adicional).toFixed(2)}` : 'Padrão';
+                        const precoEfetivo = getPrecoSaborParaTamanho(s);
+                        const precoLabel = precoEfetivo > 0 ? `+R$ ${precoEfetivo.toFixed(2)}` : 'Padrão';
                         html += `<label class="flex items-center justify-between p-3 rounded-xl border-2 cursor-pointer transition ${sel ? 'border-indigo-600 bg-indigo-50' : disabled ? 'border-gray-100 opacity-40' : 'border-gray-200'}">
                             <span class="flex items-center gap-3">
                                 <input type="checkbox" ${sel ? 'checked' : ''} ${disabled ? 'disabled' : ''} class="w-4 h-4 accent-indigo-600" onchange="toggleSaborPizza(${s.id})">
@@ -1434,7 +1445,7 @@
             if (idx !== -1) {
                 _pizza.saboresSel.splice(idx, 1);
             } else if (_pizza.saboresSel.length < max) {
-                _pizza.saboresSel.push({ id: sc.id, nome: sc.nome, preco_adicional: sc.preco_adicional });
+                _pizza.saboresSel.push({ id: sc.id, nome: sc.nome, preco_adicional: getPrecoSaborParaTamanho(sc) });
             }
             renderPizzaStep2();
         }

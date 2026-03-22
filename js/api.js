@@ -279,6 +279,12 @@ const API = {
     async deletePizzaBorda(id) {
         return await apiRequest(`/pizzas/bordas/${id}`, { method: 'DELETE' });
     },
+    async getSaborPrecos(saborId) {
+        return await apiRequest(`/pizzas/sabores/${saborId}/precos`);
+    },
+    async saveSaborPrecos(saborId, precos) {
+        return await apiRequest(`/pizzas/sabores/${saborId}/precos`, { method: 'POST', body: JSON.stringify({ precos }) });
+    },
     async getPizzaConfig(produtoId) {
         return await apiRequest(`/pizzas/config/${produtoId}`);
     },

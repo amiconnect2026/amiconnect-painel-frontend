@@ -121,7 +121,7 @@
     </div>
 
     <!-- Modal Subcategoria -->
-    <div id="modalSubcategoria" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div id="modalSubcategoria" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[70]">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm">
             <div class="p-5 border-b border-gray-200 flex items-center justify-between">
                 <h3 class="text-lg font-bold text-gray-900" id="modalSubcategoriaTitulo">Nova Categoria de Sabores</h3>
@@ -150,9 +150,12 @@
                 <input type="hidden" id="saborId">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
-                    <select id="saborSubcategoria" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none">
-                        <option value="">Sem categoria</option>
-                    </select>
+                    <div class="flex gap-2">
+                        <select id="saborSubcategoria" class="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <option value="">Sem categoria</option>
+                        </select>
+                        <button type="button" onclick="abrirSubcategoriaFromSabor()" class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition whitespace-nowrap">+ Nova</button>
+                    </div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Nome do sabor</label>
@@ -162,16 +165,16 @@
                     <label class="block text-sm font-medium text-gray-700 mb-1">Descrição <span class="font-normal text-gray-400">(opcional)</span></label>
                     <input type="text" id="saborDescricao" placeholder="Ingredientes, detalhes..." class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none">
                 </div>
-                <div class="grid grid-cols-2 gap-3 items-end">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Preço adicional (R$)</label>
-                        <input type="number" id="saborPrecoAdicional" step="0.01" min="0" value="0" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Preço adicional por tamanho <span class="font-normal text-gray-400">(R$)</span></label>
+                    <div id="saborPrecosTamanho" class="space-y-2">
+                        <p class="text-sm text-gray-400 italic">Carregando tamanhos...</p>
                     </div>
-                    <label class="flex items-center gap-2 cursor-pointer pb-2">
-                        <input type="checkbox" id="saborDisponivel" checked class="w-4 h-4 text-indigo-600">
-                        <span class="text-sm font-medium text-gray-700">Disponível</span>
-                    </label>
                 </div>
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="saborDisponivel" checked class="w-4 h-4 text-indigo-600">
+                    <span class="text-sm font-medium text-gray-700">Disponível</span>
+                </label>
             </div>
             <div class="p-4 border-t border-gray-100 flex gap-3">
                 <button onclick="fecharModalSabor()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2.5 rounded-xl transition">Cancelar</button>
@@ -211,7 +214,7 @@
         </div>
     </div>
 
-    <script src="js/api.js?v=5"></script>
+    <script src="js/api.js?v=6"></script>
     <script src="js/auth.js?v=2"></script>
     <script>
         const user = checkAuth();
@@ -225,6 +228,7 @@
 
         let subcategorias = [];
         let tabAtiva = 'tamanhos';
+        let _abrindoSubcategoriaDesSabor = false;
 
         async function init() {
             if (isAdmin) {
@@ -403,20 +407,28 @@
 
         function fecharModalSubcategoria() {
             document.getElementById('modalSubcategoria').classList.add('hidden');
+            _abrindoSubcategoriaDesSabor = false;
         }
 
         async function salvarSubcategoria() {
             const nome = document.getElementById('subcategoriaNome').value.trim();
             if (!nome) return alert('Informe o nome.');
             try {
+                let novaId = null;
                 if (editSubcategoriaId) {
                     await API.updatePizzaSubcategoria(editSubcategoriaId, { nome });
                 } else {
-                    await API.createPizzaSubcategoria({ nome }, isAdmin ? empresaSelecionadaId : null);
+                    const res = await API.createPizzaSubcategoria({ nome }, isAdmin ? empresaSelecionadaId : null);
+                    novaId = res.subcategoria?.id;
                 }
                 fecharModalSubcategoria();
                 await carregarSubcategorias();
-                await carregarSabores();
+                if (_abrindoSubcategoriaDesSabor) {
+                    _abrindoSubcategoriaDesSabor = false;
+                    if (novaId) document.getElementById('saborSubcategoria').value = novaId;
+                } else {
+                    await carregarSabores();
+                }
             } catch (e) { alert('Erro: ' + e.message); }
         }
 
@@ -501,19 +513,53 @@
             } catch (e) { alert('Erro: ' + e.message); }
         }
 
+        function renderPrecosTamanhoModal(existingPrecos) {
+            const container = document.getElementById('saborPrecosTamanho');
+            if (!tamanhos || tamanhos.length === 0) {
+                container.innerHTML = '<p class="text-sm text-gray-400 italic">Nenhum tamanho cadastrado. Cadastre tamanhos primeiro.</p>';
+                return;
+            }
+            container.innerHTML = tamanhos.map(t => {
+                const existing = existingPrecos.find(p => p.tamanho_id == t.id);
+                const val = existing ? parseFloat(existing.preco_adicional).toFixed(2) : '0.00';
+                return `<div class="flex items-center gap-3">
+                    <span class="text-sm text-gray-600 w-28 shrink-0">${t.nome}</span>
+                    <input type="number" data-tamanho-id="${t.id}" step="0.01" min="0" value="${val}" placeholder="0.00"
+                        class="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>`;
+            }).join('');
+        }
+
+        function coletarPrecosTamanho() {
+            const inputs = document.querySelectorAll('#saborPrecosTamanho input[data-tamanho-id]');
+            return Array.from(inputs).map(inp => ({
+                tamanho_id: parseInt(inp.dataset.tamanhoId),
+                preco_adicional: parseFloat(inp.value) || 0
+            }));
+        }
+
+        function abrirSubcategoriaFromSabor() {
+            _abrindoSubcategoriaDesSabor = true;
+            editSubcategoriaId = null;
+            document.getElementById('modalSubcategoriaTitulo').textContent = 'Nova Categoria de Sabores';
+            document.getElementById('subcategoriaId').value = '';
+            document.getElementById('subcategoriaNome').value = '';
+            document.getElementById('modalSubcategoria').classList.remove('hidden');
+        }
+
         function abrirModalSabor() {
             editSaborId = null;
             document.getElementById('modalSaborTitulo').textContent = 'Novo Sabor';
             document.getElementById('saborId').value = '';
             document.getElementById('saborNome').value = '';
             document.getElementById('saborDescricao').value = '';
-            document.getElementById('saborPrecoAdicional').value = '0';
             document.getElementById('saborDisponivel').checked = true;
             document.getElementById('saborSubcategoria').value = '';
+            renderPrecosTamanhoModal([]);
             document.getElementById('modalSabor').classList.remove('hidden');
         }
 
-        function editarSabor(id) {
+        async function editarSabor(id) {
             const s = sabores.find(x => x.id === id);
             if (!s) return;
             editSaborId = id;
@@ -521,10 +567,14 @@
             document.getElementById('saborId').value = s.id;
             document.getElementById('saborNome').value = s.nome;
             document.getElementById('saborDescricao').value = s.descricao || '';
-            document.getElementById('saborPrecoAdicional').value = s.preco_adicional || 0;
             document.getElementById('saborDisponivel').checked = s.disponivel;
             document.getElementById('saborSubcategoria').value = s.subcategoria_id || '';
+            renderPrecosTamanhoModal([]);
             document.getElementById('modalSabor').classList.remove('hidden');
+            try {
+                const res = await API.getSaborPrecos(id);
+                renderPrecosTamanhoModal(res.precos || []);
+            } catch(e) { console.warn('Erro ao carregar preços do sabor:', e); }
         }
 
         function fecharModalSabor() {
@@ -534,18 +584,25 @@
         async function salvarSabor() {
             const nome = document.getElementById('saborNome').value.trim();
             if (!nome) return alert('Informe o nome do sabor.');
+            const precos = coletarPrecosTamanho();
+            const maxPreco = precos.reduce((max, p) => Math.max(max, p.preco_adicional), 0);
             const data = {
                 nome,
                 descricao: document.getElementById('saborDescricao').value.trim() || null,
-                preco_adicional: parseFloat(document.getElementById('saborPrecoAdicional').value) || 0,
+                preco_adicional: maxPreco,
                 disponivel: document.getElementById('saborDisponivel').checked,
                 subcategoria_id: document.getElementById('saborSubcategoria').value || null
             };
             try {
-                if (editSaborId) {
-                    await API.updatePizzaSabor(editSaborId, data);
+                let saborId = editSaborId;
+                if (saborId) {
+                    await API.updatePizzaSabor(saborId, data);
                 } else {
-                    await API.createPizzaSabor(data, isAdmin ? empresaSelecionadaId : null);
+                    const res = await API.createPizzaSabor(data, isAdmin ? empresaSelecionadaId : null);
+                    saborId = res.sabor?.id;
+                }
+                if (saborId && precos.length > 0) {
+                    await API.saveSaborPrecos(saborId, precos);
                 }
                 fecharModalSabor();
                 await carregarSabores();
