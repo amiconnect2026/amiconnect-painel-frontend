@@ -83,6 +83,11 @@ async function carregarProdutos(empresaId) {
         empresaAtual = empresaRes.empresa;
         localStorage.setItem('empresaTipoNegocio', empresaAtual.tipo_negocio || 'restaurante');
 
+        const _navPizzas = document.getElementById('navPizzas');
+        if (_navPizzas && (user.role === 'admin' || empresaAtual.tipo_negocio === 'pizzaria')) {
+            _navPizzas.classList.remove('hidden');
+        }
+
         const selectCategoria = document.getElementById('produtoCategoria');
         selectCategoria.innerHTML = '<option value="">Selecione...</option>';
         categorias.forEach(cat => {

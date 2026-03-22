@@ -285,6 +285,12 @@ const API = {
     async saveSaborPrecos(saborId, precos) {
         return await apiRequest(`/pizzas/sabores/${saborId}/precos`, { method: 'POST', body: JSON.stringify({ precos }) });
     },
+    async getComboSabores(produtoId) {
+        return await apiRequest(`/pizzas/combo-sabores/${produtoId}`);
+    },
+    async saveComboSabores(produtoId, saborIds) {
+        return await apiRequest(`/pizzas/combo-sabores/${produtoId}`, { method: 'POST', body: JSON.stringify({ sabor_ids: saborIds }) });
+    },
     async getPizzaConfig(produtoId) {
         return await apiRequest(`/pizzas/config/${produtoId}`);
     },

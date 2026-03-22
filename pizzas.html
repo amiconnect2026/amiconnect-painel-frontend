@@ -51,13 +51,27 @@
         <!-- Tabs -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
             <div class="flex border-b border-gray-200">
-                <button id="tabTamanhos" onclick="mudarTab('tamanhos')" class="px-6 py-4 font-semibold text-indigo-600 border-b-2 border-indigo-600">📐 Tamanhos</button>
+                <button id="tabProdutos" onclick="mudarTab('produtos')" class="px-6 py-4 font-semibold text-indigo-600 border-b-2 border-indigo-600">🍕 Produtos</button>
+                <button id="tabTamanhos" onclick="mudarTab('tamanhos')" class="px-6 py-4 font-semibold text-gray-500 hover:text-gray-700">📐 Tamanhos</button>
                 <button id="tabSabores" onclick="mudarTab('sabores')" class="px-6 py-4 font-semibold text-gray-500 hover:text-gray-700">🍕 Sabores</button>
+                <button id="tabCombos" onclick="mudarTab('combos')" class="px-6 py-4 font-semibold text-gray-500 hover:text-gray-700">🎁 Combos</button>
+            </div>
+        </div>
+
+        <!-- Tab: Produtos Pizza -->
+        <div id="secaoProdutos">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-800">Produtos Pizza no Cardápio</h3>
+                <button onclick="abrirModalProdutoPizza()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-lg transition">+ Novo Produto</button>
+            </div>
+            <p class="text-sm text-gray-500 mb-4">Produtos do tipo pizza são gerenciados aqui e aparecem no cardápio sob a categoria "Pizzas". Configure complementos (bordas etc.) diretamente no cardápio.</p>
+            <div id="listaProdutosPizza" class="bg-white rounded-xl shadow-sm border border-gray-200 divide-y divide-gray-100">
+                <div class="p-8 text-center text-gray-400">Carregando...</div>
             </div>
         </div>
 
         <!-- Tab: Tamanhos -->
-        <div id="secaoTamanhos">
+        <div id="secaoTamanhos" class="hidden">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-xl font-bold text-gray-800">Tamanhos</h3>
                 <button onclick="abrirModalTamanho()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-lg transition">+ Novo Tamanho</button>
@@ -78,6 +92,18 @@
             </div>
             <div id="listaSabores" class="space-y-4">
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center text-gray-400">Carregando...</div>
+            </div>
+        </div>
+
+        <!-- Tab: Combos -->
+        <div id="secaoCombos" class="hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-800">Combos</h3>
+                <button onclick="abrirModalCombo()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-lg transition">+ Novo Combo</button>
+            </div>
+            <p class="text-sm text-gray-500 mb-4">Combos são produtos especiais que incluem pizzas + outros itens com preço fixo.</p>
+            <div id="listaCombos" class="bg-white rounded-xl shadow-sm border border-gray-200 divide-y divide-gray-100">
+                <div class="p-8 text-center text-gray-400">Carregando...</div>
             </div>
         </div>
 
@@ -178,7 +204,87 @@
     </div>
 
 
-    <script src="js/api.js?v=6"></script>
+    <!-- Modal Produto Pizza -->
+    <div id="modalProdutoPizza" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div class="p-5 border-b border-gray-200 flex items-center justify-between">
+                <h3 class="text-lg font-bold text-gray-900" id="modalProdutoPizzaTitulo">Novo Produto Pizza</h3>
+                <button onclick="fecharModalProdutoPizza()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+            <div class="p-5 space-y-4">
+                <input type="hidden" id="produtoPizzaId">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+                    <input type="text" id="ppNome" placeholder="Ex: Pizza Mussarela, Pizza Especial..." class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Descrição <span class="font-normal text-gray-400">(opcional)</span></label>
+                    <input type="text" id="ppDescricao" placeholder="Ingredientes, detalhes..." class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Preço base (R$)</label>
+                    <input type="number" id="ppPreco" step="0.01" min="0" placeholder="0.00" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="ppDisponivel" checked class="w-4 h-4 text-indigo-600">
+                    <span class="text-sm font-medium text-gray-700">Disponível</span>
+                </label>
+                <p class="text-xs text-gray-400">O produto será criado na categoria "Pizzas". Para adicionar bordas como complemento, edite o produto no Cardápio.</p>
+            </div>
+            <div class="p-4 border-t border-gray-100 flex gap-3">
+                <button onclick="fecharModalProdutoPizza()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2.5 rounded-xl transition">Cancelar</button>
+                <button onclick="salvarProdutoPizza()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 rounded-xl transition">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Combo -->
+    <div id="modalCombo" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
+            <div class="p-5 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
+                <h3 class="text-lg font-bold text-gray-900" id="modalComboTitulo">Novo Combo</h3>
+                <button onclick="fecharModalCombo()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+            <div class="p-5 space-y-4 overflow-y-auto flex-1">
+                <input type="hidden" id="comboId">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nome do combo</label>
+                    <input type="text" id="comboNome" placeholder="Ex: Combo 2 Pizzas + Refri" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Descrição do que está incluído</label>
+                    <textarea id="comboDescricao" rows="3" placeholder="Ex: 2 pizzas grandes + 1 refrigerante 2L" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none resize-none"></textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Preço (R$)</label>
+                        <input type="number" id="comboPreco" step="0.01" min="0" placeholder="0.00" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nº de pizzas</label>
+                        <input type="number" id="comboNumPizzas" min="1" max="4" value="1" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                </div>
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="comboDisponivel" checked class="w-4 h-4 text-indigo-600">
+                    <span class="text-sm font-medium text-gray-700">Disponível</span>
+                </label>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Sabores disponíveis para este combo</label>
+                    <p class="text-xs text-gray-400 mb-2">Deixe todos desmarcados para permitir todos os sabores.</p>
+                    <div id="comboSaboresCheck" class="space-y-1 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3">
+                        <p class="text-sm text-gray-400">Carregando sabores...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="p-4 border-t border-gray-100 flex gap-3 flex-shrink-0">
+                <button onclick="fecharModalCombo()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2.5 rounded-xl transition">Cancelar</button>
+                <button onclick="salvarCombo()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 rounded-xl transition">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js?v=7"></script>
     <script src="js/auth.js?v=2"></script>
     <script>
         const user = checkAuth();
@@ -195,7 +301,7 @@
             : user.empresa_id;
 
         let subcategorias = [];
-        let tabAtiva = 'tamanhos';
+        let tabAtiva = 'produtos';
         let _abrindoSubcategoriaDesSabor = false;
 
         async function init() {
@@ -232,9 +338,11 @@
                 if (emp.empresa?.tipo_negocio) localStorage.setItem('empresaTipoNegocio', emp.empresa.tipo_negocio);
             } catch(e) {}
             await Promise.all([
+                carregarProdutosPizza(),
                 carregarTamanhos(),
                 carregarSubcategorias(),
-                carregarSabores()
+                carregarSabores(),
+                carregarCombos()
             ]);
         }
 
@@ -242,7 +350,7 @@
 
         function mudarTab(tab) {
             tabAtiva = tab;
-            ['tamanhos', 'sabores'].forEach(t => {
+            ['produtos', 'tamanhos', 'sabores', 'combos'].forEach(t => {
                 document.getElementById(`secao${capitalize(t)}`).classList.toggle('hidden', t !== tab);
                 const btn = document.getElementById(`tab${capitalize(t)}`);
                 if (t === tab) {
@@ -582,6 +690,255 @@
                 await API.deletePizzaSabor(id);
                 await carregarSabores();
             } catch (e) { alert('Erro: ' + e.message); }
+        }
+
+        // ── Produtos Pizza ────────────────────────────────────────────────────────
+        let pizzaProdutos = [];
+        let categoriaPizzaId = null;
+        let editProdutoPizzaId = null;
+
+        async function carregarProdutosPizza() {
+            if (!empresaSelecionadaId) return;
+            try {
+                const [prodRes, catRes] = await Promise.all([
+                    API.getProdutos(isAdmin ? empresaSelecionadaId : null),
+                    API.getCategorias(isAdmin ? empresaSelecionadaId : null)
+                ]);
+                pizzaProdutos = (prodRes.produtos || []).filter(p => p.tipo === 'pizza');
+                const cats = catRes.categorias || [];
+                const catPizza = cats.find(c => c.nome.toLowerCase().includes('pizza'));
+                categoriaPizzaId = catPizza?.id || null;
+                renderProdutosPizza();
+            } catch(e) { console.error(e); }
+        }
+
+        function renderProdutosPizza() {
+            const el = document.getElementById('listaProdutosPizza');
+            if (pizzaProdutos.length === 0) {
+                el.innerHTML = '<div class="p-8 text-center text-gray-400">Nenhum produto pizza cadastrado. Clique em "+ Novo Produto" para criar.</div>';
+                return;
+            }
+            el.innerHTML = pizzaProdutos.map(p => `
+                <div class="flex items-center justify-between px-5 py-3">
+                    <div>
+                        <span class="font-semibold text-gray-900">${p.nome}</span>
+                        ${p.descricao ? `<span class="ml-2 text-sm text-gray-400">${p.descricao}</span>` : ''}
+                        ${!p.disponivel ? '<span class="ml-2 text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">Indisponível</span>' : ''}
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="font-bold text-indigo-600">R$ ${parseFloat(p.preco).toFixed(2)}</span>
+                        <button onclick="toggleProdutoPizza(${p.id})" class="text-sm px-2 py-1 rounded ${p.disponivel ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}">${p.disponivel ? 'Ativo' : 'Inativo'}</button>
+                        <button onclick="editarProdutoPizza(${p.id})" class="text-blue-600 hover:text-blue-800 text-sm">✏️</button>
+                        <button onclick="excluirProdutoPizza(${p.id})" class="text-red-500 hover:text-red-700 text-sm">🗑️</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function abrirModalProdutoPizza() {
+            editProdutoPizzaId = null;
+            document.getElementById('modalProdutoPizzaTitulo').textContent = 'Novo Produto Pizza';
+            document.getElementById('produtoPizzaId').value = '';
+            document.getElementById('ppNome').value = '';
+            document.getElementById('ppDescricao').value = '';
+            document.getElementById('ppPreco').value = '';
+            document.getElementById('ppDisponivel').checked = true;
+            document.getElementById('modalProdutoPizza').classList.remove('hidden');
+        }
+
+        function editarProdutoPizza(id) {
+            const p = pizzaProdutos.find(x => x.id === id);
+            if (!p) return;
+            editProdutoPizzaId = id;
+            document.getElementById('modalProdutoPizzaTitulo').textContent = 'Editar Produto Pizza';
+            document.getElementById('produtoPizzaId').value = p.id;
+            document.getElementById('ppNome').value = p.nome;
+            document.getElementById('ppDescricao').value = p.descricao || '';
+            document.getElementById('ppPreco').value = p.preco;
+            document.getElementById('ppDisponivel').checked = p.disponivel !== false;
+            document.getElementById('modalProdutoPizza').classList.remove('hidden');
+        }
+
+        function fecharModalProdutoPizza() {
+            document.getElementById('modalProdutoPizza').classList.add('hidden');
+        }
+
+        async function salvarProdutoPizza() {
+            const nome = document.getElementById('ppNome').value.trim();
+            const preco = parseFloat(document.getElementById('ppPreco').value);
+            if (!nome || isNaN(preco)) return alert('Preencha nome e preço.');
+            try {
+                let catId = categoriaPizzaId;
+                if (!catId) {
+                    const catRes = await API.createCategoria({ nome: 'Pizzas', ...(isAdmin ? { empresa_id: empresaSelecionadaId } : {}) });
+                    catId = catRes.categoria?.id || catRes.id;
+                    categoriaPizzaId = catId;
+                }
+                const formData = new FormData();
+                formData.append('nome', nome);
+                formData.append('preco', preco);
+                formData.append('descricao', document.getElementById('ppDescricao').value.trim() || '');
+                formData.append('categoria_id', catId);
+                formData.append('tipo', 'pizza');
+                formData.append('disponivel', document.getElementById('ppDisponivel').checked ? 'true' : 'false');
+                if (isAdmin) formData.append('empresa_id', empresaSelecionadaId);
+                if (editProdutoPizzaId) {
+                    await API.updateProduto(editProdutoPizzaId, formData);
+                } else {
+                    await API.createProduto(formData);
+                }
+                fecharModalProdutoPizza();
+                await carregarProdutosPizza();
+            } catch(e) { alert('Erro: ' + e.message); }
+        }
+
+        async function toggleProdutoPizza(id) {
+            try {
+                await API.toggleProduto(id);
+                await carregarProdutosPizza();
+            } catch(e) { alert('Erro: ' + e.message); }
+        }
+
+        async function excluirProdutoPizza(id) {
+            if (!confirm('Excluir este produto pizza?')) return;
+            try {
+                await API.deleteProduto(id);
+                await carregarProdutosPizza();
+            } catch(e) { alert('Erro: ' + e.message); }
+        }
+
+        // ── Combos ────────────────────────────────────────────────────────────────
+        let combos = [];
+        let editComboId = null;
+
+        async function carregarCombos() {
+            if (!empresaSelecionadaId) return;
+            try {
+                const res = await API.getProdutos(isAdmin ? empresaSelecionadaId : null);
+                combos = (res.produtos || []).filter(p => p.tipo === 'combo');
+                renderCombos();
+            } catch(e) { console.error(e); }
+        }
+
+        function renderCombos() {
+            const el = document.getElementById('listaCombos');
+            if (combos.length === 0) {
+                el.innerHTML = '<div class="p-8 text-center text-gray-400">Nenhum combo cadastrado.</div>';
+                return;
+            }
+            el.innerHTML = combos.map(c => `
+                <div class="flex items-center justify-between px-5 py-3">
+                    <div>
+                        <span class="font-semibold text-gray-900">${c.nome}</span>
+                        ${c.descricao ? `<span class="ml-2 text-sm text-gray-400">${c.descricao}</span>` : ''}
+                        ${!c.disponivel ? '<span class="ml-2 text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">Indisponível</span>' : ''}
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="font-bold text-indigo-600">R$ ${parseFloat(c.preco).toFixed(2)}</span>
+                        <button onclick="editarCombo(${c.id})" class="text-blue-600 hover:text-blue-800 text-sm">✏️</button>
+                        <button onclick="excluirCombo(${c.id})" class="text-red-500 hover:text-red-700 text-sm">🗑️</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderSaboresCombo(selectedIds = []) {
+            const container = document.getElementById('comboSaboresCheck');
+            if (!sabores || sabores.length === 0) {
+                container.innerHTML = '<p class="text-sm text-gray-400">Nenhum sabor cadastrado. Cadastre sabores primeiro.</p>';
+                return;
+            }
+            // Group by subcategoria
+            const grupos = {};
+            sabores.forEach(s => {
+                const key = s.subcategoria_nome || 'Sem categoria';
+                if (!grupos[key]) grupos[key] = [];
+                grupos[key].push(s);
+            });
+            container.innerHTML = Object.entries(grupos).map(([cat, itens]) => `
+                <div class="mb-2">
+                    <p class="text-xs font-bold text-gray-500 uppercase mb-1">${cat}</p>
+                    ${itens.map(s => `
+                        <label class="flex items-center gap-2 py-1 cursor-pointer">
+                            <input type="checkbox" value="${s.id}" ${selectedIds.includes(s.id) ? 'checked' : ''} class="combo-sabor-check w-4 h-4 text-indigo-600">
+                            <span class="text-sm text-gray-700">${s.nome}</span>
+                        </label>
+                    `).join('')}
+                </div>
+            `).join('');
+        }
+
+        function abrirModalCombo() {
+            editComboId = null;
+            document.getElementById('modalComboTitulo').textContent = 'Novo Combo';
+            document.getElementById('comboId').value = '';
+            document.getElementById('comboNome').value = '';
+            document.getElementById('comboDescricao').value = '';
+            document.getElementById('comboPreco').value = '';
+            document.getElementById('comboNumPizzas').value = '1';
+            document.getElementById('comboDisponivel').checked = true;
+            renderSaboresCombo([]);
+            document.getElementById('modalCombo').classList.remove('hidden');
+        }
+
+        async function editarCombo(id) {
+            const c = combos.find(x => x.id === id);
+            if (!c) return;
+            editComboId = id;
+            document.getElementById('modalComboTitulo').textContent = 'Editar Combo';
+            document.getElementById('comboId').value = c.id;
+            document.getElementById('comboNome').value = c.nome;
+            document.getElementById('comboDescricao').value = c.descricao || '';
+            document.getElementById('comboPreco').value = c.preco;
+            document.getElementById('comboNumPizzas').value = c.combo_num_pizzas || 1;
+            document.getElementById('comboDisponivel').checked = c.disponivel !== false;
+            renderSaboresCombo([]);
+            document.getElementById('modalCombo').classList.remove('hidden');
+            try {
+                const res = await API.getComboSabores(id);
+                renderSaboresCombo(res.sabor_ids || []);
+            } catch(e) { console.warn(e); }
+        }
+
+        function fecharModalCombo() {
+            document.getElementById('modalCombo').classList.add('hidden');
+        }
+
+        async function salvarCombo() {
+            const nome = document.getElementById('comboNome').value.trim();
+            const preco = parseFloat(document.getElementById('comboPreco').value);
+            if (!nome || isNaN(preco)) return alert('Preencha nome e preço.');
+            const checkedSaborIds = Array.from(document.querySelectorAll('.combo-sabor-check:checked')).map(el => parseInt(el.value));
+            try {
+                let comboId = editComboId;
+                const formData = new FormData();
+                formData.append('nome', nome);
+                formData.append('descricao', document.getElementById('comboDescricao').value.trim() || '');
+                formData.append('preco', preco);
+                formData.append('tipo', 'combo');
+                formData.append('combo_num_pizzas', document.getElementById('comboNumPizzas').value || '1');
+                formData.append('disponivel', document.getElementById('comboDisponivel').checked ? 'true' : 'false');
+                if (isAdmin) formData.append('empresa_id', empresaSelecionadaId);
+                if (comboId) {
+                    await API.updateProduto(comboId, formData);
+                } else {
+                    const res = await API.createProduto(formData);
+                    comboId = res.produto?.id || res.id;
+                }
+                if (comboId) {
+                    await API.saveComboSabores(comboId, checkedSaborIds);
+                }
+                fecharModalCombo();
+                await carregarCombos();
+            } catch(e) { alert('Erro: ' + e.message); }
+        }
+
+        async function excluirCombo(id) {
+            if (!confirm('Excluir este combo?')) return;
+            try {
+                await API.deleteProduto(id);
+                await carregarCombos();
+            } catch(e) { alert('Erro: ' + e.message); }
         }
 
         init();
