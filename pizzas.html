@@ -18,8 +18,13 @@
                 <div class="flex items-center gap-4">
                     <a href="dashboard.html" class="text-gray-600 hover:text-indigo-600 transition">Início</a>
                     <a href="cardapio.html" class="text-gray-600 hover:text-indigo-600 transition">Cardápio</a>
+                    <a id="navCategorias" href="categorias.html" class="text-gray-600 hover:text-indigo-600 transition">Categorias</a>
+                    <a href="conversas.html" class="text-gray-600 hover:text-indigo-600 transition">Conversas</a>
+                    <a href="configuracoes.html" class="text-gray-600 hover:text-indigo-600 transition">Minha Loja</a>
                     <a href="pizzas.html" class="text-indigo-600 font-medium">🍕 Pizzas</a>
                     <a href="pedidos.html" class="text-gray-600 hover:text-indigo-600 transition">Pedidos</a>
+                    <a href="relatorios.html" class="text-gray-600 hover:text-indigo-600 transition">Relatórios</a>
+                    <a id="navEmpresas" href="empresas.html" class="hidden text-gray-600 hover:text-indigo-600 transition">Empresas</a>
                     <button onclick="logout()" class="text-red-600 hover:text-red-700 font-medium transition">Sair</button>
                 </div>
             </div>
@@ -48,7 +53,6 @@
             <div class="flex border-b border-gray-200">
                 <button id="tabTamanhos" onclick="mudarTab('tamanhos')" class="px-6 py-4 font-semibold text-indigo-600 border-b-2 border-indigo-600">📐 Tamanhos</button>
                 <button id="tabSabores" onclick="mudarTab('sabores')" class="px-6 py-4 font-semibold text-gray-500 hover:text-gray-700">🍕 Sabores</button>
-                <button id="tabBordas" onclick="mudarTab('bordas')" class="px-6 py-4 font-semibold text-gray-500 hover:text-gray-700">🫓 Bordas</button>
             </div>
         </div>
 
@@ -77,16 +81,6 @@
             </div>
         </div>
 
-        <!-- Tab: Bordas -->
-        <div id="secaoBordas" class="hidden">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-bold text-gray-800">Bordas Recheadas</h3>
-                <button onclick="abrirModalBorda()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-lg transition">+ Nova Borda</button>
-            </div>
-            <div id="listaBordas" class="bg-white rounded-xl shadow-sm border border-gray-200 divide-y divide-gray-100">
-                <div class="p-8 text-center text-gray-400">Carregando...</div>
-            </div>
-        </div>
     </main>
 
     <!-- Modal Tamanho -->
@@ -183,36 +177,6 @@
         </div>
     </div>
 
-    <!-- Modal Borda -->
-    <div id="modalBorda" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-            <div class="p-5 border-b border-gray-200 flex items-center justify-between">
-                <h3 class="text-lg font-bold text-gray-900" id="modalBordaTitulo">Nova Borda</h3>
-                <button onclick="fecharModalBorda()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
-            </div>
-            <div class="p-5 space-y-4">
-                <input type="hidden" id="bordaId">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Nome da borda</label>
-                    <input type="text" id="bordaNome" placeholder="Ex: Catupiry, Cheddar, Chocolate..." class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none">
-                </div>
-                <div class="grid grid-cols-2 gap-3 items-end">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Preço adicional (R$)</label>
-                        <input type="number" id="bordaPrecoAdicional" step="0.01" min="0" value="0" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none">
-                    </div>
-                    <label class="flex items-center gap-2 cursor-pointer pb-2">
-                        <input type="checkbox" id="bordaDisponivel" checked class="w-4 h-4 text-indigo-600">
-                        <span class="text-sm font-medium text-gray-700">Disponível</span>
-                    </label>
-                </div>
-            </div>
-            <div class="p-4 border-t border-gray-100 flex gap-3">
-                <button onclick="fecharModalBorda()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2.5 rounded-xl transition">Cancelar</button>
-                <button onclick="salvarBorda()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 rounded-xl transition">Salvar</button>
-            </div>
-        </div>
-    </div>
 
     <script src="js/api.js?v=6"></script>
     <script src="js/auth.js?v=2"></script>
@@ -220,6 +184,10 @@
         const user = checkAuth();
         if (!user) window.location.href = 'index.html';
         document.getElementById('userName').textContent = user.nome;
+        if (user.role === 'admin') {
+            const el = document.getElementById('navEmpresas');
+            if (el) el.classList.remove('hidden');
+        }
 
         const isAdmin = user.role === 'admin';
         let empresaSelecionadaId = isAdmin
@@ -266,8 +234,7 @@
             await Promise.all([
                 carregarTamanhos(),
                 carregarSubcategorias(),
-                carregarSabores(),
-                carregarBordas()
+                carregarSabores()
             ]);
         }
 
@@ -275,7 +242,7 @@
 
         function mudarTab(tab) {
             tabAtiva = tab;
-            ['tamanhos', 'sabores', 'bordas'].forEach(t => {
+            ['tamanhos', 'sabores'].forEach(t => {
                 document.getElementById(`secao${capitalize(t)}`).classList.toggle('hidden', t !== tab);
                 const btn = document.getElementById(`tab${capitalize(t)}`);
                 if (t === tab) {
@@ -614,94 +581,6 @@
             try {
                 await API.deletePizzaSabor(id);
                 await carregarSabores();
-            } catch (e) { alert('Erro: ' + e.message); }
-        }
-
-        // ── Bordas ────────────────────────────────────────────────────────────
-
-        let bordas = [];
-        let editBordaId = null;
-
-        async function carregarBordas() {
-            if (!empresaSelecionadaId) return;
-            try {
-                const res = await API.getPizzaBordas(isAdmin ? empresaSelecionadaId : null);
-                bordas = res.bordas || [];
-                renderBordas();
-            } catch (e) { console.error(e); }
-        }
-
-        function renderBordas() {
-            const el = document.getElementById('listaBordas');
-            if (bordas.length === 0) {
-                el.innerHTML = '<div class="p-8 text-center text-gray-400">Nenhuma borda cadastrada</div>';
-                return;
-            }
-            el.innerHTML = bordas.map(b => `
-                <div class="flex items-center justify-between px-5 py-3">
-                    <div>
-                        <span class="font-semibold text-gray-900">${b.nome}</span>
-                        ${!b.disponivel ? '<span class="ml-2 text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">Indisponível</span>' : ''}
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <span class="font-bold text-indigo-600">${parseFloat(b.preco_adicional) > 0 ? '+R$ ' + parseFloat(b.preco_adicional).toFixed(2) : 'Grátis'}</span>
-                        <button onclick="editarBorda(${b.id})" class="text-blue-600 hover:text-blue-800 text-sm font-medium">✏️ Editar</button>
-                        <button onclick="excluirBorda(${b.id})" class="text-red-500 hover:text-red-700 text-sm font-medium">🗑️</button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function abrirModalBorda() {
-            editBordaId = null;
-            document.getElementById('modalBordaTitulo').textContent = 'Nova Borda';
-            document.getElementById('bordaId').value = '';
-            document.getElementById('bordaNome').value = '';
-            document.getElementById('bordaPrecoAdicional').value = '0';
-            document.getElementById('bordaDisponivel').checked = true;
-            document.getElementById('modalBorda').classList.remove('hidden');
-        }
-
-        function editarBorda(id) {
-            const b = bordas.find(x => x.id === id);
-            if (!b) return;
-            editBordaId = id;
-            document.getElementById('modalBordaTitulo').textContent = 'Editar Borda';
-            document.getElementById('bordaId').value = b.id;
-            document.getElementById('bordaNome').value = b.nome;
-            document.getElementById('bordaPrecoAdicional').value = b.preco_adicional || 0;
-            document.getElementById('bordaDisponivel').checked = b.disponivel;
-            document.getElementById('modalBorda').classList.remove('hidden');
-        }
-
-        function fecharModalBorda() {
-            document.getElementById('modalBorda').classList.add('hidden');
-        }
-
-        async function salvarBorda() {
-            const nome = document.getElementById('bordaNome').value.trim();
-            if (!nome) return alert('Informe o nome da borda.');
-            const data = {
-                nome,
-                preco_adicional: parseFloat(document.getElementById('bordaPrecoAdicional').value) || 0,
-                disponivel: document.getElementById('bordaDisponivel').checked
-            };
-            try {
-                if (editBordaId) {
-                    await API.updatePizzaBorda(editBordaId, data);
-                } else {
-                    await API.createPizzaBorda(data, isAdmin ? empresaSelecionadaId : null);
-                }
-                fecharModalBorda();
-                await carregarBordas();
-            } catch (e) { alert('Erro: ' + e.message); }
-        }
-
-        async function excluirBorda(id) {
-            if (!confirm('Excluir esta borda?')) return;
-            try {
-                await API.deletePizzaBorda(id);
-                await carregarBordas();
             } catch (e) { alert('Erro: ' + e.message); }
         }
 

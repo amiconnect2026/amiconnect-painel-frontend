@@ -128,13 +128,20 @@
         <div id="featuredSections" class="max-w-3xl mx-auto px-4 pt-4"></div>
 
         <!-- Produtos -->
-        <div class="max-w-3xl mx-auto px-4 py-6 pb-32">
+        <div class="max-w-3xl mx-auto px-4 py-6 pb-4">
             <div id="produtosContainer" class="space-y-8"></div>
             <div id="emptyState" class="hidden text-center py-16">
                 <span class="text-6xl">📭</span>
                 <h3 class="text-xl font-bold text-gray-900 mt-4">Nenhum produto disponível</h3>
                 <p class="text-gray-600 mt-2">O cardápio está sendo atualizado</p>
             </div>
+        </div>
+
+        <!-- Seção Monte sua Pizza (apenas pizzaria) -->
+        <div id="pizzaMenuSection" class="hidden max-w-3xl mx-auto px-4 pb-32">
+            <h2 class="text-xl font-extrabold text-gray-900 mb-4 pb-2 border-b border-gray-200">🍕 Monte sua Pizza</h2>
+            <p class="text-sm text-gray-500 mb-4">Escolha um produto pizza acima e personalize do seu jeito!</p>
+            <div id="pizzaMenuBody" class="space-y-6"></div>
         </div>
 
         <!-- Footer -->
@@ -424,7 +431,7 @@
                     header.style.background = `linear-gradient(to bottom, rgba(0,0,0,0.45), rgba(0,0,0,0.65)), url(${empresa.foto_capa}) center/cover no-repeat`;
                 }
 
-                const produtosDisponiveis = produtos.filter(p => p.disponivel);
+                const produtosDisponiveis = produtos.filter(p => p.disponivel !== false);
                 todosProdutos = produtosDisponiveis;
 
                 // Carregar dados de pizza (tamanhos, sabores, bordas, configs)
@@ -432,6 +439,10 @@
                     const pRes = await fetch(`https://painel.amiconnect.com.br/api/pizzas/publico/${empresaId}`);
                     if (pRes.ok) pizzaData = await pRes.json();
                 } catch(e) { console.warn('Pizza data not loaded:', e); }
+
+                if (empresa.tipo_negocio === 'pizzaria' && pizzaData?.subcategorias?.length) {
+                    renderPizzaMenu();
+                }
 
                 renderFeaturedSections(produtosDisponiveis);
 
@@ -461,6 +472,19 @@
                     };
                     tabs.appendChild(tab);
                 });
+
+                // Tab para seção de sabores de pizza
+                if (empresa.tipo_negocio === 'pizzaria' && pizzaData?.subcategorias?.length) {
+                    const pizzaTab = document.createElement('button');
+                    pizzaTab.className = 'categoria-tab whitespace-nowrap pb-2 text-gray-600 hover:text-indigo-600 transition font-semibold';
+                    pizzaTab.textContent = '🍕 Sabores';
+                    pizzaTab.onclick = () => {
+                        document.querySelectorAll('.categoria-tab').forEach(t => t.classList.remove('ativa'));
+                        pizzaTab.classList.add('ativa');
+                        document.getElementById('pizzaMenuSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    };
+                    tabs.appendChild(pizzaTab);
+                }
 
                 const container = document.getElementById('produtosContainer');
                 Object.keys(porCategoria).forEach(cat => {
@@ -494,7 +518,7 @@
                                             <img src="${p.imagem_url}" alt="${p.nome}" class="w-full h-full object-cover">
                                         </div>
                                     ` : `
-                                        <div class="w-32 h-32 flex-shrink-0 bg-gray-100 flex items-center justify-center text-4xl">🍽️</div>
+                                        <div class="w-32 h-32 flex-shrink-0 bg-gray-100 flex items-center justify-center text-4xl">${p.tipo === 'pizza' ? '🍕' : '🍽️'}</div>
                                     `}
                                 </div>
                             `).join('')}
@@ -511,6 +535,41 @@
                 document.getElementById('loading').classList.add('hidden');
                 document.getElementById('erro').classList.remove('hidden');
             }
+        }
+
+        // ===== SEÇÃO SABORES PIZZA =====
+
+        function renderPizzaMenu() {
+            const section = document.getElementById('pizzaMenuSection');
+            const body = document.getElementById('pizzaMenuBody');
+            if (!section || !body || !pizzaData?.subcategorias?.length) return;
+
+            const subcats = pizzaData.subcategorias.filter(sc => sc.sabores?.length > 0);
+            if (!subcats.length) return;
+
+            body.innerHTML = subcats.map(sc => `
+                <div>
+                    <h3 class="font-bold text-gray-700 mb-3 text-base">${sc.nome}</h3>
+                    <div class="grid grid-cols-1 gap-2">
+                        ${sc.sabores.map(s => {
+                            const disp = s.disponivel !== false;
+                            const precoLabel = parseFloat(s.preco_adicional) > 0
+                                ? `+R$ ${parseFloat(s.preco_adicional).toFixed(2)}`
+                                : 'Padrão';
+                            return `<div class="flex items-center justify-between bg-white rounded-xl border border-gray-100 px-4 py-3 ${disp ? '' : 'opacity-50'}">
+                                <div class="flex-1">
+                                    <p class="font-semibold text-gray-900 text-sm ${disp ? '' : 'line-through text-gray-400'}">${s.nome}</p>
+                                    ${s.descricao ? `<p class="text-xs text-gray-400 mt-0.5">${s.descricao}</p>` : ''}
+                                    ${!disp ? '<p class="text-xs text-red-400 mt-0.5">Indisponível</p>' : ''}
+                                </div>
+                                <span class="text-sm font-bold ${disp ? 'text-indigo-600' : 'text-gray-300'} ml-3">${precoLabel}</span>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                </div>
+            `).join('');
+
+            section.classList.remove('hidden');
         }
 
         // ===== SEÇÕES EM DESTAQUE =====
@@ -1274,8 +1333,14 @@
 
         async function abrirPizzaModal(id, nome, preco) {
             if (!pizzaData || !pizzaData.tamanhos?.length) {
-                alert('Dados de pizza ainda não carregados. Tente novamente em instantes.');
-                return;
+                try {
+                    const pRes = await fetch(`https://painel.amiconnect.com.br/api/pizzas/publico/${empresaId}`);
+                    if (pRes.ok) pizzaData = await pRes.json();
+                } catch(e) { console.warn('Pizza data load error:', e); }
+                if (!pizzaData?.tamanhos?.length) {
+                    alert('Nenhum tamanho de pizza cadastrado. Configure os tamanhos no painel.');
+                    return;
+                }
             }
             _pizza = {
                 produto: { id, nome, precoBase: preco },
