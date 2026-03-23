@@ -44,9 +44,6 @@ async function carregarConfiguracoes(empresaId) {
         document.getElementById('pedido_minimo').value = empresa.pedido_minimo || '';
         document.getElementById('formas_pagamento').value = empresa.formas_pagamento || '';
         document.getElementById('horario_funcionamento').value = empresa.horario_funcionamento || '';
-        // hora_abertura/fechamento vem como "HH:MM:SS" do PostgreSQL TIME — pegar só HH:MM
-        document.getElementById('hora_abertura').value = (empresa.hora_abertura || '09:00').substring(0, 5);
-        document.getElementById('hora_fechamento').value = (empresa.hora_fechamento || '22:00').substring(0, 5);
         document.getElementById('endereco_restaurante').value = empresa.endereco_restaurante || '';
         document.getElementById('raio_entrega_km').value = empresa.raio_entrega_km || '';
         document.getElementById('latitude').value = empresa.latitude || '';
@@ -120,8 +117,6 @@ async function salvarConfiguracoes() {
             taxa_entrega: parseFloat(document.getElementById('taxa_entrega').value),
             pedido_minimo: parseFloat(document.getElementById('pedido_minimo').value),
             horario_funcionamento: document.getElementById('horario_funcionamento').value,
-            hora_abertura: document.getElementById('hora_abertura').value || '09:00',
-            hora_fechamento: document.getElementById('hora_fechamento').value || '22:00',
             formas_pagamento: document.getElementById('formas_pagamento').value,
             endereco_restaurante: document.getElementById('endereco_restaurante').value,
             raio_entrega_km: parseFloat(document.getElementById('raio_entrega_km').value) || null,
