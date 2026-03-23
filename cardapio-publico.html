@@ -617,10 +617,18 @@
 
         // ===== CARRINHO =====
 
-        function adicionarAoCarrinho(id, nome, preco, tipo) {
+        async function adicionarAoCarrinho(id, nome, preco, tipo) {
             tipo = tipo || (todosProdutos.find(p => p.id === id)?.tipo) || 'simples';
             if (tipo === 'pizza') {
-                abrirPizzaModal(id, nome, preco);
+                // Produto pizza = tamanho; encontra o tamanho correspondente via produto_pizza_id
+                if (!pizzaData?.tamanhos?.length) {
+                    try {
+                        const pRes = await fetch(`https://painel.amiconnect.com.br/api/pizzas/publico/${empresaId}`);
+                        if (pRes.ok) pizzaData = await pRes.json();
+                    } catch(e) {}
+                }
+                const tamanho = pizzaData?.tamanhos?.find(t => t.produto_pizza_id == id);
+                if (tamanho) abrirPizzaComTamanho(tamanho.id);
                 return;
             }
             if (tipo === 'combo') { abrirComboModal(id, nome, preco); return; }
@@ -1339,7 +1347,7 @@
             if (!t) return;
 
             _pizza = {
-                produto: { id: 0, nome: 'Pizza', precoBase: parseFloat(t.preco) },
+                produto: { id: t.produto_pizza_id || 0, nome: `Pizza — ${t.nome}`, precoBase: parseFloat(t.preco) },
                 stepAtual: 2,
                 tamanhoSel: t,
                 saboresSel: [],
@@ -1348,17 +1356,16 @@
                 obs: '',
                 preSelectedSaborId: null
             };
-            // Bordas da tabela pizza_bordas como grupo de complemento
-            if (pizzaData.bordas?.length > 0) {
-                _pizza.grupos = [{
-                    id: 'borda',
-                    nome: 'Borda recheada',
-                    min_escolhas: 0,
-                    max_escolhas: 1,
-                    opcoes: pizzaData.bordas.map(b => ({ id: b.id, nome: b.nome, preco_adicional: b.preco_adicional }))
-                }];
-                _pizza.gruposSel = { borda: [] };
-            }
+            // Carregar complementos (bordas etc.) do produto vinculado ao tamanho
+            try {
+                if (t.produto_pizza_id) {
+                    const cmpData = await fetch(`https://painel.amiconnect.com.br/api/produtos/publico/${t.produto_pizza_id}/complementos`).then(r => r.json());
+                    _pizza.grupos = cmpData.grupos || [];
+                }
+            } catch(e) { _pizza.grupos = []; }
+            _pizza.gruposSel = {};
+            _pizza.grupos.forEach(g => { _pizza.gruposSel[g.id] = []; });
+
             document.getElementById('pizzaModalNome').textContent = `Pizza — ${t.nome}`;
             document.getElementById('pizzaModal').classList.remove('hidden');
             document.body.style.overflow = 'hidden';

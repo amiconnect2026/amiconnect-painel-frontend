@@ -63,6 +63,9 @@
                 <h3 class="text-xl font-bold text-gray-800">Tamanhos</h3>
                 <button onclick="abrirModalTamanho()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-lg transition">+ Novo Tamanho</button>
             </div>
+            <div class="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-4 text-sm text-blue-800">
+                ℹ️ Cada tamanho é criado como produto na categoria <strong>"Pizzas"</strong> do <a href="cardapio.html" class="underline font-semibold">Cardápio</a>. Para adicionar bordas e complementos, acesse o Cardápio e configure os adicionais no tamanho desejado.
+            </div>
             <div id="listaTamanhos" class="bg-white rounded-xl shadow-sm border border-gray-200 divide-y divide-gray-100">
                 <div class="p-8 text-center text-gray-400">Carregando...</div>
             </div>
@@ -78,7 +81,7 @@
                 </div>
             </div>
             <div class="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-4 text-sm text-blue-800">
-                ℹ️ Ao criar um novo sabor, ele aparece automaticamente no cardápio público na categoria <strong>"Pizzas"</strong>. Para adicionar complementos (bordas etc.) ou editar a foto, acesse o <a href="cardapio.html" class="underline font-semibold">Cardápio</a>.
+                ℹ️ Sabores ficam exclusivamente aqui — <strong>não aparecem como produtos individuais no cardápio</strong>. O cliente vê os tamanhos, escolhe o sabor no modal e o preço é o do sabor mais caro selecionado.
             </div>
             <div id="listaSabores" class="space-y-4">
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center text-gray-400">Carregando...</div>
