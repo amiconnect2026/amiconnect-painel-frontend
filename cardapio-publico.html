@@ -291,14 +291,27 @@
                         <p class="text-sm font-semibold text-gray-700 mb-2">📍 Endereço de entrega</p>
                         <div id="enderecosSalvos" class="space-y-2 mb-3"></div>
 
-                        <!-- Dica de localização + botão em destaque -->
-                        <div id="geoDicaBox" class="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-3">
-                            <p class="text-xs text-amber-800 font-semibold mb-2">📍 Compartilhe sua localização para facilitar a entrega!</p>
-                            <button id="btnGeolocalizacao" onclick="usarLocalizacaoAtual()"
-                                class="w-full bg-amber-400 hover:bg-amber-500 text-amber-900 font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2 active:scale-95">
-                                <span>📍</span> Usar minha localização atual
-                            </button>
-                            <div id="geoStatus" class="hidden text-xs text-center text-amber-700 mt-1.5 font-medium"></div>
+                        <!-- Localização obrigatória -->
+                        <div id="geoDicaBox" class="mb-3">
+                            <!-- Botão de solicitar (visível antes de confirmar) -->
+                            <div id="geoSolicitarBloco">
+                                <p class="text-sm text-amber-700 text-center mb-2 font-medium">
+                                    Para calcular sua taxa de entrega precisamos da sua localização!<br>
+                                    Isso garante que seu pedido chegue certinho 😊
+                                </p>
+                                <button id="btnGeolocalizacao" onclick="usarLocalizacaoAtual()"
+                                    class="w-full bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white font-bold py-3 rounded-2xl text-sm transition flex items-center justify-center gap-2 active:scale-95 shadow-md">
+                                    📍 Compartilhar localização para calcular entrega
+                                </button>
+                            </div>
+                            <!-- Localização confirmada -->
+                            <div id="geoConfirmadoBloco" class="hidden bg-green-50 border border-green-200 rounded-xl py-3 px-4 flex items-center justify-center gap-2 text-green-700 font-semibold text-sm">
+                                ✅ Localização confirmada!
+                            </div>
+                            <!-- Permissão negada -->
+                            <div id="geoNegadoBloco" class="hidden bg-orange-50 border border-orange-200 rounded-xl py-3 px-4 text-orange-700 text-sm text-center mt-2">
+                                Sem a localização não conseguimos calcular a taxa de entrega. Por favor, permita o acesso à localização nas configurações do seu navegador 😊
+                            </div>
                         </div>
 
                         <button id="btnNovoEndereco" onclick="mostrarFormEndereco()"
@@ -764,15 +777,15 @@
             _ckPerfil = null; _ckEnderecos = []; _ckEnderecoSelecionado = null;
             _ckTipoEntrega = 'entrega'; _ckStep = 1;
             _ckGeoLat = null; _ckGeoLng = null;
-            // Reset geo button
+            // Reset geo
             const geoBtn = document.getElementById('btnGeolocalizacao');
             if (geoBtn) {
                 geoBtn.disabled = false;
-                geoBtn.innerHTML = '<span>📍</span> Usar minha localização atual';
-                geoBtn.className = 'w-full bg-amber-400 hover:bg-amber-500 text-amber-900 font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2 active:scale-95';
+                geoBtn.innerHTML = '📍 Compartilhar localização para calcular entrega';
             }
-            const geoSt = document.getElementById('geoStatus');
-            if (geoSt) geoSt.classList.add('hidden');
+            document.getElementById('geoSolicitarBloco')?.classList.remove('hidden');
+            document.getElementById('geoConfirmadoBloco')?.classList.add('hidden');
+            document.getElementById('geoNegadoBloco')?.classList.add('hidden');
             document.getElementById('ckTelefone').value = '';
             document.getElementById('ckNome').value = '';
             document.getElementById('ckPerfisEncontrado').classList.add('hidden');
@@ -916,31 +929,27 @@
 
         function usarLocalizacaoAtual() {
             if (!navigator.geolocation) {
-                alert('Seu navegador não suporta geolocalização.');
+                document.getElementById('geoNegadoBloco').classList.remove('hidden');
                 return;
             }
             const btn = document.getElementById('btnGeolocalizacao');
-            const status = document.getElementById('geoStatus');
             btn.disabled = true;
-            btn.innerHTML = 'Obtendo localização...';
-            status.classList.remove('hidden');
-            status.textContent = 'Aguardando permissão...';
+            btn.innerHTML = '⏳ Aguardando permissão...';
 
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
                     _ckGeoLat = pos.coords.latitude;
                     _ckGeoLng = pos.coords.longitude;
-                    btn.innerHTML = '✅ Localização capturada!';
-                    btn.className = 'w-full bg-green-500 text-white font-bold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2';
-                    btn.disabled = false;
-                    status.textContent = 'Localização salva — será enviada com o pedido';
+                    document.getElementById('geoSolicitarBloco').classList.add('hidden');
+                    document.getElementById('geoNegadoBloco').classList.add('hidden');
+                    document.getElementById('geoConfirmadoBloco').classList.remove('hidden');
                 },
-                (err) => {
-                    btn.innerHTML = '<span>📍</span> Usar minha localização atual';
+                () => {
                     btn.disabled = false;
-                    status.textContent = err.code === 1 ? 'Permissão negada pelo navegador.' : 'Não foi possível obter localização.';
+                    btn.innerHTML = '📍 Compartilhar localização para calcular entrega';
+                    document.getElementById('geoNegadoBloco').classList.remove('hidden');
                 },
-                { timeout: 10000 }
+                { enableHighAccuracy: true, timeout: 15000 }
             );
         }
 
@@ -985,6 +994,13 @@
 
         function irParaStep3() {
             if (_ckTipoEntrega === 'entrega') {
+                // Localização obrigatória para entrega
+                if (!_ckGeoLat || !_ckGeoLng) {
+                    document.getElementById('geoSolicitarBloco').classList.remove('hidden');
+                    document.getElementById('geoNegadoBloco').classList.remove('hidden');
+                    document.getElementById('geoDicaBox').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
+                }
                 // Se não tem endereço selecionado, tenta pegar do form
                 if (!_ckEnderecoSelecionado) {
                     const rua = document.getElementById('endRua').value.trim();
