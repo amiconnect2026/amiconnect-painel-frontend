@@ -112,10 +112,14 @@
                     <label class="block text-sm font-medium text-gray-700 mb-1">Nome</label>
                     <input type="text" id="tamanhoNome" placeholder="Ex: Pequena, Média, Grande" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none">
                 </div>
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-3 gap-3">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Preço base (R$)</label>
                         <input type="number" id="tamanhoPreco" step="0.01" min="0" placeholder="0.00" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Pedaços</label>
+                        <input type="number" id="tamanhoPedacos" min="1" placeholder="Ex: 8" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Máx. sabores</label>
@@ -176,7 +180,7 @@
                     <input type="text" id="saborDescricao" placeholder="Ingredientes, detalhes..." class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Preço adicional por tamanho <span class="font-normal text-gray-400">(R$)</span></label>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Preço por tamanho <span class="font-normal text-gray-400">(R$ — preço FINAL da pizza com esse sabor)</span></label>
                     <div id="saborPrecosTamanho" class="space-y-2">
                         <p class="text-sm text-gray-400 italic">Carregando tamanhos...</p>
                     </div>
@@ -344,10 +348,11 @@
                 <div class="flex items-center justify-between px-5 py-3">
                     <div>
                         <span class="font-semibold text-gray-900">${t.nome}</span>
-                        <span class="ml-3 text-sm text-gray-500">até ${t.max_sabores || 1} sabor(es)</span>
+                        ${t.pedacos ? `<span class="ml-2 text-sm text-gray-400">${t.pedacos} pedaços</span>` : ''}
+                        <span class="ml-2 text-sm text-gray-500">até ${t.max_sabores || 1} sabor(es)</span>
                     </div>
                     <div class="flex items-center gap-4">
-                        <span class="font-bold text-indigo-600">R$ ${parseFloat(t.preco).toFixed(2)}</span>
+                        <span class="font-bold text-indigo-600">a partir de R$ ${parseFloat(t.preco).toFixed(2)}</span>
                         <button onclick="editarTamanho(${t.id})" class="text-blue-600 hover:text-blue-800 text-sm font-medium">✏️ Editar</button>
                         <button onclick="excluirTamanho(${t.id})" class="text-red-500 hover:text-red-700 text-sm font-medium">🗑️</button>
                     </div>
@@ -361,6 +366,7 @@
             document.getElementById('tamanhoId').value = '';
             document.getElementById('tamanhoNome').value = '';
             document.getElementById('tamanhoPreco').value = '';
+            document.getElementById('tamanhoPedacos').value = '';
             document.getElementById('tamanhoMaxSabores').value = '2';
             document.getElementById('modalTamanho').classList.remove('hidden');
         }
@@ -373,6 +379,7 @@
             document.getElementById('tamanhoId').value = t.id;
             document.getElementById('tamanhoNome').value = t.nome;
             document.getElementById('tamanhoPreco').value = t.preco;
+            document.getElementById('tamanhoPedacos').value = t.pedacos || '';
             document.getElementById('tamanhoMaxSabores').value = t.max_sabores || 2;
             document.getElementById('modalTamanho').classList.remove('hidden');
         }
@@ -384,13 +391,14 @@
         async function salvarTamanho() {
             const nome = document.getElementById('tamanhoNome').value.trim();
             const preco = parseFloat(document.getElementById('tamanhoPreco').value);
+            const pedacos = parseInt(document.getElementById('tamanhoPedacos').value) || null;
             const max_sabores = parseInt(document.getElementById('tamanhoMaxSabores').value) || 2;
             if (!nome || isNaN(preco)) return alert('Preencha nome e preço.');
             try {
                 if (editTamanhoId) {
-                    await API.updatePizzaTamanho(editTamanhoId, { nome, preco, max_sabores });
+                    await API.updatePizzaTamanho(editTamanhoId, { nome, preco, pedacos, max_sabores });
                 } else {
-                    await API.createPizzaTamanho({ nome, preco, max_sabores }, isAdmin ? empresaSelecionadaId : null);
+                    await API.createPizzaTamanho({ nome, preco, pedacos, max_sabores }, isAdmin ? empresaSelecionadaId : null);
                 }
                 fecharModalTamanho();
                 await carregarTamanhos();
@@ -508,10 +516,10 @@
                                 <div>
                                     <span class="font-semibold text-gray-900">${s.nome}</span>
                                     ${s.descricao ? `<span class="ml-2 text-sm text-gray-400">${s.descricao}</span>` : ''}
-                                    ${!s.disponivel ? '<span class="ml-2 text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">Indisponível</span>' : ''}
+                                    ${!s.disponivel ? '<span class="ml-2 text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">Indisponível</span>' : '<span class="ml-2 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Disponível</span>'}
                                 </div>
-                                <div class="flex items-center gap-4">
-                                    <span class="font-semibold text-indigo-600 text-sm">${parseFloat(s.preco_adicional) > 0 ? '+R$ ' + parseFloat(s.preco_adicional).toFixed(2) : 'Padrão'}</span>
+                                <div class="flex items-center gap-3">
+                                    <button onclick="toggleSaborDisponivel(${s.id})" class="text-xs px-3 py-1 rounded-full border font-medium transition ${s.disponivel ? 'border-red-300 text-red-600 hover:bg-red-50' : 'border-green-300 text-green-700 hover:bg-green-50'}">${s.disponivel ? 'Pausar' : 'Ativar'}</button>
                                     <button onclick="editarSabor(${s.id})" class="text-blue-600 hover:text-blue-800 text-sm">✏️</button>
                                     <button onclick="excluirSabor(${s.id})" class="text-red-500 hover:text-red-700 text-sm">🗑️</button>
                                 </div>
@@ -643,6 +651,21 @@
             if (!confirm('Excluir este sabor?')) return;
             try {
                 await API.deletePizzaSabor(id);
+                await carregarSabores();
+            } catch (e) { alert('Erro: ' + e.message); }
+        }
+
+        async function toggleSaborDisponivel(id) {
+            const s = sabores.find(x => x.id === id);
+            if (!s) return;
+            try {
+                await API.updatePizzaSabor(id, {
+                    nome: s.nome,
+                    descricao: s.descricao,
+                    preco_adicional: s.preco_adicional,
+                    subcategoria_id: s.subcategoria_id,
+                    disponivel: !s.disponivel
+                });
                 await carregarSabores();
             } catch (e) { alert('Erro: ' + e.message); }
         }

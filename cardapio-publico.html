@@ -468,43 +468,64 @@
                     const section = document.createElement('div');
                     section.id = `cat-${cat.replace(/\s/g, '-')}`;
                     section.className = 'fade-in';
+
+                    // Se a categoria tem produtos tipo 'pizza' e há tamanhos cadastrados → mostrar tamanhos como entrada
+                    const temPizza = prods.some(p => p.tipo === 'pizza');
+                    const prodsNaoPizza = prods.filter(p => p.tipo !== 'pizza');
+
+                    let pizzaSection = '';
+                    if (temPizza && pizzaData?.tamanhos?.length > 0) {
+                        pizzaSection = `
+                            <div class="space-y-3 mb-4">
+                                ${pizzaData.tamanhos.filter(t => t.disponivel !== false).map(t => `
+                                    <button onclick="abrirPizzaComTamanho(${t.id})" class="w-full bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex items-center justify-between hover:border-indigo-300 hover:shadow-md transition text-left">
+                                        <div class="flex items-center gap-3">
+                                            <span class="text-3xl">🍕</span>
+                                            <div>
+                                                <p class="font-extrabold text-gray-900 text-base">${t.nome}</p>
+                                                ${t.pedacos ? `<p class="text-sm text-gray-400">${t.pedacos} pedaços · até ${t.max_sabores || 1} sabor(es)</p>` : `<p class="text-sm text-gray-400">até ${t.max_sabores || 1} sabor(es)</p>`}
+                                            </div>
+                                        </div>
+                                        <div class="text-right flex-shrink-0 ml-4">
+                                            <p class="text-indigo-600 font-extrabold text-lg">a partir de R$ ${parseFloat(t.preco).toFixed(2)}</p>
+                                            <p class="text-xs text-gray-400 mt-0.5">Escolher sabores →</p>
+                                        </div>
+                                    </button>
+                                `).join('')}
+                            </div>`;
+                    }
+
+                    const produtosHtml = prodsNaoPizza.map(p => `
+                        <div class="produto-card bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex relative">
+                            ${p.is_novo ? '<span class="absolute top-2 left-2 z-10 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">NOVO</span>' : ''}
+                            ${!p.disponivel ? '<div class="absolute inset-0 bg-gray-900 bg-opacity-60 flex items-center justify-center z-10 rounded-xl"><span class="text-white font-bold text-sm bg-gray-800 px-3 py-1 rounded-full">ESGOTADO</span></div>' : ''}
+                            <div class="flex-1 p-4 flex flex-col justify-between">
+                                <div>
+                                    <h3 class="font-extrabold text-gray-900 text-base">${p.nome}</h3>
+                                    ${p.descricao ? `<p class="text-gray-500 text-sm mt-1 leading-relaxed">${p.descricao}</p>` : ''}
+                                </div>
+                                <div class="flex items-center justify-between mt-3">
+                                    <div>
+                                        ${p.promocao_ativa && p.desconto_percent > 0
+                                            ? `<p class="text-gray-400 text-sm line-through">R$ ${parseFloat(p.preco).toFixed(2)}</p><p class="text-red-600 font-extrabold text-lg">R$ ${parseFloat(p.preco_final).toFixed(2)}</p>`
+                                            : `<p class="text-indigo-600 font-extrabold text-lg">R$ ${parseFloat(p.preco_final).toFixed(2)}</p>`}
+                                    </div>
+                                    ${p.disponivel ? `<button class="btn-adicionar bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-xl text-sm flex items-center gap-1 shadow-sm" onclick="adicionarAoCarrinho(${p.id}, '${p.nome.replace(/'/g, "\\'")}', ${parseFloat(p.preco_final).toFixed(2)}, '${p.tipo || 'simples'}')"><span class="text-lg leading-none">+</span> Adicionar</button>` : ''}
+                                </div>
+                            </div>
+                            ${p.imagem_url ? `
+                                <div class="w-32 h-32 flex-shrink-0">
+                                    <img src="${p.imagem_url}" alt="${p.nome}" class="w-full h-full object-cover">
+                                </div>
+                            ` : `
+                                <div class="w-32 h-32 flex-shrink-0 bg-gray-100 flex items-center justify-center text-4xl">🍽️</div>
+                            `}
+                        </div>`).join('');
+
                     section.innerHTML = `
                         <h2 class="text-xl font-extrabold text-gray-900 mb-4 pb-2 border-b border-gray-200">${cat}</h2>
-                        <div class="grid grid-cols-1 gap-4">
-                            ${prods.map(p => {
-                                const minTamanhoPreco = p.tipo === 'pizza' && pizzaData?.tamanhos?.length
-                                    ? Math.min(...pizzaData.tamanhos.map(t => parseFloat(t.preco)))
-                                    : null;
-                                return `
-                                <div class="produto-card bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex relative">
-                                    ${p.is_novo ? '<span class="absolute top-2 left-2 z-10 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">NOVO</span>' : ''}
-                                    ${!p.disponivel ? '<div class="absolute inset-0 bg-gray-900 bg-opacity-60 flex items-center justify-center z-10 rounded-xl"><span class="text-white font-bold text-sm bg-gray-800 px-3 py-1 rounded-full">ESGOTADO</span></div>' : ''}
-                                    <div class="flex-1 p-4 flex flex-col justify-between">
-                                        <div>
-                                            <h3 class="font-extrabold text-gray-900 text-base">${p.nome}</h3>
-                                            ${p.descricao ? `<p class="text-gray-500 text-sm mt-1 leading-relaxed">${p.descricao}</p>` : ''}
-                                        </div>
-                                        <div class="flex items-center justify-between mt-3">
-                                            <div>
-                                                ${p.tipo === 'pizza' && minTamanhoPreco !== null
-                                                    ? `<p class="text-indigo-600 font-extrabold text-lg">A partir de R$ ${minTamanhoPreco.toFixed(2)}</p>`
-                                                    : p.promocao_ativa && p.desconto_percent > 0
-                                                        ? `<p class="text-gray-400 text-sm line-through">R$ ${parseFloat(p.preco).toFixed(2)}</p><p class="text-red-600 font-extrabold text-lg">R$ ${parseFloat(p.preco_final).toFixed(2)}</p>`
-                                                        : `<p class="text-indigo-600 font-extrabold text-lg">R$ ${parseFloat(p.preco_final).toFixed(2)}</p>`}
-                                            </div>
-                                            ${p.disponivel ? `<button class="btn-adicionar bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-xl text-sm flex items-center gap-1 shadow-sm" onclick="adicionarAoCarrinho(${p.id}, '${p.nome.replace(/'/g, "\\'")}', ${parseFloat(p.preco_final).toFixed(2)}, '${p.tipo || 'simples'}')">${p.tipo === 'pizza' ? 'Ver opções →' : '<span class="text-lg leading-none">+</span> Adicionar'}</button>` : ''}
-                                        </div>
-                                    </div>
-                                    ${p.imagem_url ? `
-                                        <div class="w-32 h-32 flex-shrink-0">
-                                            <img src="${p.imagem_url}" alt="${p.nome}" class="w-full h-full object-cover">
-                                        </div>
-                                    ` : `
-                                        <div class="w-32 h-32 flex-shrink-0 bg-gray-100 flex items-center justify-center text-4xl">${p.tipo === 'pizza' ? '🍕' : '🍽️'}</div>
-                                    `}
-                                </div>`;
-                            }).join('')}
-                        </div>
+                        ${pizzaSection}
+                        ${prodsNaoPizza.length > 0 ? `<div class="grid grid-cols-1 gap-4">${produtosHtml}</div>` : ''}
                     `;
                     container.appendChild(section);
                 });
@@ -1284,17 +1305,64 @@
             obs: ''
         };
 
+        // Retorna o preço FINAL da pizza com esse sabor no tamanho selecionado
+        // pizza_sabor_precos.preco_adicional armazena o preço final (não adicional)
         function getPrecoSaborParaTamanho(sabor) {
-            if (!_pizza.tamanhoSel || !sabor.precos?.length) return parseFloat(sabor.preco_adicional) || 0;
-            const p = sabor.precos.find(x => x.tamanho_id == _pizza.tamanhoSel.id);
-            return p !== undefined ? (parseFloat(p.preco_adicional) || 0) : (parseFloat(sabor.preco_adicional) || 0);
+            if (!_pizza.tamanhoSel) return parseFloat(_pizza.tamanhoSel?.preco || 0);
+            if (sabor.precos?.length) {
+                const p = sabor.precos.find(x => x.tamanho_id == _pizza.tamanhoSel.id);
+                if (p !== undefined && parseFloat(p.preco_adicional) > 0) return parseFloat(p.preco_adicional);
+            }
+            // Fallback: usa o preço base do tamanho
+            return parseFloat(_pizza.tamanhoSel.preco) || 0;
         }
 
         function calcPrecoTotal() {
-            if (!_pizza.tamanhoSel) return _pizza.produto?.precoBase || 0;
-            const maxSaborPreco = _pizza.saboresSel.reduce((max, s) => Math.max(max, parseFloat(s.preco_adicional) || 0), 0);
+            if (!_pizza.tamanhoSel) return 0;
+            const basePreco = parseFloat(_pizza.tamanhoSel.preco);
             const compPreco = Object.values(_pizza.gruposSel || {}).flat().reduce((sum, o) => sum + (parseFloat(o.preco_adicional) || 0), 0);
-            return parseFloat(_pizza.tamanhoSel.preco) + maxSaborPreco + compPreco;
+            if (_pizza.saboresSel.length === 0) return basePreco + compPreco;
+            // Preço = o maior preço entre os sabores selecionados (não soma!)
+            const maxSaborPreco = _pizza.saboresSel.reduce((max, s) => Math.max(max, parseFloat(s.preco_adicional) || basePreco), 0);
+            return maxSaborPreco + compPreco;
+        }
+
+        // Entrada a partir do card de TAMANHO no cardápio público
+        async function abrirPizzaComTamanho(tamanhoId) {
+            if (!pizzaData?.tamanhos?.length) {
+                try {
+                    const pRes = await fetch(`https://painel.amiconnect.com.br/api/pizzas/publico/${empresaId}`);
+                    if (pRes.ok) pizzaData = await pRes.json();
+                } catch(e) { console.warn('Pizza data load error:', e); }
+            }
+            const t = pizzaData?.tamanhos?.find(x => x.id === tamanhoId);
+            if (!t) return;
+
+            _pizza = {
+                produto: { id: 0, nome: 'Pizza', precoBase: parseFloat(t.preco) },
+                stepAtual: 2,
+                tamanhoSel: t,
+                saboresSel: [],
+                grupos: [],
+                gruposSel: {},
+                obs: '',
+                preSelectedSaborId: null
+            };
+            // Bordas da tabela pizza_bordas como grupo de complemento
+            if (pizzaData.bordas?.length > 0) {
+                _pizza.grupos = [{
+                    id: 'borda',
+                    nome: 'Borda recheada',
+                    min_escolhas: 0,
+                    max_escolhas: 1,
+                    opcoes: pizzaData.bordas.map(b => ({ id: b.id, nome: b.nome, preco_adicional: b.preco_adicional }))
+                }];
+                _pizza.gruposSel = { borda: [] };
+            }
+            document.getElementById('pizzaModalNome').textContent = `Pizza — ${t.nome}`;
+            document.getElementById('pizzaModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            renderPizzaStep();
         }
 
         async function abrirPizzaModal(id, nome, preco) {
@@ -1479,8 +1547,7 @@
                         const atingiu = _pizza.saboresSel.length >= max;
                         const disabled = atingiu && !sel;
                         const precoEfetivo = getPrecoSaborParaTamanho(s);
-                        const precoFull = parseFloat(_pizza.tamanhoSel?.preco || 0) + precoEfetivo;
-                        const precoLabel = `R$ ${precoFull.toFixed(2)}`;
+                        const precoLabel = `R$ ${precoEfetivo.toFixed(2)}`;
                         html += `<label class="flex items-center justify-between p-3 rounded-xl border-2 cursor-pointer transition ${sel ? 'border-indigo-600 bg-indigo-50' : disabled ? 'border-gray-100 opacity-40' : 'border-gray-200'}">
                             <span class="flex items-center gap-3">
                                 <input type="checkbox" ${sel ? 'checked' : ''} ${disabled ? 'disabled' : ''} class="w-4 h-4 accent-indigo-600" onchange="toggleSaborPizza(${s.id})">
@@ -1578,7 +1645,7 @@
                     <div class="bg-gray-50 rounded-xl p-4 space-y-2">
                         <div class="flex justify-between text-sm">
                             <span class="text-gray-500">Tamanho</span>
-                            <span class="font-semibold">${_pizza.tamanhoSel?.nome} — R$ ${parseFloat(_pizza.tamanhoSel?.preco || 0).toFixed(2)}</span>
+                            <span class="font-semibold">${_pizza.tamanhoSel?.nome}${_pizza.tamanhoSel?.pedacos ? ` (${_pizza.tamanhoSel.pedacos} pedaços)` : ''}</span>
                         </div>
                         <div class="flex justify-between text-sm">
                             <span class="text-gray-500">Sabores</span>
@@ -1611,12 +1678,16 @@
                     }).join(', ') });
                 }
             });
+            const saboresStr = _pizza.saboresSel.map(s => s.nome).join('/');
+            const nomeItem = saboresStr
+                ? `Pizza ${saboresStr} (${_pizza.tamanhoSel?.nome || ''})`
+                : `Pizza (${_pizza.tamanhoSel?.nome || ''})`;
             adicionarAoCarrinhoComComplementos({
-                id: _pizza.produto.id,
-                nome: _pizza.produto.nome,
+                id: _pizza.produto.id || 0,
+                nome: nomeItem,
                 preco,
                 quantidade: 1,
-                instanceKey: `${_pizza.produto.id}_${Date.now()}`,
+                instanceKey: `pizza_${Date.now()}`,
                 complementos,
                 pizza: {
                     tamanho: _pizza.tamanhoSel?.nome,
