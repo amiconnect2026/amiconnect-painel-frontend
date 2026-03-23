@@ -137,13 +137,6 @@
             </div>
         </div>
 
-        <!-- Seção Monte sua Pizza (apenas pizzaria) -->
-        <div id="pizzaMenuSection" class="hidden max-w-3xl mx-auto px-4 pb-32">
-            <h2 class="text-xl font-extrabold text-gray-900 mb-4 pb-2 border-b border-gray-200">🍕 Monte sua Pizza</h2>
-            <p class="text-sm text-gray-500 mb-4">Escolha um produto pizza acima e personalize do seu jeito!</p>
-            <div id="pizzaMenuBody" class="space-y-6"></div>
-        </div>
-
         <!-- Footer -->
         <div class="text-center py-8 text-gray-400 text-sm border-t border-gray-200 mt-4">
             <p>Cardápio digital por <strong class="text-indigo-500">AmiConnect</strong> 🤖</p>
@@ -440,10 +433,6 @@
                     if (pRes.ok) pizzaData = await pRes.json();
                 } catch(e) { console.warn('Pizza data not loaded:', e); }
 
-                if (empresa.tipo_negocio === 'pizzaria' && pizzaData?.subcategorias?.length) {
-                    renderPizzaMenu();
-                }
-
                 renderFeaturedSections(produtosDisponiveis);
 
                 if (produtosDisponiveis.length === 0) {
@@ -473,19 +462,6 @@
                     tabs.appendChild(tab);
                 });
 
-                // Tab para seção de sabores de pizza
-                if (empresa.tipo_negocio === 'pizzaria' && pizzaData?.subcategorias?.length) {
-                    const pizzaTab = document.createElement('button');
-                    pizzaTab.className = 'categoria-tab whitespace-nowrap pb-2 text-gray-600 hover:text-indigo-600 transition font-semibold';
-                    pizzaTab.textContent = '🍕 Sabores';
-                    pizzaTab.onclick = () => {
-                        document.querySelectorAll('.categoria-tab').forEach(t => t.classList.remove('ativa'));
-                        pizzaTab.classList.add('ativa');
-                        document.getElementById('pizzaMenuSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    };
-                    tabs.appendChild(pizzaTab);
-                }
-
                 const container = document.getElementById('produtosContainer');
                 Object.keys(porCategoria).forEach(cat => {
                     const prods = porCategoria[cat];
@@ -495,7 +471,11 @@
                     section.innerHTML = `
                         <h2 class="text-xl font-extrabold text-gray-900 mb-4 pb-2 border-b border-gray-200">${cat}</h2>
                         <div class="grid grid-cols-1 gap-4">
-                            ${prods.map(p => `
+                            ${prods.map(p => {
+                                const minTamanhoPreco = p.tipo === 'pizza' && pizzaData?.tamanhos?.length
+                                    ? Math.min(...pizzaData.tamanhos.map(t => parseFloat(t.preco)))
+                                    : null;
+                                return `
                                 <div class="produto-card bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex relative">
                                     ${p.is_novo ? '<span class="absolute top-2 left-2 z-10 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">NOVO</span>' : ''}
                                     ${!p.disponivel ? '<div class="absolute inset-0 bg-gray-900 bg-opacity-60 flex items-center justify-center z-10 rounded-xl"><span class="text-white font-bold text-sm bg-gray-800 px-3 py-1 rounded-full">ESGOTADO</span></div>' : ''}
@@ -506,11 +486,13 @@
                                         </div>
                                         <div class="flex items-center justify-between mt-3">
                                             <div>
-                                                ${p.promocao_ativa && p.desconto_percent > 0
-                                                    ? `<p class="text-gray-400 text-sm line-through">R$ ${parseFloat(p.preco).toFixed(2)}</p><p class="text-red-600 font-extrabold text-lg">R$ ${parseFloat(p.preco_final).toFixed(2)}</p>`
-                                                    : `<p class="text-indigo-600 font-extrabold text-lg">R$ ${parseFloat(p.preco_final).toFixed(2)}</p>`}
+                                                ${p.tipo === 'pizza' && minTamanhoPreco !== null
+                                                    ? `<p class="text-indigo-600 font-extrabold text-lg">A partir de R$ ${minTamanhoPreco.toFixed(2)}</p>`
+                                                    : p.promocao_ativa && p.desconto_percent > 0
+                                                        ? `<p class="text-gray-400 text-sm line-through">R$ ${parseFloat(p.preco).toFixed(2)}</p><p class="text-red-600 font-extrabold text-lg">R$ ${parseFloat(p.preco_final).toFixed(2)}</p>`
+                                                        : `<p class="text-indigo-600 font-extrabold text-lg">R$ ${parseFloat(p.preco_final).toFixed(2)}</p>`}
                                             </div>
-                                            ${p.disponivel ? `<button class="btn-adicionar bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-xl text-sm flex items-center gap-1 shadow-sm" onclick="adicionarAoCarrinho(${p.id}, '${p.nome.replace(/'/g, "\\'")}', ${parseFloat(p.preco_final).toFixed(2)}, '${p.tipo || 'simples'}')"><span class="text-lg leading-none">+</span> Adicionar</button>` : ''}
+                                            ${p.disponivel ? `<button class="btn-adicionar bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-xl text-sm flex items-center gap-1 shadow-sm" onclick="adicionarAoCarrinho(${p.id}, '${p.nome.replace(/'/g, "\\'")}', ${parseFloat(p.preco_final).toFixed(2)}, '${p.tipo || 'simples'}')">${p.tipo === 'pizza' ? 'Ver opções →' : '<span class="text-lg leading-none">+</span> Adicionar'}</button>` : ''}
                                         </div>
                                     </div>
                                     ${p.imagem_url ? `
@@ -520,8 +502,8 @@
                                     ` : `
                                         <div class="w-32 h-32 flex-shrink-0 bg-gray-100 flex items-center justify-center text-4xl">${p.tipo === 'pizza' ? '🍕' : '🍽️'}</div>
                                     `}
-                                </div>
-                            `).join('')}
+                                </div>`;
+                            }).join('')}
                         </div>
                     `;
                     container.appendChild(section);
@@ -535,41 +517,6 @@
                 document.getElementById('loading').classList.add('hidden');
                 document.getElementById('erro').classList.remove('hidden');
             }
-        }
-
-        // ===== SEÇÃO SABORES PIZZA =====
-
-        function renderPizzaMenu() {
-            const section = document.getElementById('pizzaMenuSection');
-            const body = document.getElementById('pizzaMenuBody');
-            if (!section || !body || !pizzaData?.subcategorias?.length) return;
-
-            const subcats = pizzaData.subcategorias.filter(sc => sc.sabores?.length > 0);
-            if (!subcats.length) return;
-
-            body.innerHTML = subcats.map(sc => `
-                <div>
-                    <h3 class="font-bold text-gray-700 mb-3 text-base">${sc.nome}</h3>
-                    <div class="grid grid-cols-1 gap-2">
-                        ${sc.sabores.map(s => {
-                            const disp = s.disponivel !== false;
-                            const precoLabel = parseFloat(s.preco_adicional) > 0
-                                ? `+R$ ${parseFloat(s.preco_adicional).toFixed(2)}`
-                                : 'Padrão';
-                            return `<div class="flex items-center justify-between bg-white rounded-xl border border-gray-100 px-4 py-3 ${disp ? '' : 'opacity-50'}">
-                                <div class="flex-1">
-                                    <p class="font-semibold text-gray-900 text-sm ${disp ? '' : 'line-through text-gray-400'}">${s.nome}</p>
-                                    ${s.descricao ? `<p class="text-xs text-gray-400 mt-0.5">${s.descricao}</p>` : ''}
-                                    ${!disp ? '<p class="text-xs text-red-400 mt-0.5">Indisponível</p>' : ''}
-                                </div>
-                                <span class="text-sm font-bold ${disp ? 'text-indigo-600' : 'text-gray-300'} ml-3">${precoLabel}</span>
-                            </div>`;
-                        }).join('')}
-                    </div>
-                </div>
-            `).join('');
-
-            section.classList.remove('hidden');
         }
 
         // ===== SEÇÕES EM DESTAQUE =====
@@ -1370,8 +1317,12 @@
                 temBorda: pizzaData.configs?.[id] === true || pizzaData.configs?.[id] === 'true' || false,
                 grupos: [],
                 gruposSel: {},
-                obs: ''
+                obs: '',
+                preSelectedSaborId: null
             };
+            // Pre-select the sabor that corresponds to this product
+            const preSelectedSabor = pizzaData.subcategorias.flatMap(sc => sc.sabores).find(s => s.produto_id == id);
+            _pizza.preSelectedSaborId = preSelectedSabor?.id || null;
             try {
                 const cmpData = await fetch(`https://painel.amiconnect.com.br/api/produtos/publico/${id}/complementos`).then(r => r.json());
                 _pizza.grupos = cmpData.grupos || [];
@@ -1501,6 +1452,13 @@
                 const saborFull = pizzaData.subcategorias.flatMap(sc => sc.sabores).find(x => x.id === s.id);
                 return { ...s, preco_adicional: saborFull ? getPrecoSaborParaTamanho(saborFull) : s.preco_adicional };
             });
+            // Pre-select sabor from produto if none selected yet
+            if (_pizza.saboresSel.length === 0 && _pizza.preSelectedSaborId) {
+                const preS = pizzaData.subcategorias.flatMap(sc => sc.sabores).find(x => x.id === _pizza.preSelectedSaborId);
+                if (preS) {
+                    _pizza.saboresSel = [{ id: preS.id, nome: preS.nome, preco_adicional: getPrecoSaborParaTamanho(preS) }];
+                }
+            }
             renderPizzaStep1();
         }
 
@@ -1521,7 +1479,8 @@
                         const atingiu = _pizza.saboresSel.length >= max;
                         const disabled = atingiu && !sel;
                         const precoEfetivo = getPrecoSaborParaTamanho(s);
-                        const precoLabel = precoEfetivo > 0 ? `+R$ ${precoEfetivo.toFixed(2)}` : 'Padrão';
+                        const precoFull = parseFloat(_pizza.tamanhoSel?.preco || 0) + precoEfetivo;
+                        const precoLabel = `R$ ${precoFull.toFixed(2)}`;
                         html += `<label class="flex items-center justify-between p-3 rounded-xl border-2 cursor-pointer transition ${sel ? 'border-indigo-600 bg-indigo-50' : disabled ? 'border-gray-100 opacity-40' : 'border-gray-200'}">
                             <span class="flex items-center gap-3">
                                 <input type="checkbox" ${sel ? 'checked' : ''} ${disabled ? 'disabled' : ''} class="w-4 h-4 accent-indigo-600" onchange="toggleSaborPizza(${s.id})">
