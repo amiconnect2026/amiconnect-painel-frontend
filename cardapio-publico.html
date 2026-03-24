@@ -330,7 +330,7 @@
                                 class="w-full border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-800 font-semibold py-2 rounded-xl text-xs transition flex items-center justify-center gap-2 active:scale-95">
                                 📍 Usar minha localização atual
                             </button>
-                            <div id="geoStatus" class="hidden text-xs text-center text-gray-500 mt-1"></div>
+                            <div id="geoStatus" class="hidden mt-2"></div>
                         </div>
 
                         <!-- Salvar endereço com apelido -->
@@ -1054,7 +1054,15 @@
                             const result = data.results[0];
                             preencherCamposEndereco(result.formatted_address, result.address_components, lat, lng);
                             btn.innerHTML = '✅ Localização preenchida!';
-                            st.textContent = 'Endereço preenchido automaticamente. Confirme o número.';
+                            st.innerHTML = `
+                                <div class="bg-amber-50 border border-amber-300 rounded-xl px-3 py-2.5 flex gap-2 items-start">
+                                    <span class="text-amber-500 text-base leading-tight mt-0.5">⚠️</span>
+                                    <div>
+                                        <p class="text-amber-800 font-bold text-xs">Verifique o número!</p>
+                                        <p class="text-amber-700 text-xs mt-0.5">O GPS nem sempre acerta o número exato. Confira se está correto antes de continuar.</p>
+                                    </div>
+                                </div>`;
+                            st.classList.remove('hidden');
                             mostrarSalvarEnderecoBloco();
                             if (!document.getElementById('endNumero').value) {
                                 document.getElementById('endNumero').focus();
@@ -1063,17 +1071,18 @@
                             throw new Error('Sem resultado');
                         }
                     } catch (e) {
-                        // Fallback: armazena só coordenadas sem endereço
                         _ckGeoLat = lat; _ckGeoLng = lng;
-                        btn.innerHTML = '✅ Coordenadas capturadas';
-                        st.textContent = 'Não foi possível converter o endereço. Preencha manualmente.';
+                        btn.innerHTML = '📍 Usar minha localização atual';
+                        st.innerHTML = `<p class="text-xs text-center text-gray-500">Não foi possível converter o endereço. Preencha manualmente.</p>`;
+                        st.classList.remove('hidden');
                     }
                     btn.disabled = false;
                 },
                 () => {
                     btn.disabled = false;
                     btn.innerHTML = '📍 Usar minha localização atual';
-                    st.textContent = 'Permissão negada. Verifique as configurações do navegador.';
+                    st.innerHTML = `<p class="text-xs text-center text-gray-500">Permissão negada. Verifique as configurações do navegador.</p>`;
+                    st.classList.remove('hidden');
                 },
                 { enableHighAccuracy: true, timeout: 15000 }
             );
