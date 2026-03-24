@@ -1404,8 +1404,17 @@
             if (obs) msg += `\n\n💬 Obs: ${obs}`;
 
             const numero = dadosEmpresa?.whatsapp || '';
-            const url = `https://wa.me/${numero}?text=${encodeURIComponent(msg)}`;
-            window.open(url, '_blank');
+            const mensagemCodificada = encodeURIComponent(msg);
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+            if (isIOS) {
+                window.location.href = `whatsapp://send?phone=${numero}&text=${mensagemCodificada}`;
+                setTimeout(() => {
+                    window.open(`https://api.whatsapp.com/send?phone=${numero}&text=${mensagemCodificada}`, '_blank');
+                }, 500);
+            } else {
+                window.open(`https://api.whatsapp.com/send?phone=${numero}&text=${mensagemCodificada}`, '_blank');
+            }
             fecharCheckout();
 
             // Salvar endereço no perfil do cliente (silencioso, não bloqueia)
