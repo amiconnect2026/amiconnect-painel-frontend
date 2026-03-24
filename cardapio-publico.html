@@ -912,6 +912,53 @@
             });
         }
 
+        function parseAddressComponents(components) {
+            const get = (...types) => {
+                const c = components.find(c => types.some(t => c.types.includes(t)));
+                return c ? c.long_name : '';
+            };
+            return {
+                numero:  get('street_number'),
+                rua:     get('route'),
+                bairro:  get('sublocality_level_1', 'neighborhood', 'sublocality'),
+                cidade:  get('locality', 'administrative_area_level_2'),
+                estado:  get('administrative_area_level_1')
+            };
+        }
+
+        function preencherCamposEndereco(formatted, components, lat, lng) {
+            const parsed = parseAddressComponents(components);
+
+            // Preencher autocomplete com endereço formatado (sem número para evitar duplicata)
+            const semNumero = formatted
+                .replace(/^[\d\w-]+,\s*/, '')   // remove número do início se houver
+                .trim();
+            const placesInput = document.getElementById('placesInput');
+            placesInput.value = semNumero || formatted;
+            placesInput.classList.remove('border-gray-300', 'border-red-400');
+            placesInput.classList.add('border-green-400');
+
+            // Preencher número
+            if (parsed.numero) {
+                document.getElementById('endNumero').value = parsed.numero;
+            }
+
+            // Armazenar tudo
+            _ckGeoLat = lat;
+            _ckGeoLng = lng;
+            _ckPlacesAddress = formatted;
+            _ckEnderecoSelecionado = {
+                endereco: semNumero || formatted,
+                numero:   parsed.numero,
+                rua:      parsed.rua,
+                bairro:   parsed.bairro,
+                cidade:   parsed.cidade,
+                lat, lng
+            };
+
+            document.getElementById('placesConfirmado').classList.remove('hidden');
+        }
+
         function usarLocalizacaoAtual() {
             if (!navigator.geolocation) {
                 const st = document.getElementById('geoStatus');
@@ -920,24 +967,45 @@
                 return;
             }
             const btn = document.getElementById('btnGeolocalizacao');
-            const st = document.getElementById('geoStatus');
+            const st  = document.getElementById('geoStatus');
             btn.disabled = true;
             btn.innerHTML = '⏳ Obtendo localização...';
             st.textContent = 'Aguardando permissão...';
             st.classList.remove('hidden');
 
             navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                    _ckGeoLat = pos.coords.latitude;
-                    _ckGeoLng = pos.coords.longitude;
+                async (pos) => {
+                    const lat = pos.coords.latitude;
+                    const lng = pos.coords.longitude;
+                    st.textContent = 'Convertendo coordenadas em endereço...';
+                    try {
+                        const resp = await fetch(
+                            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${MAPS_KEY}&language=pt-BR`
+                        );
+                        const data = await resp.json();
+                        if (data.status === 'OK' && data.results[0]) {
+                            const result = data.results[0];
+                            preencherCamposEndereco(result.formatted_address, result.address_components, lat, lng);
+                            btn.innerHTML = '✅ Localização preenchida!';
+                            st.textContent = 'Endereço preenchido automaticamente. Confirme o número.';
+                            if (!document.getElementById('endNumero').value) {
+                                document.getElementById('endNumero').focus();
+                            }
+                        } else {
+                            throw new Error('Sem resultado');
+                        }
+                    } catch (e) {
+                        // Fallback: armazena só coordenadas sem endereço
+                        _ckGeoLat = lat; _ckGeoLng = lng;
+                        btn.innerHTML = '✅ Coordenadas capturadas';
+                        st.textContent = 'Não foi possível converter o endereço. Preencha manualmente.';
+                    }
                     btn.disabled = false;
-                    btn.innerHTML = '✅ Localização capturada!';
-                    st.textContent = 'Coordenadas salvas — serão enviadas com o pedido.';
                 },
                 () => {
                     btn.disabled = false;
                     btn.innerHTML = '📍 Usar minha localização atual';
-                    st.textContent = 'Não foi possível obter localização. Verifique as permissões do navegador.';
+                    st.textContent = 'Permissão negada. Verifique as configurações do navegador.';
                 },
                 { enableHighAccuracy: true, timeout: 15000 }
             );
@@ -970,32 +1038,32 @@
                 const place = _placesAutocomplete.getPlace();
                 if (!place.geometry) return;
 
-                // Extrair número do address_components
+                const lat = place.geometry.location.lat();
+                const lng = place.geometry.location.lng();
                 const comps = place.address_components || [];
-                const numComp = comps.find(c => c.types.includes('street_number'));
-                const numero = numComp ? numComp.long_name : '';
+                const parsed = parseAddressComponents(comps);
 
-                // Armazenar endereço base (formatted_address do Places como referência)
                 _ckPlacesAddress = place.formatted_address;
-                _ckGeoLat = place.geometry.location.lat();
-                _ckGeoLng = place.geometry.location.lng();
+                _ckGeoLat = lat;
+                _ckGeoLng = lng;
                 _ckEnderecoSelecionado = {
-                    endereco: _ckPlacesAddress,
-                    lat: _ckGeoLat,
-                    lng: _ckGeoLng
+                    endereco: place.formatted_address,
+                    rua:      parsed.rua,
+                    bairro:   parsed.bairro,
+                    cidade:   parsed.cidade,
+                    lat, lng
                 };
 
-                // Preencher campo número (editável)
+                // Preencher número se existir
                 const numInput = document.getElementById('endNumero');
-                numInput.value = numero;
-                if (numero) {
+                numInput.value = parsed.numero;
+                if (parsed.numero) {
                     numInput.classList.add('border-green-300');
                     setTimeout(() => numInput.classList.remove('border-green-300'), 1500);
                 } else {
                     numInput.focus();
                 }
 
-                // Feedback visual no autocomplete
                 input.classList.remove('border-gray-300');
                 input.classList.add('border-green-400');
                 document.getElementById('placesConfirmado').classList.remove('hidden');
@@ -1169,6 +1237,54 @@
             const url = `https://wa.me/${numero}?text=${encodeURIComponent(msg)}`;
             window.open(url, '_blank');
             fecharCheckout();
+
+            // Salvar endereço no perfil do cliente (silencioso, não bloqueia)
+            salvarEnderecoNoPerfil();
+        }
+
+        async function salvarEnderecoNoPerfil() {
+            try {
+                if (_ckTipoEntrega !== 'entrega') return;
+                if (!_ckEnderecoSelecionado) return;
+
+                const e = _ckEnderecoSelecionado;
+                const rua    = e.rua    || e.endereco;
+                const numero = e.numero || document.getElementById('endNumero')?.value?.trim();
+                if (!rua || !numero) return;
+
+                // Garantir que o perfil existe
+                let perfilId = _ckPerfil?.id;
+                if (!perfilId) {
+                    const tel  = document.getElementById('ckTelefone').value.trim().replace(/\D/g, '');
+                    const nome = _ckPerfil?.nome || document.getElementById('ckNome').value.trim();
+                    if (!tel) return;
+                    const cr = await fetch(`${API_BASE}/perfis/publico`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ telefone: tel, nome: nome || tel })
+                    });
+                    const cd = await cr.json();
+                    perfilId = cd.perfil?.id;
+                }
+                if (!perfilId) return;
+
+                await fetch(`${API_BASE}/perfis/publico/${perfilId}/enderecos`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        apelido:     'Casa',
+                        rua,
+                        numero,
+                        bairro:      e.bairro      || null,
+                        cidade:      e.cidade      || null,
+                        complemento: e.complemento || null,
+                        lat:         e.lat         || null,
+                        lng:         e.lng         || null
+                    })
+                });
+            } catch (err) {
+                console.warn('Não foi possível salvar endereço no perfil:', err);
+            }
         }
 
         async function buscarPerfilPorTelefone(tel) {
