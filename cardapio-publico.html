@@ -1381,8 +1381,8 @@
             if (_ckTipoEntrega === 'entrega' && _ckEnderecoSelecionado) {
                 if (btnConfirmar) { btnConfirmar.disabled = true; btnConfirmar.innerHTML = '🔄 Confirmando pedido...'; }
                 const e = _ckEnderecoSelecionado;
-                const enderecoBase = e.endereco || [e.rua, e.bairro, e.cidade].filter(Boolean).join(', ');
-                const enderecoCompleto = [enderecoBase, e.numero, 'Brasil'].filter(Boolean).join(', ');
+                // Geocoding sem bairro para evitar falsos negativos
+                const enderecoCompleto = [e.rua, e.numero, e.cidade, e.estado, 'Brasil'].filter(Boolean).join(', ');
                 try {
                     const resp = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(enderecoCompleto)}&key=${MAPS_KEY}`);
                     const data = await resp.json();
