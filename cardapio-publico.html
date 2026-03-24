@@ -294,10 +294,10 @@
 
                         <!-- Campo Places Autocomplete -->
                         <div class="mb-3">
-                            <label class="text-xs font-semibold text-gray-600 mb-1 block">🔍 Digite seu endereço</label>
+                            <label class="text-xs font-semibold text-gray-600 mb-1 block">🔍 Rua / Avenida</label>
                             <div class="relative">
                                 <input id="placesInput" type="text"
-                                    placeholder="Ex: Rua das Flores, 123 — Pontal do Paraná"
+                                    placeholder="Ex: Rodovia PR 407, Pontal do Paraná"
                                     autocomplete="off"
                                     class="w-full border-2 border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-400 transition pr-10"
                                     oninput="onPlacesInputChange()">
@@ -309,11 +309,18 @@
                             </div>
                         </div>
 
-                        <!-- Complemento -->
-                        <div class="mb-3">
-                            <label class="text-xs font-semibold text-gray-600 mb-1 block">Complemento <span class="font-normal text-gray-400">(opcional)</span></label>
-                            <input id="endComplemento" type="text" placeholder="Apto, bloco, referência..."
-                                class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
+                        <!-- Número + Complemento -->
+                        <div class="grid grid-cols-2 gap-2 mb-3">
+                            <div>
+                                <label class="text-xs font-semibold text-gray-600 mb-1 block">Número <span class="text-red-400">*</span></label>
+                                <input id="endNumero" type="text" placeholder="Ex: 1376"
+                                    class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
+                            </div>
+                            <div>
+                                <label class="text-xs font-semibold text-gray-600 mb-1 block">Complemento <span class="font-normal text-gray-400">(opcional)</span></label>
+                                <input id="endComplemento" type="text" placeholder="Casa 2, Apto..."
+                                    class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
+                            </div>
                         </div>
 
                         <!-- GPS como sugestão opcional -->
@@ -739,9 +746,10 @@
         let _ckPermiteRetirada = true;
         let _ckGeoLat = null;
         let _ckGeoLng = null;
-        let _ckPlacesAddress = null;   // endereço selecionado via Google Places
+        let _ckPlacesAddress = null;   // endereço formatado do Places (sem número)
         let _ckStep = 1;
         let _placesAutocomplete = null;
+        const MAPS_KEY = 'AIzaSyCj9rGIQNjyrJCljAKcmB-DpGNGemmJGX4';
 
         function abrirModalPedido() {
             if (carrinho.length === 0) return;
@@ -756,6 +764,7 @@
             const placesInput = document.getElementById('placesInput');
             if (placesInput) { placesInput.value = ''; placesInput.className = 'w-full border-2 border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-400 transition pr-10'; }
             document.getElementById('placesConfirmado')?.classList.add('hidden');
+            document.getElementById('endNumero').value = '';
             document.getElementById('endComplemento').value = '';
             // Reset GPS btn
             const geoBtn = document.getElementById('btnGeolocalizacao');
@@ -935,9 +944,12 @@
         }
 
         function onPlacesInputChange() {
-            // Se o usuário editar o campo manualmente após selecionar, invalida a seleção
+            // Invalida seleção ao reeditar manualmente
             _ckPlacesAddress = null;
             _ckEnderecoSelecionado = null;
+            _ckGeoLat = null;
+            _ckGeoLng = null;
+            document.getElementById('endNumero').value = '';
             const input = document.getElementById('placesInput');
             input.classList.remove('border-green-400');
             input.classList.add('border-gray-300');
@@ -958,6 +970,12 @@
                 const place = _placesAutocomplete.getPlace();
                 if (!place.geometry) return;
 
+                // Extrair número do address_components
+                const comps = place.address_components || [];
+                const numComp = comps.find(c => c.types.includes('street_number'));
+                const numero = numComp ? numComp.long_name : '';
+
+                // Armazenar endereço base (formatted_address do Places como referência)
                 _ckPlacesAddress = place.formatted_address;
                 _ckGeoLat = place.geometry.location.lat();
                 _ckGeoLng = place.geometry.location.lng();
@@ -967,7 +985,17 @@
                     lng: _ckGeoLng
                 };
 
-                // Feedback visual
+                // Preencher campo número (editável)
+                const numInput = document.getElementById('endNumero');
+                numInput.value = numero;
+                if (numero) {
+                    numInput.classList.add('border-green-300');
+                    setTimeout(() => numInput.classList.remove('border-green-300'), 1500);
+                } else {
+                    numInput.focus();
+                }
+
+                // Feedback visual no autocomplete
                 input.classList.remove('border-gray-300');
                 input.classList.add('border-green-400');
                 document.getElementById('placesConfirmado').classList.remove('hidden');
@@ -1015,20 +1043,28 @@
 
         function irParaStep3() {
             if (_ckTipoEntrega === 'entrega') {
-                // Deve ter endereço selecionado via Places ou endereço salvo
+                // Validar endereço selecionado via Places ou salvo
                 if (!_ckEnderecoSelecionado) {
                     const input = document.getElementById('placesInput');
                     input.focus();
                     input.classList.add('border-red-400');
-                    input.placeholder = 'Selecione um endereço da lista de sugestões...';
-                    setTimeout(() => {
-                        input.classList.remove('border-red-400');
-                        input.classList.add('border-gray-300');
-                    }, 2000);
+                    input.classList.remove('border-gray-300');
+                    setTimeout(() => { input.classList.remove('border-red-400'); input.classList.add('border-gray-300'); }, 2000);
                     return;
                 }
-                // Adicionar complemento ao endereço selecionado
+                // Validar número obrigatório
+                const numero = document.getElementById('endNumero').value.trim();
+                if (!numero) {
+                    const numInput = document.getElementById('endNumero');
+                    numInput.focus();
+                    numInput.classList.add('border-red-400');
+                    numInput.placeholder = 'Número obrigatório';
+                    setTimeout(() => { numInput.classList.remove('border-red-400'); numInput.placeholder = 'Ex: 1376'; }, 2000);
+                    return;
+                }
+                // Montar endereço completo com número e complemento
                 const complemento = document.getElementById('endComplemento').value.trim();
+                _ckEnderecoSelecionado.numero = numero;
                 _ckEnderecoSelecionado.complemento = complemento || null;
             }
 
@@ -1054,9 +1090,8 @@
                 entregaEl.innerHTML = '🏃 <strong>Retirada no local</strong>';
             } else {
                 const e = _ckEnderecoSelecionado;
-                // Suporte a endereço do Places (e.endereco) e endereços salvos (e.rua, e.numero...)
                 const textoEnd = e.endereco
-                    ? [e.endereco, e.complemento].filter(Boolean).join(', ')
+                    ? [e.endereco, e.numero, e.complemento].filter(Boolean).join(', ')
                     : [e.rua, e.numero, e.bairro, e.cidade, e.complemento].filter(Boolean).join(', ');
                 let label = `📍 <strong>${textoEnd}</strong>`;
                 if (e.lat && e.lng) label += ` <a href="https://www.google.com/maps?q=${e.lat},${e.lng}" target="_blank" class="text-indigo-600 underline text-xs ml-1">📌 Ver mapa</a>`;
@@ -1071,10 +1106,33 @@
             mostrarStep(3);
         }
 
-        function confirmarEAbrirWhatsApp() {
+        async function confirmarEAbrirWhatsApp() {
+            const btnConfirmar = document.querySelector('#step3 button[onclick="confirmarEAbrirWhatsApp()"]');
             const subtotal = carrinho.reduce((acc, i) => acc + i.preco * i.quantidade, 0);
             const obs = document.getElementById('observacoesCarrinho').value.trim();
             const nome = _ckPerfil?.nome || document.getElementById('ckNome').value.trim();
+
+            // Geocoding para endereço de entrega
+            let latFinal = null, lngFinal = null;
+            if (_ckTipoEntrega === 'entrega' && _ckEnderecoSelecionado) {
+                if (btnConfirmar) { btnConfirmar.disabled = true; btnConfirmar.innerHTML = '🔄 Confirmando pedido...'; }
+                const e = _ckEnderecoSelecionado;
+                const enderecoBase = e.endereco || [e.rua, e.bairro, e.cidade].filter(Boolean).join(', ');
+                const enderecoCompleto = [enderecoBase, e.numero, 'Brasil'].filter(Boolean).join(', ');
+                try {
+                    const resp = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(enderecoCompleto)}&key=${MAPS_KEY}`);
+                    const data = await resp.json();
+                    if (data.status === 'OK' && data.results[0]) {
+                        latFinal = data.results[0].geometry.location.lat;
+                        lngFinal = data.results[0].geometry.location.lng;
+                    }
+                } catch (err) {
+                    console.warn('Geocoding falhou, usando fallback do Places:', err);
+                }
+                // Fallback para coordenadas do Places
+                if (!latFinal) { latFinal = e.lat || _ckGeoLat; lngFinal = e.lng || _ckGeoLng; }
+                if (btnConfirmar) { btnConfirmar.disabled = false; btnConfirmar.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg> Enviar pelo WhatsApp'; }
+            }
 
             let msg = `Olá! Gostaria de fazer um pedido:\n\n`;
             if (nome) msg += `*Nome:* ${nome}\n`;
@@ -1099,12 +1157,10 @@
             } else if (_ckEnderecoSelecionado) {
                 const e = _ckEnderecoSelecionado;
                 const textoEnd = e.endereco
-                    ? [e.endereco, e.complemento].filter(Boolean).join(', ')
+                    ? [e.endereco, e.numero, e.complemento].filter(Boolean).join(', ')
                     : [e.rua, e.numero, e.bairro, e.cidade, e.complemento].filter(Boolean).join(', ');
                 msg += `\n\n📍 *Endereço de entrega:* ${textoEnd}`;
-                const lat = e.lat || _ckGeoLat;
-                const lng = e.lng || _ckGeoLng;
-                if (lat && lng) msg += `\n📌 https://www.google.com/maps?q=${lat},${lng}`;
+                if (latFinal && lngFinal) msg += `\n📌 https://www.google.com/maps?q=${latFinal},${lngFinal}`;
             }
 
             if (obs) msg += `\n\n💬 Obs: ${obs}`;
