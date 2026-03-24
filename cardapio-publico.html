@@ -682,7 +682,22 @@
             }
             if (tipo === 'combo') { abrirComboModal(id, nome, preco); return; }
             if (tipo !== 'simples') {
-                abrirComplementosCliente(id, nome, preco, tipo);
+                // Verificar se há grupos habilitados antes de abrir o modal
+                try {
+                    const data = await fetch(`https://painel.amiconnect.com.br/api/produtos/publico/${id}/complementos`).then(r => r.json());
+                    if (data.grupos && data.grupos.length > 0) {
+                        abrirComplementosCliente(id, nome, preco, tipo, data);
+                    } else {
+                        // Nenhum grupo ativo: adicionar direto ao carrinho
+                        const existente = carrinho.find(i => i.id === id && !i.complementos?.length);
+                        if (existente) { existente.quantidade++; }
+                        else { carrinho.push({ id, nome, preco, quantidade: 1, instanceKey: String(id), complementos: [] }); }
+                        atualizarCarrinho();
+                        animarBadgeCarrinho();
+                    }
+                } catch(e) {
+                    abrirComplementosCliente(id, nome, preco, tipo);
+                }
                 return;
             }
             // Produto simples: empilha por id
@@ -1526,7 +1541,7 @@
             precoBase: 0
         };
 
-        async function abrirComplementosCliente(id, nome, preco, tipo) {
+        async function abrirComplementosCliente(id, nome, preco, tipo, prefetchedData) {
             _cmp = { produto: { id, nome, preco }, grupos: [], selecoes: {}, precoBase: preco };
             document.getElementById('cmpModalNome').textContent = nome;
             document.getElementById('cmpModalBody').innerHTML = '<div class="text-center py-8 text-gray-400">Carregando...</div>';
@@ -1535,7 +1550,7 @@
             document.body.style.overflow = 'hidden';
 
             try {
-                const data = await fetch(`https://painel.amiconnect.com.br/api/produtos/publico/${id}/complementos`).then(r => r.json());
+                const data = prefetchedData || await fetch(`https://painel.amiconnect.com.br/api/produtos/publico/${id}/complementos`).then(r => r.json());
                 if (data.error) throw new Error(data.error);
                 _cmp.grupos = data.grupos || [];
                 _cmp.grupos.forEach(g => { _cmp.selecoes[g.id] = []; });

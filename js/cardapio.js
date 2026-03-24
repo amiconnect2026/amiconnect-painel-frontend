@@ -620,6 +620,7 @@ function renderGrupoBlock(g) {
                 <input type="number" min="1" value="${g.max_escolhas ?? 1}" class="w-14 border border-gray-300 rounded-lg px-2 py-1 text-sm focus:outline-none" id="g-max-${g.id}">
             </div>
             <button onclick="salvarGrupo(${g.id})" class="text-sm bg-green-100 hover:bg-green-200 text-green-700 font-semibold px-3 py-1.5 rounded-lg transition">💾</button>
+            <button onclick="toggleGrupo(${g.id})" id="toggle-grupo-${g.id}" class="text-sm ${g.habilitado === false ? 'bg-gray-100 hover:bg-gray-200 text-gray-500' : 'bg-blue-100 hover:bg-blue-200 text-blue-700'} font-semibold px-2 py-1.5 rounded-lg transition" title="${g.habilitado === false ? 'Habilitar grupo' : 'Desabilitar grupo'}">${g.habilitado === false ? '⏸️' : '✅'}</button>
             <button onclick="excluirGrupo(${g.id})" class="text-sm bg-red-100 hover:bg-red-200 text-red-700 font-semibold px-2 py-1.5 rounded-lg transition">🗑️</button>
         </div>
         <div class="p-3 space-y-2" id="grupo-opcoes-${g.id}">
@@ -670,6 +671,22 @@ async function excluirGrupo(id) {
     try {
         await API.deleteGrupo(id);
         document.getElementById(`grupo-block-${id}`)?.remove();
+    } catch (e) { alert('Erro: ' + e.message); }
+}
+
+async function toggleGrupo(id) {
+    try {
+        const res = await API.toggleGrupo(id);
+        const habilitado = res.grupo.habilitado;
+        const btn = document.getElementById(`toggle-grupo-${id}`);
+        if (btn) {
+            btn.textContent = habilitado === false ? '⏸️' : '✅';
+            btn.title = habilitado === false ? 'Habilitar grupo' : 'Desabilitar grupo';
+            btn.className = `text-sm ${habilitado === false ? 'bg-gray-100 hover:bg-gray-200 text-gray-500' : 'bg-blue-100 hover:bg-blue-200 text-blue-700'} font-semibold px-2 py-1.5 rounded-lg transition`;
+        }
+        // Visual feedback no bloco do grupo
+        const bloco = document.getElementById(`grupo-block-${id}`);
+        if (bloco) bloco.style.opacity = habilitado === false ? '0.5' : '1';
     } catch (e) { alert('Erro: ' + e.message); }
 }
 

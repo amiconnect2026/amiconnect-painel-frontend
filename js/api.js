@@ -206,6 +206,9 @@ const API = {
     async deleteGrupo(id) {
         return await apiRequest(`/produtos/grupos/${id}`, { method: 'DELETE' });
     },
+    async toggleGrupo(id) {
+        return await apiRequest(`/produtos/grupos/${id}/toggle`, { method: 'PATCH' });
+    },
     async createOpcao(grupoId, data) {
         return await apiRequest(`/produtos/grupos/${grupoId}/opcoes`, { method: 'POST', body: JSON.stringify(data) });
     },
