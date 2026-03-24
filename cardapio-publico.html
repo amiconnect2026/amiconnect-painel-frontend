@@ -6,6 +6,7 @@
     <title>Cardápio</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCj9rGIQNjyrJCljAKcmB-DpGNGemmJGX4&libraries=places"></script>
     <style>
         * { font-family: 'Nunito', sans-serif; }
         .categoria-tab.ativa {
@@ -291,67 +292,37 @@
                         <p class="text-sm font-semibold text-gray-700 mb-2">📍 Endereço de entrega</p>
                         <div id="enderecosSalvos" class="space-y-2 mb-3"></div>
 
-                        <!-- Localização obrigatória -->
-                        <div id="geoDicaBox" class="mb-3">
-                            <!-- Botão de solicitar (visível antes de confirmar) -->
-                            <div id="geoSolicitarBloco">
-                                <p class="text-sm text-amber-700 text-center mb-2 font-medium">
-                                    Para calcular sua taxa de entrega precisamos da sua localização!<br>
-                                    Isso garante que seu pedido chegue certinho 😊
-                                </p>
-                                <button id="btnGeolocalizacao" onclick="usarLocalizacaoAtual()"
-                                    class="w-full bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white font-bold py-3 rounded-2xl text-sm transition flex items-center justify-center gap-2 active:scale-95 shadow-md">
-                                    📍 Compartilhar localização para calcular entrega
-                                </button>
+                        <!-- Campo Places Autocomplete -->
+                        <div class="mb-3">
+                            <label class="text-xs font-semibold text-gray-600 mb-1 block">🔍 Digite seu endereço</label>
+                            <div class="relative">
+                                <input id="placesInput" type="text"
+                                    placeholder="Ex: Rua das Flores, 123 — Pontal do Paraná"
+                                    autocomplete="off"
+                                    class="w-full border-2 border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-400 transition pr-10"
+                                    oninput="onPlacesInputChange()">
+                                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg pointer-events-none">🔍</span>
                             </div>
-                            <!-- Localização confirmada -->
-                            <div id="geoConfirmadoBloco" class="hidden bg-green-50 border border-green-200 rounded-xl py-3 px-4 flex items-center justify-center gap-2 text-green-700 font-semibold text-sm">
-                                ✅ Localização confirmada!
-                            </div>
-                            <!-- Permissão negada -->
-                            <div id="geoNegadoBloco" class="hidden bg-orange-50 border border-orange-200 rounded-xl py-3 px-4 text-orange-700 text-sm text-center mt-2">
-                                Sem a localização não conseguimos calcular a taxa de entrega. Por favor, permita o acesso à localização nas configurações do seu navegador 😊
+                            <!-- Endereço confirmado -->
+                            <div id="placesConfirmado" class="hidden mt-2 bg-green-50 border border-green-200 rounded-xl px-3 py-2 text-green-700 text-xs font-semibold">
+                                ✅ Endereço selecionado
                             </div>
                         </div>
 
-                        <button id="btnNovoEndereco" onclick="mostrarFormEndereco()"
-                            class="w-full border-2 border-dashed border-gray-300 rounded-xl py-3 text-sm font-semibold text-gray-500 hover:border-indigo-400 hover:text-indigo-600 transition">
-                            + Informar endereço
-                        </button>
+                        <!-- Complemento -->
+                        <div class="mb-3">
+                            <label class="text-xs font-semibold text-gray-600 mb-1 block">Complemento <span class="font-normal text-gray-400">(opcional)</span></label>
+                            <input id="endComplemento" type="text" placeholder="Apto, bloco, referência..."
+                                class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
+                        </div>
 
-                        <!-- Formulário novo endereço -->
-                        <div id="formEndereco" class="hidden mt-3 space-y-3">
-                            <div class="grid grid-cols-3 gap-2">
-                                <div class="col-span-2">
-                                    <label class="text-xs font-semibold text-gray-600">Rua *</label>
-                                    <input id="endRua" type="text" placeholder="Nome da rua"
-                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 mt-0.5">
-                                </div>
-                                <div>
-                                    <label class="text-xs font-semibold text-gray-600">Número *</label>
-                                    <input id="endNumero" type="text" placeholder="123"
-                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 mt-0.5">
-                                </div>
-                            </div>
-                            <div>
-                                <label class="text-xs font-semibold text-gray-600">Bairro *</label>
-                                <input id="endBairro" type="text" placeholder="Nome do bairro"
-                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 mt-0.5">
-                            </div>
-                            <div>
-                                <label class="text-xs font-semibold text-gray-600">Cidade *</label>
-                                <input id="endCidade" type="text" placeholder="Nome da cidade"
-                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 mt-0.5">
-                            </div>
-                            <div>
-                                <label class="text-xs font-semibold text-gray-600">Complemento</label>
-                                <input id="endComplemento" type="text" placeholder="Apto, bloco, referência..."
-                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 mt-0.5">
-                            </div>
-                            <button onclick="salvarNovoEndereco()"
-                                class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-sm transition">
-                                Salvar endereço
+                        <!-- GPS como sugestão opcional -->
+                        <div class="mb-1">
+                            <button id="btnGeolocalizacao" onclick="usarLocalizacaoAtual()"
+                                class="w-full border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-800 font-semibold py-2 rounded-xl text-xs transition flex items-center justify-center gap-2 active:scale-95">
+                                📍 Usar minha localização atual
                             </button>
+                            <div id="geoStatus" class="hidden text-xs text-center text-gray-500 mt-1"></div>
                         </div>
                     </div>
 
@@ -767,7 +738,9 @@
         let _ckPermiteRetirada = true;
         let _ckGeoLat = null;
         let _ckGeoLng = null;
+        let _ckPlacesAddress = null;   // endereço selecionado via Google Places
         let _ckStep = 1;
+        let _placesAutocomplete = null;
 
         function abrirModalPedido() {
             if (carrinho.length === 0) return;
@@ -776,16 +749,17 @@
             // reset state
             _ckPerfil = null; _ckEnderecos = []; _ckEnderecoSelecionado = null;
             _ckTipoEntrega = 'entrega'; _ckStep = 1;
-            _ckGeoLat = null; _ckGeoLng = null;
-            // Reset geo
+            _ckGeoLat = null; _ckGeoLng = null; _ckPlacesAddress = null;
+            _placesAutocomplete = null;
+            // Reset Places field
+            const placesInput = document.getElementById('placesInput');
+            if (placesInput) { placesInput.value = ''; placesInput.className = 'w-full border-2 border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-400 transition pr-10'; }
+            document.getElementById('placesConfirmado')?.classList.add('hidden');
+            document.getElementById('endComplemento').value = '';
+            // Reset GPS btn
             const geoBtn = document.getElementById('btnGeolocalizacao');
-            if (geoBtn) {
-                geoBtn.disabled = false;
-                geoBtn.innerHTML = '📍 Compartilhar localização para calcular entrega';
-            }
-            document.getElementById('geoSolicitarBloco')?.classList.remove('hidden');
-            document.getElementById('geoConfirmadoBloco')?.classList.add('hidden');
-            document.getElementById('geoNegadoBloco')?.classList.add('hidden');
+            if (geoBtn) { geoBtn.disabled = false; geoBtn.innerHTML = '📍 Usar minha localização atual'; }
+            document.getElementById('geoStatus')?.classList.add('hidden');
             document.getElementById('ckTelefone').value = '';
             document.getElementById('ckNome').value = '';
             document.getElementById('ckPerfisEncontrado').classList.add('hidden');
@@ -870,6 +844,7 @@
 
             mostrarStep(2);
             selecionarTipoEntrega('entrega');
+            setTimeout(inicializarPlacesAutocomplete, 100);
         }
 
         function voltarStep1() { mostrarStep(1); }
@@ -929,28 +904,73 @@
 
         function usarLocalizacaoAtual() {
             if (!navigator.geolocation) {
-                document.getElementById('geoNegadoBloco').classList.remove('hidden');
+                const st = document.getElementById('geoStatus');
+                st.textContent = 'Seu navegador não suporta geolocalização.';
+                st.classList.remove('hidden');
                 return;
             }
             const btn = document.getElementById('btnGeolocalizacao');
+            const st = document.getElementById('geoStatus');
             btn.disabled = true;
-            btn.innerHTML = '⏳ Aguardando permissão...';
+            btn.innerHTML = '⏳ Obtendo localização...';
+            st.textContent = 'Aguardando permissão...';
+            st.classList.remove('hidden');
 
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
                     _ckGeoLat = pos.coords.latitude;
                     _ckGeoLng = pos.coords.longitude;
-                    document.getElementById('geoSolicitarBloco').classList.add('hidden');
-                    document.getElementById('geoNegadoBloco').classList.add('hidden');
-                    document.getElementById('geoConfirmadoBloco').classList.remove('hidden');
+                    btn.disabled = false;
+                    btn.innerHTML = '✅ Localização capturada!';
+                    st.textContent = 'Coordenadas salvas — serão enviadas com o pedido.';
                 },
                 () => {
                     btn.disabled = false;
-                    btn.innerHTML = '📍 Compartilhar localização para calcular entrega';
-                    document.getElementById('geoNegadoBloco').classList.remove('hidden');
+                    btn.innerHTML = '📍 Usar minha localização atual';
+                    st.textContent = 'Não foi possível obter localização. Verifique as permissões do navegador.';
                 },
                 { enableHighAccuracy: true, timeout: 15000 }
             );
+        }
+
+        function onPlacesInputChange() {
+            // Se o usuário editar o campo manualmente após selecionar, invalida a seleção
+            _ckPlacesAddress = null;
+            _ckEnderecoSelecionado = null;
+            const input = document.getElementById('placesInput');
+            input.classList.remove('border-green-400');
+            input.classList.add('border-gray-300');
+            document.getElementById('placesConfirmado').classList.add('hidden');
+        }
+
+        function inicializarPlacesAutocomplete() {
+            if (!window.google || _placesAutocomplete) return;
+            const input = document.getElementById('placesInput');
+            if (!input) return;
+
+            _placesAutocomplete = new google.maps.places.Autocomplete(input, {
+                componentRestrictions: { country: 'br' },
+                fields: ['formatted_address', 'geometry', 'address_components']
+            });
+
+            _placesAutocomplete.addListener('place_changed', () => {
+                const place = _placesAutocomplete.getPlace();
+                if (!place.geometry) return;
+
+                _ckPlacesAddress = place.formatted_address;
+                _ckGeoLat = place.geometry.location.lat();
+                _ckGeoLng = place.geometry.location.lng();
+                _ckEnderecoSelecionado = {
+                    endereco: _ckPlacesAddress,
+                    lat: _ckGeoLat,
+                    lng: _ckGeoLng
+                };
+
+                // Feedback visual
+                input.classList.remove('border-gray-300');
+                input.classList.add('border-green-400');
+                document.getElementById('placesConfirmado').classList.remove('hidden');
+            });
         }
 
         async function salvarNovoEndereco() {
@@ -994,38 +1014,21 @@
 
         function irParaStep3() {
             if (_ckTipoEntrega === 'entrega') {
-                // Localização obrigatória para entrega
-                if (!_ckGeoLat || !_ckGeoLng) {
-                    document.getElementById('geoSolicitarBloco').classList.remove('hidden');
-                    document.getElementById('geoNegadoBloco').classList.remove('hidden');
-                    document.getElementById('geoDicaBox').scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    return;
-                }
-                // Se não tem endereço selecionado, tenta pegar do form
+                // Deve ter endereço selecionado via Places ou endereço salvo
                 if (!_ckEnderecoSelecionado) {
-                    const rua = document.getElementById('endRua').value.trim();
-                    const numero = document.getElementById('endNumero').value.trim();
-                    const bairro = document.getElementById('endBairro').value.trim();
-                    const cidade = document.getElementById('endCidade').value.trim();
-                    if (!rua || !numero || !bairro || !cidade) {
-                        alert('Preencha rua, número, bairro e cidade para continuar.');
-                        return;
-                    }
-                    _ckEnderecoSelecionado = { rua, numero, bairro, cidade, complemento: document.getElementById('endComplemento').value.trim() || null, lat: _ckGeoLat || null, lng: _ckGeoLng || null };
-                }
-                // Validar campos obrigatórios do endereço selecionado
-                const e = _ckEnderecoSelecionado;
-                const faltando = [];
-                if (!e.rua)    faltando.push('rua');
-                if (!e.numero) faltando.push('número');
-                if (!e.bairro) faltando.push('bairro');
-                if (!e.cidade) faltando.push('cidade');
-                if (faltando.length > 0) {
-                    alert(`Endereço incompleto. Preencha: ${faltando.join(', ')}.`);
-                    _ckEnderecoSelecionado = null;
-                    mostrarFormEndereco();
+                    const input = document.getElementById('placesInput');
+                    input.focus();
+                    input.classList.add('border-red-400');
+                    input.placeholder = 'Selecione um endereço da lista de sugestões...';
+                    setTimeout(() => {
+                        input.classList.remove('border-red-400');
+                        input.classList.add('border-gray-300');
+                    }, 2000);
                     return;
                 }
+                // Adicionar complemento ao endereço selecionado
+                const complemento = document.getElementById('endComplemento').value.trim();
+                _ckEnderecoSelecionado.complemento = complemento || null;
             }
 
             // Preencher step 3
@@ -1050,8 +1053,12 @@
                 entregaEl.innerHTML = '🏃 <strong>Retirada no local</strong>';
             } else {
                 const e = _ckEnderecoSelecionado;
-                let label = `📍 <strong>${[e.rua, e.numero, e.bairro, e.cidade, e.complemento].filter(Boolean).join(', ')}</strong>`;
-                if (e.lat && e.lng) label += ` <a href="https://www.google.com/maps?q=${e.lat},${e.lng}" target="_blank" class="text-indigo-600 underline text-xs ml-1">Ver mapa</a>`;
+                // Suporte a endereço do Places (e.endereco) e endereços salvos (e.rua, e.numero...)
+                const textoEnd = e.endereco
+                    ? [e.endereco, e.complemento].filter(Boolean).join(', ')
+                    : [e.rua, e.numero, e.bairro, e.cidade, e.complemento].filter(Boolean).join(', ');
+                let label = `📍 <strong>${textoEnd}</strong>`;
+                if (e.lat && e.lng) label += ` <a href="https://www.google.com/maps?q=${e.lat},${e.lng}" target="_blank" class="text-indigo-600 underline text-xs ml-1">📌 Ver mapa</a>`;
                 entregaEl.innerHTML = label;
             }
 
@@ -1090,10 +1097,13 @@
                 msg += `\n\n🏃 *Vou retirar no local*`;
             } else if (_ckEnderecoSelecionado) {
                 const e = _ckEnderecoSelecionado;
-                msg += `\n\n📍 *Endereço de entrega:*\n${[e.rua, e.numero, e.bairro, e.cidade, e.complemento].filter(Boolean).join(', ')}`;
-                const lat = _ckGeoLat || e.lat;
-                const lng = _ckGeoLng || e.lng;
-                if (lat && lng) msg += `\nhttps://www.google.com/maps?q=${lat},${lng}`;
+                const textoEnd = e.endereco
+                    ? [e.endereco, e.complemento].filter(Boolean).join(', ')
+                    : [e.rua, e.numero, e.bairro, e.cidade, e.complemento].filter(Boolean).join(', ');
+                msg += `\n\n📍 *Endereço de entrega:* ${textoEnd}`;
+                const lat = e.lat || _ckGeoLat;
+                const lng = e.lng || _ckGeoLng;
+                if (lat && lng) msg += `\n📌 https://www.google.com/maps?q=${lat},${lng}`;
             }
 
             if (obs) msg += `\n\n💬 Obs: ${obs}`;
