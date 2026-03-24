@@ -323,6 +323,13 @@
                             </div>
                         </div>
 
+                        <!-- Bairro (aparece só quando não identificado automaticamente) -->
+                        <div id="bairroManualBloco" class="hidden mb-3">
+                            <label class="text-xs font-semibold text-gray-600 mb-1 block">Bairro <span class="font-normal text-gray-400">(opcional)</span></label>
+                            <input id="endBairro" type="text" placeholder="Ex: Jardim Jacarandá"
+                                class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
+                        </div>
+
                         <!-- GPS como sugestão opcional -->
                         <div class="mb-3">
                             <p class="text-xs text-amber-700 text-center mb-1.5 font-medium">Para facilitar a entrega, compartilhe sua localização 😊</p>
@@ -818,7 +825,9 @@
             if (placesInput) { placesInput.value = ''; placesInput.className = 'w-full border-2 border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-400 transition pr-10'; }
             document.getElementById('placesConfirmado')?.classList.add('hidden');
             document.getElementById('endNumero').value = '';
+            document.getElementById('endBairro').value = '';
             document.getElementById('endComplemento').value = '';
+            document.getElementById('bairroManualBloco')?.classList.add('hidden');
             _ckApelidoEndereco = null; _ckApelidoConflitante = null; _ckApelidoPendente = null;
             document.getElementById('salvarEnderecoBloco')?.classList.add('hidden');
             document.getElementById('apelidoOutroBloco')?.classList.add('hidden');
@@ -984,7 +993,7 @@
             return {
                 numero: getLong('street_number'),
                 rua:    getLong('route'),
-                bairro: getLong('sublocality_level_1', 'neighborhood', 'sublocality'),
+                bairro: getLong('sublocality_level_1') || getLong('sublocality') || getLong('neighborhood') || getLong('administrative_area_level_4') || getLong('administrative_area_level_3'),
                 cidade: getLong('locality', 'administrative_area_level_2'),
                 estado: getShort('administrative_area_level_1')   // "PR" e não "Paraná"
             };
@@ -1007,6 +1016,17 @@
                 _ckEnderecoSelecionado = null;
                 _ckPlacesAddress = null;
                 return false;
+            }
+
+            // Mostrar campo bairro manual se não vier nos components
+            const bairroBloco = document.getElementById('bairroManualBloco');
+            const bairroInput = document.getElementById('endBairro');
+            if (!parsed.bairro) {
+                bairroBloco.classList.remove('hidden');
+                bairroInput.value = '';
+            } else {
+                bairroBloco.classList.add('hidden');
+                bairroInput.value = parsed.bairro;
             }
 
             // Problema 2: montar endereço SEM número para evitar duplicação
@@ -1299,6 +1319,11 @@
                     numInput.placeholder = 'Número obrigatório';
                     setTimeout(() => { numInput.classList.remove('border-red-400'); numInput.placeholder = 'Ex: 1376'; }, 2000);
                     return;
+                }
+                // Capturar bairro manual se campo estiver visível
+                const bairroManual = document.getElementById('endBairro').value.trim();
+                if (bairroManual && !_ckEnderecoSelecionado.bairro) {
+                    _ckEnderecoSelecionado.bairro = bairroManual;
                 }
                 // Montar endereço completo com número e complemento
                 const complemento = document.getElementById('endComplemento').value.trim();
