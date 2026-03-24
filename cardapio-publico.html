@@ -987,6 +987,12 @@
             });
         }
 
+        function montarTextoEndereco(e) {
+            const ruaNumero   = [e.rua, e.numero].filter(Boolean).join(', ');
+            const cidadeEstado = [e.cidade, e.estado].filter(Boolean).join(' - ');
+            return [ruaNumero, e.bairro, e.complemento, cidadeEstado].filter(Boolean).join(', ');
+        }
+
         function parseAddressComponents(components) {
             const getLong  = (...types) => (components.find(c => types.some(t => c.types.includes(t))) || {}).long_name  || '';
             const getShort = (...types) => (components.find(c => types.some(t => c.types.includes(t))) || {}).short_name || '';
@@ -1029,12 +1035,9 @@
                 bairroInput.value = parsed.bairro;
             }
 
-            // Problema 2: montar endereço SEM número para evitar duplicação
-            const cidadeEstado = [parsed.cidade, parsed.estado].filter(Boolean).join(' - ');
-            const enderecoSemNumero = [parsed.rua, parsed.bairro, cidadeEstado].filter(Boolean).join(', ');
-
+            // Campo autocomplete mostra só a rua (sem número, bairro, cidade)
             const placesInput = document.getElementById('placesInput');
-            placesInput.value = enderecoSemNumero;
+            placesInput.value = parsed.rua;
             placesInput.classList.remove('border-gray-300', 'border-red-400');
             placesInput.classList.add('border-green-400');
 
@@ -1042,13 +1045,13 @@
 
             _ckGeoLat = lat;
             _ckGeoLng = lng;
-            _ckPlacesAddress = enderecoSemNumero;
+            _ckPlacesAddress = parsed.rua;
             _ckEnderecoSelecionado = {
-                endereco: enderecoSemNumero,
-                numero:   parsed.numero,
-                rua:      parsed.rua,
-                bairro:   parsed.bairro,
-                cidade:   parsed.cidade,
+                rua:    parsed.rua,
+                numero: parsed.numero,
+                bairro: parsed.bairro,
+                cidade: parsed.cidade,
+                estado: parsed.estado,
                 lat, lng
             };
 
@@ -1353,9 +1356,7 @@
                 entregaEl.innerHTML = '🏃 <strong>Retirada no local</strong>';
             } else {
                 const e = _ckEnderecoSelecionado;
-                const textoEnd = e.endereco
-                    ? [e.endereco, e.numero, e.complemento].filter(Boolean).join(', ')
-                    : [e.rua, e.numero, e.bairro, e.cidade, e.complemento].filter(Boolean).join(', ');
+                const textoEnd = montarTextoEndereco(e);
                 let label = `📍 <strong>${textoEnd}</strong>`;
                 if (e.lat && e.lng) label += ` <a href="https://www.google.com/maps?q=${e.lat},${e.lng}" target="_blank" class="text-indigo-600 underline text-xs ml-1">📌 Ver mapa</a>`;
                 entregaEl.innerHTML = label;
@@ -1419,10 +1420,7 @@
                 msg += `\n\n🏃 *Vou retirar no local*`;
             } else if (_ckEnderecoSelecionado) {
                 const e = _ckEnderecoSelecionado;
-                const textoEnd = e.endereco
-                    ? [e.endereco, e.numero, e.complemento].filter(Boolean).join(', ')
-                    : [e.rua, e.numero, e.bairro, e.cidade, e.complemento].filter(Boolean).join(', ');
-                msg += `\n\n📍 *Endereço de entrega:* ${textoEnd}`;
+                msg += `\n\n📍 *Endereço de entrega:* ${montarTextoEndereco(e)}`;
                 if (latFinal && lngFinal) msg += `\n📌 https://www.google.com/maps?q=${latFinal},${lngFinal}`;
             }
 
