@@ -979,42 +979,52 @@
         }
 
         function parseAddressComponents(components) {
-            const get = (...types) => {
-                const c = components.find(c => types.some(t => c.types.includes(t)));
-                return c ? c.long_name : '';
-            };
+            const getLong  = (...types) => (components.find(c => types.some(t => c.types.includes(t))) || {}).long_name  || '';
+            const getShort = (...types) => (components.find(c => types.some(t => c.types.includes(t))) || {}).short_name || '';
             return {
-                numero:  get('street_number'),
-                rua:     get('route'),
-                bairro:  get('sublocality_level_1', 'neighborhood', 'sublocality'),
-                cidade:  get('locality', 'administrative_area_level_2'),
-                estado:  get('administrative_area_level_1')
+                numero: getLong('street_number'),
+                rua:    getLong('route'),
+                bairro: getLong('sublocality_level_1', 'neighborhood', 'sublocality'),
+                cidade: getLong('locality', 'administrative_area_level_2'),
+                estado: getShort('administrative_area_level_1')   // "PR" e não "Paraná"
             };
         }
 
-        function preencherCamposEndereco(formatted, components, lat, lng) {
+        // Retorna true se preencheu com sucesso, false se rua veio vazia
+        function preencherCamposEndereco(components, lat, lng) {
             const parsed = parseAddressComponents(components);
 
-            // Preencher autocomplete com endereço formatado (sem número para evitar duplicata)
-            const semNumero = formatted
-                .replace(/^[\d\w-]+,\s*/, '')   // remove número do início se houver
-                .trim();
+            // Problema 1: sem logradouro (ex: retornou só CEP)
+            if (!parsed.rua) {
+                const placesInput = document.getElementById('placesInput');
+                placesInput.value = '';
+                placesInput.placeholder = 'Digite seu endereço...';
+                placesInput.classList.remove('border-green-400');
+                placesInput.classList.add('border-gray-300');
+                document.getElementById('endNumero').value = '';
+                document.getElementById('placesConfirmado').classList.add('hidden');
+                document.getElementById('salvarEnderecoBloco').classList.add('hidden');
+                _ckEnderecoSelecionado = null;
+                _ckPlacesAddress = null;
+                return false;
+            }
+
+            // Problema 2: montar endereço SEM número para evitar duplicação
+            const cidadeEstado = [parsed.cidade, parsed.estado].filter(Boolean).join(' - ');
+            const enderecoSemNumero = [parsed.rua, parsed.bairro, cidadeEstado].filter(Boolean).join(', ');
+
             const placesInput = document.getElementById('placesInput');
-            placesInput.value = semNumero || formatted;
+            placesInput.value = enderecoSemNumero;
             placesInput.classList.remove('border-gray-300', 'border-red-400');
             placesInput.classList.add('border-green-400');
 
-            // Preencher número
-            if (parsed.numero) {
-                document.getElementById('endNumero').value = parsed.numero;
-            }
+            if (parsed.numero) document.getElementById('endNumero').value = parsed.numero;
 
-            // Armazenar tudo
             _ckGeoLat = lat;
             _ckGeoLng = lng;
-            _ckPlacesAddress = formatted;
+            _ckPlacesAddress = enderecoSemNumero;
             _ckEnderecoSelecionado = {
-                endereco: semNumero || formatted,
+                endereco: enderecoSemNumero,
                 numero:   parsed.numero,
                 rua:      parsed.rua,
                 bairro:   parsed.bairro,
@@ -1024,6 +1034,7 @@
 
             document.getElementById('placesConfirmado').classList.remove('hidden');
             mostrarSalvarEnderecoBloco();
+            return true;
         }
 
         function usarLocalizacaoAtual() {
@@ -1051,21 +1062,27 @@
                         );
                         const data = await resp.json();
                         if (data.status === 'OK' && data.results[0]) {
-                            const result = data.results[0];
-                            preencherCamposEndereco(result.formatted_address, result.address_components, lat, lng);
-                            btn.innerHTML = '✅ Localização preenchida!';
-                            st.innerHTML = `
-                                <div class="bg-amber-50 border border-amber-300 rounded-xl px-3 py-2.5 flex gap-2 items-start">
-                                    <span class="text-amber-500 text-base leading-tight mt-0.5">⚠️</span>
-                                    <div>
-                                        <p class="text-amber-800 font-bold text-xs">Verifique o número!</p>
-                                        <p class="text-amber-700 text-xs mt-0.5">O GPS nem sempre acerta o número exato. Confira se está correto antes de continuar.</p>
-                                    </div>
-                                </div>`;
-                            st.classList.remove('hidden');
-                            mostrarSalvarEnderecoBloco();
-                            if (!document.getElementById('endNumero').value) {
-                                document.getElementById('endNumero').focus();
+                            const ok = preencherCamposEndereco(data.results[0].address_components, lat, lng);
+                            if (ok) {
+                                btn.innerHTML = '✅ Localização preenchida!';
+                                st.innerHTML = `
+                                    <div class="bg-amber-50 border border-amber-300 rounded-xl px-3 py-2.5 flex gap-2 items-start">
+                                        <span class="text-amber-500 text-base leading-tight mt-0.5">⚠️</span>
+                                        <div>
+                                            <p class="text-amber-800 font-bold text-xs">Verifique o número!</p>
+                                            <p class="text-amber-700 text-xs mt-0.5">O GPS nem sempre acerta o número exato. Confira se está correto antes de continuar.</p>
+                                        </div>
+                                    </div>`;
+                                st.classList.remove('hidden');
+                                if (!document.getElementById('endNumero').value) document.getElementById('endNumero').focus();
+                            } else {
+                                btn.innerHTML = '📍 Usar minha localização atual';
+                                st.innerHTML = `
+                                    <div class="bg-orange-50 border border-orange-200 rounded-xl px-3 py-2.5 text-orange-700 text-xs text-center">
+                                        Não conseguimos identificar sua rua. Por favor, digite o endereço manualmente.
+                                    </div>`;
+                                st.classList.remove('hidden');
+                                document.getElementById('placesInput').focus();
                             }
                         } else {
                             throw new Error('Sem resultado');
@@ -1209,34 +1226,17 @@
 
                 const lat = place.geometry.location.lat();
                 const lng = place.geometry.location.lng();
-                const comps = place.address_components || [];
-                const parsed = parseAddressComponents(comps);
 
-                _ckPlacesAddress = place.formatted_address;
-                _ckGeoLat = lat;
-                _ckGeoLng = lng;
-                _ckEnderecoSelecionado = {
-                    endereco: place.formatted_address,
-                    rua:      parsed.rua,
-                    bairro:   parsed.bairro,
-                    cidade:   parsed.cidade,
-                    lat, lng
-                };
+                preencherCamposEndereco(place.address_components || [], lat, lng);
 
-                // Preencher número se existir
+                // Feedback verde no número se foi preenchido automaticamente
                 const numInput = document.getElementById('endNumero');
-                numInput.value = parsed.numero;
-                if (parsed.numero) {
+                if (numInput.value) {
                     numInput.classList.add('border-green-300');
                     setTimeout(() => numInput.classList.remove('border-green-300'), 1500);
                 } else {
                     numInput.focus();
                 }
-
-                input.classList.remove('border-gray-300');
-                input.classList.add('border-green-400');
-                document.getElementById('placesConfirmado').classList.remove('hidden');
-                mostrarSalvarEnderecoBloco();
             });
         }
 
