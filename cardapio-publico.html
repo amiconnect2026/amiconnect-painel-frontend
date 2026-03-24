@@ -324,13 +324,63 @@
                         </div>
 
                         <!-- GPS como sugestão opcional -->
-                        <div class="mb-1">
+                        <div class="mb-3">
                             <p class="text-xs text-amber-700 text-center mb-1.5 font-medium">Para facilitar a entrega, compartilhe sua localização 😊</p>
                             <button id="btnGeolocalizacao" onclick="usarLocalizacaoAtual()"
                                 class="w-full border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-800 font-semibold py-2 rounded-xl text-xs transition flex items-center justify-center gap-2 active:scale-95">
                                 📍 Usar minha localização atual
                             </button>
                             <div id="geoStatus" class="hidden text-xs text-center text-gray-500 mt-1"></div>
+                        </div>
+
+                        <!-- Salvar endereço com apelido -->
+                        <div id="salvarEnderecoBloco" class="hidden bg-indigo-50 border border-indigo-200 rounded-xl p-4 mt-1">
+                            <p class="text-sm font-bold text-gray-800 mb-3">💾 Salvar este endereço?</p>
+                            <div id="apelidoBotoes" class="flex gap-2 flex-wrap">
+                                <button onclick="escolherApelido('Casa')"
+                                    class="apelido-btn px-4 py-2 rounded-xl border-2 border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:border-indigo-400 hover:text-indigo-600 transition active:scale-95">
+                                    🏠 Casa
+                                </button>
+                                <button onclick="escolherApelido('Trabalho')"
+                                    class="apelido-btn px-4 py-2 rounded-xl border-2 border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:border-indigo-400 hover:text-indigo-600 transition active:scale-95">
+                                    💼 Trabalho
+                                </button>
+                                <button onclick="escolherApelido('Outro')"
+                                    class="apelido-btn px-4 py-2 rounded-xl border-2 border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:border-indigo-400 hover:text-indigo-600 transition active:scale-95">
+                                    📝 Outro
+                                </button>
+                                <button onclick="escolherApelido(false)"
+                                    class="px-3 py-2 text-xs text-gray-400 hover:text-gray-600 transition">
+                                    Não salvar
+                                </button>
+                            </div>
+                            <!-- Campo texto para "Outro" -->
+                            <div id="apelidoOutroBloco" class="hidden mt-3 flex gap-2">
+                                <input id="apelidoOutroInput" type="text" placeholder="Ex: Casa da vó, Praia..."
+                                    class="flex-1 border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
+                                <button onclick="confirmarApelidoOutro()"
+                                    class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 rounded-xl text-sm transition">
+                                    OK
+                                </button>
+                            </div>
+                            <!-- Conflito de apelido -->
+                            <div id="apelidoConflito" class="hidden mt-3 bg-yellow-50 border border-yellow-200 rounded-xl p-3">
+                                <p class="text-sm text-yellow-800 mb-2" id="apelidoConflitoMsg"></p>
+                                <div class="flex gap-2">
+                                    <button onclick="resolverConflito('substituir')"
+                                        class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 rounded-xl text-sm transition">
+                                        Sim, substituir
+                                    </button>
+                                    <button onclick="resolverConflito('novo')"
+                                        class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 rounded-xl text-sm transition">
+                                        Salvar como novo
+                                    </button>
+                                </div>
+                            </div>
+                            <!-- Apelido confirmado -->
+                            <div id="apelidoConfirmadoMsg" class="hidden mt-3 text-green-700 text-sm font-semibold">
+                                ✅ Será salvo como "<span id="apelidoConfirmadoLabel"></span>"
+                            </div>
                         </div>
                     </div>
 
@@ -749,6 +799,9 @@
         let _ckPlacesAddress = null;   // endereço formatado do Places (sem número)
         let _ckStep = 1;
         let _placesAutocomplete = null;
+        let _ckApelidoEndereco = null;     // null=não decidiu, false=não salvar, string=apelido
+        let _ckApelidoConflitante = null;  // endereço existente com mesmo apelido
+        let _ckApelidoPendente = null;     // apelido aguardando resolução de conflito
         const MAPS_KEY = 'AIzaSyCj9rGIQNjyrJCljAKcmB-DpGNGemmJGX4';
 
         function abrirModalPedido() {
@@ -766,6 +819,12 @@
             document.getElementById('placesConfirmado')?.classList.add('hidden');
             document.getElementById('endNumero').value = '';
             document.getElementById('endComplemento').value = '';
+            _ckApelidoEndereco = null; _ckApelidoConflitante = null; _ckApelidoPendente = null;
+            document.getElementById('salvarEnderecoBloco')?.classList.add('hidden');
+            document.getElementById('apelidoOutroBloco')?.classList.add('hidden');
+            document.getElementById('apelidoConflito')?.classList.add('hidden');
+            document.getElementById('apelidoConfirmadoMsg')?.classList.add('hidden');
+            document.querySelectorAll('.apelido-btn').forEach(b => { b.classList.remove('border-indigo-500', 'bg-indigo-100', 'text-indigo-700'); b.classList.add('border-gray-200', 'bg-white', 'text-gray-700'); });
             // Reset GPS btn
             const geoBtn = document.getElementById('btnGeolocalizacao');
             if (geoBtn) { geoBtn.disabled = false; geoBtn.innerHTML = '📍 Usar minha localização atual'; }
@@ -957,6 +1016,7 @@
             };
 
             document.getElementById('placesConfirmado').classList.remove('hidden');
+            mostrarSalvarEnderecoBloco();
         }
 
         function usarLocalizacaoAtual() {
@@ -988,6 +1048,7 @@
                             preencherCamposEndereco(result.formatted_address, result.address_components, lat, lng);
                             btn.innerHTML = '✅ Localização preenchida!';
                             st.textContent = 'Endereço preenchido automaticamente. Confirme o número.';
+                            mostrarSalvarEnderecoBloco();
                             if (!document.getElementById('endNumero').value) {
                                 document.getElementById('endNumero').focus();
                             }
@@ -1011,6 +1072,96 @@
             );
         }
 
+        function mostrarSalvarEnderecoBloco() {
+            // Só faz sentido mostrar se o cliente tem perfil (fluxo público)
+            _ckApelidoEndereco = null;
+            _ckApelidoConflitante = null;
+            _ckApelidoPendente = null;
+            document.getElementById('apelidoOutroBloco').classList.add('hidden');
+            document.getElementById('apelidoConflito').classList.add('hidden');
+            document.getElementById('apelidoConfirmadoMsg').classList.add('hidden');
+            document.querySelectorAll('.apelido-btn').forEach(b => {
+                b.classList.remove('border-indigo-500', 'bg-indigo-100', 'text-indigo-700');
+                b.classList.add('border-gray-200', 'bg-white', 'text-gray-700');
+            });
+            document.getElementById('salvarEnderecoBloco').classList.remove('hidden');
+        }
+
+        function escolherApelido(apelido) {
+            document.getElementById('apelidoOutroBloco').classList.add('hidden');
+            document.getElementById('apelidoConflito').classList.add('hidden');
+            document.getElementById('apelidoConfirmadoMsg').classList.add('hidden');
+
+            // Destacar botão selecionado
+            document.querySelectorAll('.apelido-btn').forEach(b => {
+                b.classList.remove('border-indigo-500', 'bg-indigo-100', 'text-indigo-700');
+                b.classList.add('border-gray-200', 'bg-white', 'text-gray-700');
+            });
+
+            if (apelido === false) {
+                // Não salvar
+                _ckApelidoEndereco = false;
+                document.getElementById('salvarEnderecoBloco').classList.add('hidden');
+                return;
+            }
+
+            if (apelido === 'Outro') {
+                document.getElementById('apelidoOutroBloco').classList.remove('hidden');
+                document.getElementById('apelidoOutroInput').focus();
+                return;
+            }
+
+            // Verificar conflito com endereços salvos
+            const conflito = (_ckEnderecos || []).find(e => e.apelido === apelido);
+            if (conflito) {
+                _ckApelidoPendente = apelido;
+                _ckApelidoConflitante = conflito;
+                document.getElementById('apelidoConflitoMsg').textContent =
+                    `Você já tem um endereço salvo como "${apelido}". Deseja substituir?`;
+                document.getElementById('apelidoConflito').classList.remove('hidden');
+            } else {
+                confirmarApelido(apelido);
+            }
+        }
+
+        function confirmarApelidoOutro() {
+            const valor = document.getElementById('apelidoOutroInput').value.trim();
+            if (!valor) { document.getElementById('apelidoOutroInput').focus(); return; }
+            document.getElementById('apelidoOutroBloco').classList.add('hidden');
+            const conflito = (_ckEnderecos || []).find(e => e.apelido === valor);
+            if (conflito) {
+                _ckApelidoPendente = valor;
+                _ckApelidoConflitante = conflito;
+                document.getElementById('apelidoConflitoMsg').textContent =
+                    `Você já tem um endereço salvo como "${valor}". Deseja substituir?`;
+                document.getElementById('apelidoConflito').classList.remove('hidden');
+            } else {
+                confirmarApelido(valor);
+            }
+        }
+
+        function resolverConflito(acao) {
+            document.getElementById('apelidoConflito').classList.add('hidden');
+            if (acao === 'substituir') {
+                _ckApelidoEndereco = _ckApelidoPendente;
+                _ckEnderecoSelecionado._substituir = true;
+            } else {
+                // Salvar como novo (apelido diferente gerado na hora com sufixo)
+                _ckApelidoEndereco = _ckApelidoPendente;
+                _ckEnderecoSelecionado._substituir = false;
+            }
+            confirmarApelido(_ckApelidoEndereco, acao === 'substituir');
+        }
+
+        function confirmarApelido(apelido, substituir = false) {
+            _ckApelidoEndereco = apelido;
+            if (_ckEnderecoSelecionado) _ckEnderecoSelecionado._substituir = substituir;
+            document.getElementById('apelidoConfirmadoLabel').textContent = apelido;
+            document.getElementById('apelidoConfirmadoMsg').classList.remove('hidden');
+            document.getElementById('apelidoBotoes').classList.add('hidden');
+            setTimeout(() => document.getElementById('apelidoBotoes').classList.remove('hidden'), 0);
+        }
+
         function onPlacesInputChange() {
             // Invalida seleção ao reeditar manualmente
             _ckPlacesAddress = null;
@@ -1018,6 +1169,8 @@
             _ckGeoLat = null;
             _ckGeoLng = null;
             document.getElementById('endNumero').value = '';
+            document.getElementById('salvarEnderecoBloco').classList.add('hidden');
+            document.getElementById('apelidoConfirmadoMsg')?.classList.add('hidden');
             const input = document.getElementById('placesInput');
             input.classList.remove('border-green-400');
             input.classList.add('border-gray-300');
@@ -1067,6 +1220,7 @@
                 input.classList.remove('border-gray-300');
                 input.classList.add('border-green-400');
                 document.getElementById('placesConfirmado').classList.remove('hidden');
+                mostrarSalvarEnderecoBloco();
             });
         }
 
@@ -1246,6 +1400,7 @@
             try {
                 if (_ckTipoEntrega !== 'entrega') return;
                 if (!_ckEnderecoSelecionado) return;
+                if (_ckApelidoEndereco === false) return; // cliente escolheu não salvar
 
                 const e = _ckEnderecoSelecionado;
                 const rua    = e.rua    || e.endereco;
@@ -1268,11 +1423,15 @@
                 }
                 if (!perfilId) return;
 
+                const apelido    = typeof _ckApelidoEndereco === 'string' ? _ckApelidoEndereco : 'Casa';
+                const substituir = e._substituir === true;
+
                 await fetch(`${API_BASE}/perfis/publico/${perfilId}/enderecos`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        apelido:     'Casa',
+                        apelido,
+                        substituir,
                         rua,
                         numero,
                         bairro:      e.bairro      || null,
