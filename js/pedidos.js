@@ -144,7 +144,7 @@ function renderPedidos() {
             const podeArquivar = pedido.impresso || pedido.status === 'cancelado';
             const podeSairEntrega = pedido.status !== 'pendente' && pedido.status !== 'saiu_entrega' && pedido.status !== 'entregue' && pedido.status !== 'cancelado';
             return `
-            <div class="bg-white rounded-xl shadow-sm border-2 transition ${selecionado ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200 hover:border-indigo-300'}" style="border-left: 6px solid ${getStatusBorderColor(pedido.status)}">
+            <div class="rounded-xl shadow-sm border-2 transition ${selecionado ? 'border-indigo-400' : 'border-gray-200 hover:border-gray-300'}" style="border-left: 6px solid ${getStatusBorderColor(pedido.status)}; background-color: ${getStatusBgColor(pedido.status)}">
                 <div class="flex items-start gap-3 p-6">
                     ${podeArquivar ? `<input type="checkbox" class="mt-1 w-4 h-4 flex-shrink-0 cursor-pointer accent-indigo-600" ${selecionado ? 'checked' : ''} onchange="toggleSelecao(${pedido.id})">` : '<div class="w-4 flex-shrink-0 mt-1"></div>'}
                     <div class="flex-1 cursor-pointer min-w-0" onclick="verDetalhes(${pedido.id})">
@@ -503,12 +503,23 @@ ${pedido.observacoes ? '<p><b>Obs:</b> ' + ascii(pedido.observacoes) + '</p>' : 
 function getStatusBorderColor(status) {
     const colors = {
         'pendente':     '#F59E0B',
-        'confirmado':   '#3B82F6',
+        'confirmado':   '#06B6D4',
         'saiu_entrega': '#8B5CF6',
         'entregue':     '#10B981',
         'cancelado':    '#EF4444'
     };
     return colors[status] || '#D1D5DB';
+}
+
+function getStatusBgColor(status) {
+    const colors = {
+        'pendente':     '#FFFBEB',
+        'confirmado':   '#ECFEFF',
+        'saiu_entrega': '#F5F3FF',
+        'entregue':     '#F0FDF4',
+        'cancelado':    '#FFF1F2'
+    };
+    return colors[status] || '#FFFFFF';
 }
 
 function getStatusColor(status) {
