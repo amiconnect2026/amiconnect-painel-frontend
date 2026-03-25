@@ -325,14 +325,6 @@
                             </div>
                         </div>
 
-                        <!-- Bairro (aparece só quando não identificado automaticamente) -->
-                        <div id="bairroManualBloco" class="hidden mb-3">
-                            <label class="text-xs font-semibold text-gray-600 mb-1 block">Bairro <span class="text-red-500">*</span></label>
-                            <input id="endBairro" type="text" placeholder="Ex: Jardim Jacarandá"
-                                class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
-                            <p id="bairroErro" class="hidden text-red-500 text-xs mt-1"></p>
-                        </div>
-
                         <!-- GPS como sugestão opcional -->
                         <div class="mb-3">
                             <p class="text-xs text-amber-700 text-center mb-1.5 font-medium">Para facilitar a entrega, compartilhe sua localização 😊</p>
@@ -393,6 +385,14 @@
                             </div>
                         </div>
                         </div><!-- /formEndereco -->
+
+                        <!-- Bairro (aparece quando não detectado — tanto endereço salvo quanto Places/GPS) -->
+                        <div id="bairroManualBloco" class="hidden mb-3">
+                            <label class="text-xs font-semibold text-gray-600 mb-1 block">Bairro <span class="text-red-500">*</span></label>
+                            <input id="endBairro" type="text" placeholder="Ex: Jardim Jacarandá"
+                                class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
+                            <p id="bairroErro" class="hidden text-red-500 text-xs mt-1"></p>
+                        </div>
                     </div>
 
                     <!-- Resumo de valores (aparece após calcular taxa) -->
