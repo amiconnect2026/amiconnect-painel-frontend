@@ -168,7 +168,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Injetar navPedidosBadge no link "Pedidos" de todas as páginas (via JS para não editar cada HTML)
-    const pedidosNavLink = document.querySelector('header a[href="pedidos.html"]');
+    const pedidosNavLink = document.querySelector('nav a[href="pedidos.html"], a[href="pedidos.html"]');
     if (pedidosNavLink && !document.getElementById('navPedidosBadge')) {
         pedidosNavLink.classList.add('relative');
         const nb = document.createElement('span');
@@ -179,7 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Garantir que o link ativo do nav corresponde à página atual
     const path = window.location.pathname.split('/').pop() || 'dashboard.html';
-    document.querySelectorAll('header a[href$=".html"]').forEach(a => {
+    document.querySelectorAll('nav a[href$=".html"], a[href$=".html"]').forEach(a => {
         const href = a.getAttribute('href');
         if (href === path) {
             a.classList.add('text-indigo-600', 'font-medium');
