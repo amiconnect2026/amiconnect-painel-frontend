@@ -392,8 +392,25 @@
                         </div>
                     </div>
 
+                    <!-- Resumo de valores (aparece após calcular taxa) -->
+                    <div id="taxaResumoBloco" class="hidden mb-4 bg-gray-50 rounded-xl p-4 text-sm space-y-1">
+                        <div class="flex justify-between text-gray-600">
+                            <span>Subtotal</span>
+                            <span id="taxaResumoSubtotal">R$ 0,00</span>
+                        </div>
+                        <div class="flex justify-between text-gray-600">
+                            <span>Taxa de entrega</span>
+                            <span id="taxaResumoTaxa">R$ 0,00</span>
+                        </div>
+                        <div class="flex justify-between font-extrabold text-gray-900 border-t border-gray-200 pt-2 mt-1">
+                            <span>Total</span>
+                            <span id="taxaResumoTotal">R$ 0,00</span>
+                        </div>
+                        <p id="taxaForaRaio" class="hidden text-red-500 text-xs mt-1 text-center font-semibold">⚠️ Seu endereço está fora da área de entrega.</p>
+                    </div>
+
                     <!-- Forma de pagamento -->
-                    <div class="mb-4">
+                    <div id="pagamentoSection" class="hidden mb-4">
                         <p class="text-sm font-semibold text-gray-700 mb-2">💳 Forma de pagamento <span class="text-red-500">*</span></p>
                         <div class="grid grid-cols-3 gap-2">
                             <button id="pag-pix" onclick="selecionarPagamento('pix')"
@@ -431,9 +448,17 @@
                 <div id="step3" class="modal-step px-6 py-5 space-y-4">
                     <div class="bg-gray-50 rounded-xl p-4 space-y-1 text-sm">
                         <div id="step3Itens" class="space-y-1 text-gray-700"></div>
-                        <div class="border-t border-gray-200 pt-2 mt-2 flex justify-between font-extrabold text-gray-900">
+                        <div class="border-t border-gray-200 pt-2 mt-2 flex justify-between text-gray-600 text-xs">
                             <span>Subtotal</span>
                             <span id="step3Subtotal"></span>
+                        </div>
+                        <div class="flex justify-between text-gray-600 text-xs">
+                            <span>Taxa de entrega</span>
+                            <span id="step3Taxa"></span>
+                        </div>
+                        <div class="border-t border-gray-200 pt-2 mt-1 flex justify-between font-extrabold text-gray-900">
+                            <span>Total</span>
+                            <span id="step3Total"></span>
                         </div>
                     </div>
                     <div id="step3Entrega" class="text-sm text-gray-600 bg-indigo-50 rounded-xl p-3"></div>
@@ -856,6 +881,8 @@
         let _ckApelidoPendente = null;     // apelido aguardando resolução de conflito
         let _ckPagamento = null;           // 'pix', 'cartao', 'dinheiro'
         let _ckTroco = null;               // valor troco (só dinheiro)
+        let _ckTaxaEntrega = 0;            // taxa calculada por distância
+        let _ckDentroRaio = true;          // cliente dentro do raio de entrega
         const MAPS_KEY = 'AIzaSyCj9rGIQNjyrJCljAKcmB-DpGNGemmJGX4';
 
         function abrirModalPedido() {
@@ -866,6 +893,7 @@
             _ckPerfil = null; _ckEnderecos = []; _ckEnderecoSelecionado = null;
             _ckTipoEntrega = 'entrega'; _ckStep = 1;
             _ckPagamento = null; _ckTroco = null;
+            _ckTaxaEntrega = 0; _ckDentroRaio = true;
             _ckGeoLat = null; _ckGeoLng = null; _ckPlacesAddress = null;
             _placesAutocomplete = null;
             // Reset Places field
@@ -1018,6 +1046,9 @@
                     btnR.className = 'flex flex-col items-center justify-center py-4 rounded-xl border-2 border-gray-200 text-gray-500 font-bold text-sm gap-1';
                 }
                 sec.classList.remove('hidden');
+                // Ocultar resumo e pagamento até novo cálculo de taxa
+                document.getElementById('taxaResumoBloco')?.classList.add('hidden');
+                document.getElementById('pagamentoSection')?.classList.add('hidden');
             } else {
                 if (_ckPermiteRetirada) {
                     btnR.className = 'flex flex-col items-center justify-center py-4 rounded-xl border-2 border-indigo-600 bg-indigo-50 text-indigo-700 font-bold text-sm gap-1';
@@ -1025,6 +1056,62 @@
                 btnE.className = 'flex flex-col items-center justify-center py-4 rounded-xl border-2 border-gray-200 text-gray-500 font-bold text-sm gap-1';
                 sec.classList.add('hidden');
                 _ckEnderecoSelecionado = null;
+                // Retirada: taxa = 0, mostrar resumo e pagamento diretamente
+                _ckTaxaEntrega = 0;
+                _ckDentroRaio = true;
+                const subtotal = carrinho.reduce((acc, i) => acc + i.preco * i.quantidade, 0);
+                document.getElementById('taxaResumoSubtotal').textContent = `R$ ${subtotal.toFixed(2)}`;
+                document.getElementById('taxaResumoTaxa').textContent = 'Grátis';
+                document.getElementById('taxaResumoTotal').textContent = `R$ ${subtotal.toFixed(2)}`;
+                document.getElementById('taxaForaRaio')?.classList.add('hidden');
+                document.getElementById('taxaResumoBloco')?.classList.remove('hidden');
+                document.getElementById('pagamentoSection')?.classList.remove('hidden');
+            }
+        }
+
+        async function calcularTaxaEntrega(lat, lng) {
+            const subtotal = carrinho.reduce((acc, i) => acc + i.preco * i.quantidade, 0);
+            const resumoBloco = document.getElementById('taxaResumoBloco');
+            const pagamentoSection = document.getElementById('pagamentoSection');
+            const taxaEl = document.getElementById('taxaResumoTaxa');
+            const foraRaioEl = document.getElementById('taxaForaRaio');
+
+            document.getElementById('taxaResumoSubtotal').textContent = `R$ ${subtotal.toFixed(2)}`;
+            taxaEl.textContent = '⏳ Calculando...';
+            document.getElementById('taxaResumoTotal').textContent = '—';
+            foraRaioEl?.classList.add('hidden');
+            resumoBloco?.classList.remove('hidden');
+            pagamentoSection?.classList.add('hidden');
+
+            try {
+                const resp = await fetch(`${API_BASE}/taxa-entrega?empresa_id=${empresaId}&lat=${lat}&lng=${lng}`);
+                const data = await resp.json();
+
+                if (!data.dentro_raio) {
+                    _ckDentroRaio = false;
+                    taxaEl.textContent = '—';
+                    document.getElementById('taxaResumoTotal').textContent = '—';
+                    foraRaioEl?.classList.remove('hidden');
+                    pagamentoSection?.classList.add('hidden');
+                } else {
+                    _ckTaxaEntrega = parseFloat(data.taxa || 0);
+                    _ckDentroRaio = true;
+                    const total = subtotal + _ckTaxaEntrega;
+                    taxaEl.textContent = `R$ ${_ckTaxaEntrega.toFixed(2)}`;
+                    document.getElementById('taxaResumoTotal').textContent = `R$ ${total.toFixed(2)}`;
+                    // Atualizar label do troco com o total
+                    const trocoLabel = document.querySelector('#trocoBloco label');
+                    if (trocoLabel) trocoLabel.innerHTML = `Troco para quanto? <span class="font-normal text-gray-500">(Total: R$ ${total.toFixed(2)})</span>`;
+                    pagamentoSection?.classList.remove('hidden');
+                }
+            } catch (e) {
+                // Fallback: usa taxa padrão da empresa
+                _ckTaxaEntrega = parseFloat(dadosEmpresa?.taxa_entrega || 0);
+                _ckDentroRaio = true;
+                const total = subtotal + _ckTaxaEntrega;
+                taxaEl.textContent = `R$ ${_ckTaxaEntrega.toFixed(2)}`;
+                document.getElementById('taxaResumoTotal').textContent = `R$ ${total.toFixed(2)}`;
+                pagamentoSection?.classList.remove('hidden');
             }
         }
 
@@ -1046,12 +1133,14 @@
                     // Pré-preencher número (editável) e complemento
                     document.getElementById('endNumero').value = end.numero || '';
                     document.getElementById('endComplemento').value = end.complemento || '';
+                    if (end.lat && end.lng) calcularTaxaEntrega(end.lat, end.lng);
                 };
                 if (i === 0) {
                     _ckEnderecoSelecionado = end;
                     // Pré-preencher número do endereço principal
                     document.getElementById('endNumero').value = end.numero || '';
                     document.getElementById('endComplemento').value = end.complemento || '';
+                    if (end.lat && end.lng) calcularTaxaEntrega(end.lat, end.lng);
                 }
                 container.appendChild(div);
             });
@@ -1135,6 +1224,7 @@
 
             document.getElementById('placesConfirmado').classList.remove('hidden');
             mostrarSalvarEnderecoBloco();
+            if (lat && lng) calcularTaxaEntrega(lat, lng);
             return true;
         }
 
@@ -1391,6 +1481,11 @@
                     setTimeout(() => { input.classList.remove('border-red-400'); input.classList.add('border-gray-300'); }, 2000);
                     return;
                 }
+                // Validar se dentro do raio de entrega
+                if (!_ckDentroRaio) {
+                    document.getElementById('taxaForaRaio')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
+                }
                 // Validar número obrigatório
                 const numero = document.getElementById('endNumero').value.trim();
                 if (!numero) {
@@ -1443,6 +1538,10 @@
                 return `<div class="flex justify-between"><span>${i.quantidade}x ${nomeCompleto}</span><span class="font-semibold">R$ ${(i.preco * i.quantidade).toFixed(2)}</span></div>${detailLines}`;
             }).join('');
             document.getElementById('step3Subtotal').textContent = `R$ ${subtotal.toFixed(2)}`;
+            const taxaDisplay = _ckTipoEntrega === 'retirada' ? 'Grátis' : `R$ ${_ckTaxaEntrega.toFixed(2)}`;
+            document.getElementById('step3Taxa').textContent = taxaDisplay;
+            const totalFinal = subtotal + (_ckTipoEntrega === 'retirada' ? 0 : _ckTaxaEntrega);
+            document.getElementById('step3Total').textContent = `R$ ${totalFinal.toFixed(2)}`;
 
             const entregaEl = document.getElementById('step3Entrega');
             if (_ckTipoEntrega === 'retirada') {
@@ -1531,7 +1630,11 @@
                 }
                 if (item.obs) msg += `  Obs: ${item.obs}\n`;
             });
+            const taxaMsg = _ckTipoEntrega === 'retirada' ? 0 : _ckTaxaEntrega;
+            const totalMsg = subtotal + taxaMsg;
             msg += `\n*Subtotal:* R$ ${subtotal.toFixed(2)}`;
+            if (_ckTipoEntrega === 'entrega') msg += `\n*Taxa de entrega:* R$ ${taxaMsg.toFixed(2)}`;
+            msg += `\n*Total:* R$ ${totalMsg.toFixed(2)}`;
 
             if (_ckTipoEntrega === 'retirada') {
                 msg += `\n\n🏃 *Vou retirar no local*`;
