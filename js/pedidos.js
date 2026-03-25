@@ -144,7 +144,7 @@ function renderPedidos() {
             const podeArquivar = pedido.impresso || pedido.status === 'cancelado';
             const podeSairEntrega = pedido.status !== 'pendente' && pedido.status !== 'saiu_entrega' && pedido.status !== 'entregue' && pedido.status !== 'cancelado';
             return `
-            <div class="bg-white rounded-xl shadow-sm border-2 transition ${selecionado ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200 hover:border-indigo-300'}">
+            <div class="bg-white rounded-xl shadow-sm border-2 transition ${selecionado ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200 hover:border-indigo-300'}" style="border-left: 6px solid ${getStatusBorderColor(pedido.status)}">
                 <div class="flex items-start gap-3 p-6">
                     ${podeArquivar ? `<input type="checkbox" class="mt-1 w-4 h-4 flex-shrink-0 cursor-pointer accent-indigo-600" ${selecionado ? 'checked' : ''} onchange="toggleSelecao(${pedido.id})">` : '<div class="w-4 flex-shrink-0 mt-1"></div>'}
                     <div class="flex-1 cursor-pointer min-w-0" onclick="verDetalhes(${pedido.id})">
@@ -356,51 +356,51 @@ async function verDetalhes(id) {
         const enderecoTexto = enderecoPartes[0].trim();
         const localizacaoLink = enderecoPartes[1] ? enderecoPartes[1].trim() : null;
         document.getElementById('pedidoDetalhes').innerHTML = `
-            <div class="space-y-6">
+            <div class="space-y-3">
                 <div class="flex justify-between items-start">
                     <div>
-                        <h4 class="text-2xl font-bold text-gray-900">Pedido #${pedido.numero_diario || pedido.id}</h4>
-                        <p class="text-gray-600">${formatDate(pedido.created_at)}</p>
+                        <h4 class="text-lg font-bold text-gray-900">Pedido #${pedido.numero_diario || pedido.id}</h4>
+                        <p class="text-xs text-gray-500">${formatDate(pedido.created_at)}</p>
                     </div>
-                    <span id="statusBadge" class="px-4 py-2 rounded-full font-medium ${getStatusColor(pedido.status)}">${getStatusLabel(pedido.status)}</span>
+                    <span id="statusBadge" class="px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(pedido.status)}">${getStatusLabel(pedido.status)}</span>
                 </div>
                 <div>
-                    <p class="text-sm font-medium text-gray-500 mb-2">Alterar Status</p>
-                    <div class="flex gap-2 flex-wrap">
-                        <button onclick="mudarStatus(${pedido.id}, 'pendente')" class="px-3 py-1 rounded-lg text-sm font-medium bg-yellow-100 text-yellow-700 hover:bg-yellow-200">Pendente</button>
-                        <button onclick="mudarStatus(${pedido.id}, 'confirmado')" class="px-3 py-1 rounded-lg text-sm font-medium bg-blue-100 text-blue-700 hover:bg-blue-200">Confirmado</button>
-                        <button onclick="mudarStatus(${pedido.id}, 'entregue')" class="px-3 py-1 rounded-lg text-sm font-medium bg-green-100 text-green-700 hover:bg-green-200">Entregue</button>
-                        <button onclick="mudarStatus(${pedido.id}, 'cancelado')" class="px-3 py-1 rounded-lg text-sm font-medium bg-red-100 text-red-700 hover:bg-red-200">Cancelado</button>
+                    <p class="text-xs font-medium text-gray-500 mb-1">Alterar Status</p>
+                    <div class="flex gap-1.5 flex-wrap">
+                        <button onclick="mudarStatus(${pedido.id}, 'pendente')" class="px-2 py-1 rounded-lg text-xs font-medium bg-yellow-100 text-yellow-700 hover:bg-yellow-200">Pendente</button>
+                        <button onclick="mudarStatus(${pedido.id}, 'confirmado')" class="px-2 py-1 rounded-lg text-xs font-medium bg-blue-100 text-blue-700 hover:bg-blue-200">Confirmado</button>
+                        <button onclick="mudarStatus(${pedido.id}, 'entregue')" class="px-2 py-1 rounded-lg text-xs font-medium bg-green-100 text-green-700 hover:bg-green-200">Entregue</button>
+                        <button onclick="mudarStatus(${pedido.id}, 'cancelado')" class="px-2 py-1 rounded-lg text-xs font-medium bg-red-100 text-red-700 hover:bg-red-200">Cancelado</button>
                     </div>
                 </div>
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <p class="text-sm font-medium text-gray-500">Cliente</p>
-                        <p class="text-lg font-semibold text-gray-900">${pedido.cliente_nome || '-'}</p>
-                        <p class="text-gray-600">${formatPhone(pedido.cliente_telefone)}</p>
+                        <p class="text-xs font-medium text-gray-500">Cliente</p>
+                        <p class="text-sm font-semibold text-gray-900">${pedido.cliente_nome || '-'}</p>
+                        <p class="text-xs text-gray-600">${formatPhone(pedido.cliente_telefone)}</p>
                     </div>
                     <div>
-                        <p class="text-sm font-medium text-gray-500">Endereco</p>
-                        <p class="text-gray-900">${enderecoTexto || '-'}</p>
-                        ${localizacaoLink ? '<a href="' + localizacaoLink + '" target="_blank" class="text-indigo-600 text-sm">Ver no mapa</a>' : ''}
+                        <p class="text-xs font-medium text-gray-500">Endereço</p>
+                        <p class="text-xs text-gray-900">${enderecoTexto || '-'}</p>
+                        ${localizacaoLink ? '<a href="' + localizacaoLink + '" target="_blank" class="text-indigo-600 text-xs">Ver no mapa</a>' : ''}
                     </div>
                 </div>
                 <div>
-                    <p class="text-sm font-medium text-gray-500 mb-2">Itens do Pedido</p>
-                    <div class="bg-gray-50 rounded-lg p-4 space-y-2">
-                        ${itens.map(item => '<div class="flex justify-between"><span>' + item.quantidade + 'x ' + item.nome + '</span><span class="font-semibold">R$ ' + (item.quantidade * item.preco).toFixed(2) + '</span></div>').join('')}
+                    <p class="text-xs font-medium text-gray-500 mb-1">Itens do Pedido</p>
+                    <div class="bg-gray-50 rounded-lg p-3 space-y-1">
+                        ${itens.map(item => '<div class="flex justify-between text-sm"><span>' + item.quantidade + 'x ' + item.nome + '</span><span class="font-semibold">R$ ' + (item.quantidade * item.preco).toFixed(2) + '</span></div>').join('')}
                     </div>
                 </div>
-                <div class="border-t pt-4">
-                    <div class="flex justify-between text-sm"><span class="text-gray-600">Subtotal</span><span>R$ ${parseFloat(pedido.subtotal).toFixed(2)}</span></div>
-                    <div class="flex justify-between text-sm"><span class="text-gray-600">Taxa de Entrega</span><span>R$ ${parseFloat(pedido.taxa_entrega).toFixed(2)}</span></div>
-                    <div class="flex justify-between text-xl font-bold mt-2 pt-2 border-t"><span>Total</span><span class="text-green-600">R$ ${parseFloat(pedido.total).toFixed(2)}</span></div>
+                <div class="border-t pt-2">
+                    <div class="flex justify-between text-xs"><span class="text-gray-600">Subtotal</span><span>R$ ${parseFloat(pedido.subtotal).toFixed(2)}</span></div>
+                    <div class="flex justify-between text-xs"><span class="text-gray-600">Taxa de Entrega</span><span>R$ ${parseFloat(pedido.taxa_entrega).toFixed(2)}</span></div>
+                    <div class="flex justify-between text-base font-bold mt-1 pt-1 border-t"><span>Total</span><span class="text-green-600">R$ ${parseFloat(pedido.total).toFixed(2)}</span></div>
                 </div>
-                ${pedido.forma_pagamento ? '<div><p class="text-sm font-medium text-gray-500">Forma de Pagamento</p><p class="text-gray-900">' + pedido.forma_pagamento + '</p>' + (pedido.troco_para ? '<p class="text-sm text-gray-600">Troco para: R$ ' + parseFloat(pedido.troco_para).toFixed(2) + '</p>' : '') + '</div>' : ''}
-                ${pedido.observacoes ? '<div><p class="text-sm font-medium text-gray-500">Observacoes</p><p class="text-gray-900">' + pedido.observacoes + '</p></div>' : ''}
-                <div class="flex gap-3 pt-4">
-                    <button onclick="imprimirPedido(${pedido.id})" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg transition">Imprimir</button>
-                    <button onclick="fecharModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 rounded-lg transition">Fechar</button>
+                ${pedido.forma_pagamento ? '<div><p class="text-xs font-medium text-gray-500">Forma de Pagamento</p><p class="text-sm text-gray-900">' + pedido.forma_pagamento + '</p>' + (pedido.troco_para ? '<p class="text-xs text-gray-600">Troco para: R$ ' + parseFloat(pedido.troco_para).toFixed(2) + '</p>' : '') + '</div>' : ''}
+                ${pedido.observacoes ? '<div><p class="text-xs font-medium text-gray-500">Observações</p><p class="text-sm text-gray-900">' + pedido.observacoes + '</p></div>' : ''}
+                <div class="flex gap-2 pt-2">
+                    <button onclick="imprimirPedido(${pedido.id})" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 rounded-lg text-sm transition">Imprimir</button>
+                    <button onclick="fecharModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 rounded-lg text-sm transition">Fechar</button>
                 </div>
             </div>
         `;
@@ -498,6 +498,17 @@ ${pedido.observacoes ? '<p><b>Obs:</b> ' + ascii(pedido.observacoes) + '</p>' : 
         }
         loadPedidos();
     } catch (error) { alert('Erro ao imprimir: ' + error.message); }
+}
+
+function getStatusBorderColor(status) {
+    const colors = {
+        'pendente':     '#F59E0B',
+        'confirmado':   '#3B82F6',
+        'saiu_entrega': '#8B5CF6',
+        'entregue':     '#10B981',
+        'cancelado':    '#EF4444'
+    };
+    return colors[status] || '#D1D5DB';
 }
 
 function getStatusColor(status) {

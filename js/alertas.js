@@ -176,6 +176,15 @@ let _pedidosPendentesCount = 0;
 function setPedidosPendentesCount(n) {
     _pedidosPendentesCount = n;
     atualizarTitulo();
+    const navBadge = document.getElementById('navPedidosBadge');
+    if (navBadge) {
+        if (n > 0) {
+            navBadge.textContent = n > 99 ? '99+' : n;
+            navBadge.classList.remove('hidden');
+        } else {
+            navBadge.classList.add('hidden');
+        }
+    }
 }
 
 function atualizarTitulo() {
