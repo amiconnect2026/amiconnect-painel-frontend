@@ -92,7 +92,18 @@ function _iniciarRepetidorPedidoGlobal() {
 }
 
 // Para o som de pedido em qualquer página (bloquinho clicado ou pedidos.html aberto)
+function _getPedidosSomVistosGlobal() {
+    try { return new Set(JSON.parse(localStorage.getItem('amiconnect_pedidos_som_vistos') || '[]')); }
+    catch { return new Set(); }
+}
+
 function silenciarPedidoSom() {
+    // Marcar IDs ativos como vistos para o poll não retomar o som
+    if (_pedidosSomJaDisparadoGlobal.size > 0) {
+        const vistos = _getPedidosSomVistosGlobal();
+        _pedidosSomJaDisparadoGlobal.forEach(id => vistos.add(id));
+        localStorage.setItem('amiconnect_pedidos_som_vistos', JSON.stringify([...vistos].slice(-500)));
+    }
     _pedidosSomJaDisparadoGlobal.clear();
     clearInterval(_intervalRepetidorPedidoGlobal);
     _intervalRepetidorPedidoGlobal = null;
@@ -149,13 +160,33 @@ function incrementarBadgeConversas() {
 
 document.addEventListener('DOMContentLoaded', () => {
     _injetarBadgeConversas();
-    // Zera o badge quando está na página de conversas
-    if (window.location.pathname.includes('conversas')) {
-        _novasConversasCount = 0;
-    }
+    if (window.location.pathname.includes('conversas')) _novasConversasCount = 0;
+
     // Silencia som de pedido ao clicar no bloquinho 🧾 (em qualquer página)
     document.addEventListener('click', (e) => {
         if (e.target.closest('button[onclick*="pedidos.html"]')) silenciarPedidoSom();
+    });
+
+    // Injetar navPedidosBadge no link "Pedidos" de todas as páginas (via JS para não editar cada HTML)
+    const pedidosNavLink = document.querySelector('header a[href="pedidos.html"]');
+    if (pedidosNavLink && !document.getElementById('navPedidosBadge')) {
+        pedidosNavLink.classList.add('relative');
+        const nb = document.createElement('span');
+        nb.id = 'navPedidosBadge';
+        nb.className = 'hidden absolute -top-2 -right-3 bg-orange-500 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center leading-none';
+        pedidosNavLink.appendChild(nb);
+    }
+
+    // Garantir que o link ativo do nav corresponde à página atual
+    const path = window.location.pathname.split('/').pop() || 'dashboard.html';
+    document.querySelectorAll('header a[href$=".html"]').forEach(a => {
+        const href = a.getAttribute('href');
+        if (href === path) {
+            a.classList.add('text-indigo-600', 'font-medium');
+            a.classList.remove('text-gray-600');
+        } else {
+            a.classList.remove('text-indigo-600', 'font-medium');
+        }
     });
 });
 
@@ -253,9 +284,51 @@ function getEmpresaIdAtual() {
     return user.role === 'admin' ? (parseInt(localStorage.getItem('adminEmpresaId')) || null) : user.empresa_id;
 }
 
+// ── Polling de pedidos pendentes (badge + som em todas as páginas) ─────────────
+let _intervalPollPedidosGlobal = null;
+
+async function _pollPedidosPendentesGlobal() {
+    if (window.location.pathname.includes('pedidos')) return; // pedidos.js gerencia
+    try {
+        const empresaId = getEmpresaIdAtual();
+        if (!empresaId) return;
+        const data = await apiRequest(`/pedidos?empresa_id=${empresaId}&status=pendente&arquivado=false&limit=100`);
+        const pendentes = data.pedidos || [];
+        const count = pendentes.length;
+
+        // Atualizar badge bloquinho e navPedidosBadge
+        const badge = document.getElementById('pedidosBadge');
+        if (badge) {
+            if (count > 0) { badge.textContent = count > 9 ? '9+' : count; badge.classList.remove('hidden'); }
+            else { badge.classList.add('hidden'); }
+        }
+        setPedidosPendentesCount(count);
+
+        // Iniciar som se houver pendentes não visitados
+        if (count > 0) {
+            const vistos = _getPedidosSomVistosGlobal();
+            pendentes.forEach(p => {
+                if (!vistos.has(p.id) && !_pedidosSomJaDisparadoGlobal.has(p.id)) {
+                    _pedidosSomJaDisparadoGlobal.add(p.id);
+                }
+            });
+            if (_pedidosSomJaDisparadoGlobal.size > 0) _iniciarRepetidorPedidoGlobal();
+        }
+    } catch(e) { console.warn('Poll pedidos pendentes:', e); }
+}
+
+function _iniciarPollingPedidosGlobal() {
+    if (window.location.pathname.includes('pedidos')) return;
+    if (_intervalPollPedidosGlobal) return;
+    _pollPedidosPendentesGlobal();
+    _intervalPollPedidosGlobal = setInterval(_pollPedidosPendentesGlobal, 30 * 1000);
+}
+// ── Fim polling pedidos ───────────────────────────────────────────────────────
+
 async function iniciarAlertas() {
     await carregarAlertas();
     atualizarBadge();
+    _iniciarPollingPedidosGlobal();
 
     intervalAlertas = setInterval(async () => {
         await carregarAlertas();
@@ -282,10 +355,10 @@ async function carregarAlertas() {
         if (novosNaoOuvidos.length > 0) {
             novosNaoOuvidos.forEach(a => _alertasSomJaDisparado.add(a.id));
             if (!_primeiraCarregaAlertas) {
-                // Só toca para alertas que chegaram depois da página abrir
+                // Toca imediatamente só para alertas que chegaram após a página abrir
                 tocarSomAlerta();
-                _iniciarRepetidorAlerta();
             }
+            _iniciarRepetidorAlerta(); // inicia repetidor sempre (inclusive no primeiro carregamento)
         }
         _primeiraCarregaAlertas = false;
 
@@ -423,4 +496,5 @@ window.addEventListener('beforeunload', () => {
     if (intervalAlertas) clearInterval(intervalAlertas);
     if (_intervalSomAlerta) clearInterval(_intervalSomAlerta);
     if (_intervalRepetidorPedidoGlobal) clearInterval(_intervalRepetidorPedidoGlobal);
+    if (_intervalPollPedidosGlobal) clearInterval(_intervalPollPedidosGlobal);
 });

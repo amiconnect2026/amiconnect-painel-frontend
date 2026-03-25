@@ -1149,16 +1149,24 @@
                     _ckEnderecoSelecionado = end;
                     container.querySelectorAll('div').forEach(d => d.className = d.className.replace('border-indigo-600 bg-indigo-50', 'border-gray-200 bg-white'));
                     div.className = div.className.replace('border-gray-200 bg-white', 'border-indigo-600 bg-indigo-50');
-                    // Pré-preencher número (editável) e complemento
                     document.getElementById('endNumero').value = end.numero || '';
                     document.getElementById('endComplemento').value = end.complemento || '';
+                    // Mostrar campo bairro editável se não está salvo no endereço
+                    const _bBloco = document.getElementById('bairroManualBloco');
+                    const _bInput = document.getElementById('endBairro');
+                    if (!end.bairro) { _bBloco?.classList.remove('hidden'); if (_bInput) _bInput.value = ''; }
+                    else { _bBloco?.classList.add('hidden'); if (_bInput) _bInput.value = end.bairro; }
                     if (end.lat && end.lng) calcularTaxaEntrega(end.lat, end.lng);
                 };
                 if (i === 0) {
                     _ckEnderecoSelecionado = end;
-                    // Pré-preencher número do endereço principal
                     document.getElementById('endNumero').value = end.numero || '';
                     document.getElementById('endComplemento').value = end.complemento || '';
+                    // Mostrar campo bairro editável se não está salvo no endereço
+                    const _bBloco0 = document.getElementById('bairroManualBloco');
+                    const _bInput0 = document.getElementById('endBairro');
+                    if (!end.bairro) { _bBloco0?.classList.remove('hidden'); if (_bInput0) _bInput0.value = ''; }
+                    else { _bBloco0?.classList.add('hidden'); if (_bInput0) _bInput0.value = end.bairro; }
                     if (end.lat && end.lng) calcularTaxaEntrega(end.lat, end.lng);
                 }
                 container.appendChild(div);
