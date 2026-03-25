@@ -296,10 +296,11 @@
                         <div id="formEndereco">
                         <!-- Campo Places Autocomplete -->
                         <div class="mb-3">
-                            <label class="text-xs font-semibold text-gray-600 mb-1 block">🔍 Rua / Avenida</label>
+                            <label class="text-xs font-semibold text-gray-600 mb-1 block">🔍 Rua / Avenida e Número</label>
+                            <p class="text-xs text-gray-500 mb-1.5">Inclua o número no endereço. Ex: Rodovia PR-412, 1971</p>
                             <div class="relative">
                                 <input id="placesInput" type="text"
-                                    placeholder="Ex: Rodovia PR 407, Pontal do Paraná"
+                                    placeholder="Ex: Rodovia PR-412, 1971"
                                     autocomplete="off"
                                     class="w-full border-2 border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-400 transition pr-10"
                                     oninput="onPlacesInputChange()">
@@ -311,18 +312,26 @@
                             </div>
                         </div>
 
-                        <!-- Número + Complemento -->
-                        <div class="grid grid-cols-2 gap-2 mb-3">
-                            <div>
-                                <label class="text-xs font-semibold text-gray-600 mb-1 block">Número <span class="text-red-400">*</span></label>
-                                <input id="endNumero" type="text" placeholder="Confirme ou informe o número"
-                                    class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
-                            </div>
-                            <div>
-                                <label class="text-xs font-semibold text-gray-600 mb-1 block">Complemento <span class="font-normal text-gray-400">(opcional)</span></label>
-                                <input id="endComplemento" type="text" placeholder="Casa 2, Apto..."
-                                    class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
-                            </div>
+                        <!-- Número (oculto por padrão; aparece se não detectado no endereço ou via GPS) -->
+                        <div id="numWrapper" class="hidden mb-3">
+                            <label class="text-xs font-semibold text-gray-600 mb-1 block">Número <span class="text-red-400">*</span></label>
+                            <input id="endNumero" type="text" placeholder="Ex: 1971"
+                                class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
+                        </div>
+
+                        <!-- Bairro (aparece quando não detectado automaticamente) -->
+                        <div id="bairroManualBloco" class="hidden mb-3">
+                            <label class="text-xs font-semibold text-gray-600 mb-1 block">Bairro <span class="text-red-500">*</span></label>
+                            <input id="endBairro" type="text" placeholder="Ex: Jardim Jacarandá"
+                                class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
+                            <p id="bairroErro" class="hidden text-red-500 text-xs mt-1"></p>
+                        </div>
+
+                        <!-- Complemento -->
+                        <div class="mb-3">
+                            <label class="text-xs font-semibold text-gray-600 mb-1 block">Complemento <span class="font-normal text-gray-400">(opcional)</span></label>
+                            <input id="endComplemento" type="text" placeholder="Casa 2, Apto..."
+                                class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
                         </div>
 
                         <!-- GPS como sugestão opcional -->
@@ -386,12 +395,12 @@
                         </div>
                         </div><!-- /formEndereco -->
 
-                        <!-- Bairro (aparece quando não detectado — tanto endereço salvo quanto Places/GPS) -->
-                        <div id="bairroManualBloco" class="hidden mb-3">
+                        <!-- Bairro endereço salvo (aparece quando endereço salvo não tem bairro) -->
+                        <div id="bairroSalvoBloco" class="hidden mb-3">
                             <label class="text-xs font-semibold text-gray-600 mb-1 block">Bairro <span class="text-red-500">*</span></label>
-                            <input id="endBairro" type="text" placeholder="Ex: Jardim Jacarandá"
+                            <input id="endBairroSalvo" type="text" placeholder="Ex: Jardim Jacarandá"
                                 class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
-                            <p id="bairroErro" class="hidden text-red-500 text-xs mt-1"></p>
+                            <p id="bairroSalvoErro" class="hidden text-red-500 text-xs mt-1"></p>
                         </div>
                     </div>
 
@@ -911,7 +920,11 @@
             document.getElementById('endNumero').value = '';
             document.getElementById('endBairro').value = '';
             document.getElementById('endComplemento').value = '';
+            document.getElementById('numWrapper')?.classList.add('hidden');
             document.getElementById('bairroManualBloco')?.classList.add('hidden');
+            document.getElementById('bairroSalvoBloco')?.classList.add('hidden');
+            const endBairroSalvo = document.getElementById('endBairroSalvo');
+            if (endBairroSalvo) endBairroSalvo.value = '';
             _ckApelidoEndereco = null; _ckApelidoConflitante = null; _ckApelidoPendente = null;
             document.getElementById('salvarEnderecoBloco')?.classList.add('hidden');
             document.getElementById('apelidoOutroBloco')?.classList.add('hidden');
@@ -1152,8 +1165,8 @@
                     document.getElementById('endNumero').value = end.numero || '';
                     document.getElementById('endComplemento').value = end.complemento || '';
                     // Mostrar campo bairro editável se não está salvo no endereço
-                    const _bBloco = document.getElementById('bairroManualBloco');
-                    const _bInput = document.getElementById('endBairro');
+                    const _bBloco = document.getElementById('bairroSalvoBloco');
+                    const _bInput = document.getElementById('endBairroSalvo');
                     if (!end.bairro) { _bBloco?.classList.remove('hidden'); if (_bInput) _bInput.value = ''; }
                     else { _bBloco?.classList.add('hidden'); if (_bInput) _bInput.value = end.bairro; }
                     if (end.lat && end.lng) calcularTaxaEntrega(end.lat, end.lng);
@@ -1163,8 +1176,8 @@
                     document.getElementById('endNumero').value = end.numero || '';
                     document.getElementById('endComplemento').value = end.complemento || '';
                     // Mostrar campo bairro editável se não está salvo no endereço
-                    const _bBloco0 = document.getElementById('bairroManualBloco');
-                    const _bInput0 = document.getElementById('endBairro');
+                    const _bBloco0 = document.getElementById('bairroSalvoBloco');
+                    const _bInput0 = document.getElementById('endBairroSalvo');
                     if (!end.bairro) { _bBloco0?.classList.remove('hidden'); if (_bInput0) _bInput0.value = ''; }
                     else { _bBloco0?.classList.add('hidden'); if (_bInput0) _bInput0.value = end.bairro; }
                     if (end.lat && end.lng) calcularTaxaEntrega(end.lat, end.lng);
@@ -1184,6 +1197,7 @@
         function mostrarFormEndereco() {
             document.getElementById('formEndereco').classList.remove('hidden');
             document.getElementById('btnUsarOutroEndereco')?.classList.add('hidden');
+            document.getElementById('bairroSalvoBloco')?.classList.add('hidden');
             _ckEnderecoSelecionado = null;
             document.querySelectorAll('#enderecosSalvos div').forEach(d => {
                 d.className = d.className.replace('border-indigo-600 bg-indigo-50', 'border-gray-200 bg-white');
@@ -1244,7 +1258,15 @@
             placesInput.classList.remove('border-gray-300', 'border-red-400');
             placesInput.classList.add('border-green-400');
 
-            if (parsed.numero) document.getElementById('endNumero').value = parsed.numero;
+            // Mostrar campo número apenas se não detectado automaticamente
+            const numWrapper = document.getElementById('numWrapper');
+            if (parsed.numero) {
+                document.getElementById('endNumero').value = parsed.numero;
+                numWrapper?.classList.add('hidden');
+            } else {
+                document.getElementById('endNumero').value = '';
+                numWrapper?.classList.remove('hidden');
+            }
 
             _ckGeoLat = lat;
             _ckGeoLng = lng;
@@ -1291,6 +1313,8 @@
                         if (data.status === 'OK' && data.results[0]) {
                             const ok = preencherCamposEndereco(data.results[0].address_components, lat, lng);
                             if (ok) {
+                                // GPS sempre mostra campo número para confirmação
+                                document.getElementById('numWrapper')?.classList.remove('hidden');
                                 btn.innerHTML = '✅ Localização preenchida!';
                                 st.innerHTML = `
                                     <div class="bg-amber-50 border border-amber-300 rounded-xl px-3 py-2.5 flex gap-2 items-start">
@@ -1429,6 +1453,9 @@
             _ckGeoLat = null;
             _ckGeoLng = null;
             document.getElementById('endNumero').value = '';
+            document.getElementById('numWrapper')?.classList.add('hidden');
+            document.getElementById('bairroManualBloco')?.classList.add('hidden');
+            document.getElementById('endBairro').value = '';
             document.getElementById('salvarEnderecoBloco').classList.add('hidden');
             document.getElementById('apelidoConfirmadoMsg')?.classList.add('hidden');
             const input = document.getElementById('placesInput');
@@ -1472,12 +1499,13 @@
                     document.getElementById('placesInput').value = place.formatted_address;
                 }
 
-                // Feedback verde no número se foi preenchido automaticamente
+                // Feedback verde no número se foi preenchido automaticamente; foca se não preenchido
                 const numInput = document.getElementById('endNumero');
+                const numWrap = document.getElementById('numWrapper');
                 if (numInput.value) {
                     numInput.classList.add('border-green-300');
                     setTimeout(() => numInput.classList.remove('border-green-300'), 1500);
-                } else {
+                } else if (numWrap && !numWrap.classList.contains('hidden')) {
                     numInput.focus();
                 }
             });
@@ -1562,32 +1590,44 @@
                 // Validar número obrigatório
                 const numero = document.getElementById('endNumero').value.trim();
                 if (!numero) {
+                    const numWrapper = document.getElementById('numWrapper');
+                    numWrapper?.classList.remove('hidden');
                     const numInput = document.getElementById('endNumero');
                     numInput.focus();
                     numInput.classList.add('border-red-400');
                     numInput.placeholder = 'Número obrigatório';
-                    setTimeout(() => { numInput.classList.remove('border-red-400'); numInput.placeholder = 'Ex: 1376'; }, 2000);
+                    setTimeout(() => { numInput.classList.remove('border-red-400'); numInput.placeholder = 'Ex: 1971'; }, 2000);
                     return;
                 }
-                // Capturar bairro manual se campo estiver visível
-                const bairroManual = document.getElementById('endBairro').value.trim();
+                // Capturar bairro manual (novo endereço ou endereço salvo sem bairro)
+                const bairroManualBloco = document.getElementById('bairroManualBloco');
+                const bairroSalvoBloco = document.getElementById('bairroSalvoBloco');
+                const bairroManualVal = (!bairroManualBloco?.classList.contains('hidden'))
+                    ? document.getElementById('endBairro').value.trim() : '';
+                const bairroSalvoVal = (!bairroSalvoBloco?.classList.contains('hidden'))
+                    ? document.getElementById('endBairroSalvo').value.trim() : '';
+                const bairroManual = bairroManualVal || bairroSalvoVal;
                 if (bairroManual && !_ckEnderecoSelecionado.bairro) {
                     _ckEnderecoSelecionado.bairro = bairroManual;
                 }
-                // Validar bairro obrigatório quando campo manual estiver visível
-                const bairroBloco = document.getElementById('bairroManualBloco');
-                if (bairroBloco && !bairroBloco.classList.contains('hidden') && !_ckEnderecoSelecionado.bairro) {
-                    const bairroInput = document.getElementById('endBairro');
-                    bairroInput.focus();
-                    bairroInput.classList.add('border-red-400');
-                    setTimeout(() => bairroInput.classList.remove('border-red-400'), 3000);
-                    const errEl = document.getElementById('bairroErro');
-                    if (errEl) {
-                        errEl.textContent = 'Por favor, informe o bairro para garantir a entrega correta 😊';
-                        errEl.classList.remove('hidden');
-                        setTimeout(() => errEl.classList.add('hidden'), 4000);
+                // Validar bairro obrigatório
+                if (!_ckEnderecoSelecionado.bairro) {
+                    const blocoVisivel = (!bairroManualBloco?.classList.contains('hidden')) ? bairroManualBloco : bairroSalvoBloco;
+                    const inputId = (!bairroManualBloco?.classList.contains('hidden')) ? 'endBairro' : 'endBairroSalvo';
+                    const errId = (!bairroManualBloco?.classList.contains('hidden')) ? 'bairroErro' : 'bairroSalvoErro';
+                    if (blocoVisivel) {
+                        const bairroInput = document.getElementById(inputId);
+                        bairroInput.focus();
+                        bairroInput.classList.add('border-red-400');
+                        setTimeout(() => bairroInput.classList.remove('border-red-400'), 3000);
+                        const errEl = document.getElementById(errId);
+                        if (errEl) {
+                            errEl.textContent = 'Por favor, informe o bairro para garantir a entrega correta 😊';
+                            errEl.classList.remove('hidden');
+                            setTimeout(() => errEl.classList.add('hidden'), 4000);
+                        }
+                        return;
                     }
-                    return;
                 }
                 // Montar endereço completo com número e complemento
                 const complemento = document.getElementById('endComplemento').value.trim();
