@@ -81,16 +81,21 @@ let _intervalRepetidorPedidoGlobal = null;
 function _iniciarRepetidorPedidoGlobal() {
     if (typeof _iniciarRepetidorSom === 'function') return; // pedidos.js gerencia
     if (_intervalRepetidorPedidoGlobal) return;
-    let count = 0;
     _intervalRepetidorPedidoGlobal = setInterval(() => {
-        count++;
-        if (_pedidosSomJaDisparadoGlobal.size > 0 && count <= 10) {
+        if (_pedidosSomJaDisparadoGlobal.size > 0) {
             tocarSomPedido();
         } else {
             clearInterval(_intervalRepetidorPedidoGlobal);
             _intervalRepetidorPedidoGlobal = null;
         }
     }, 30 * 1000);
+}
+
+// Para o som de pedido em qualquer página (bloquinho clicado ou pedidos.html aberto)
+function silenciarPedidoSom() {
+    _pedidosSomJaDisparadoGlobal.clear();
+    clearInterval(_intervalRepetidorPedidoGlobal);
+    _intervalRepetidorPedidoGlobal = null;
 }
 
 // Chamado pelo socket em qualquer página
@@ -148,6 +153,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.location.pathname.includes('conversas')) {
         _novasConversasCount = 0;
     }
+    // Silencia som de pedido ao clicar no bloquinho 🧾 (em qualquer página)
+    document.addEventListener('click', (e) => {
+        if (e.target.closest('button[onclick*="pedidos.html"]')) silenciarPedidoSom();
+    });
 });
 
 // ── Banner de ativação de áudio ───────────────────────────────────────────────

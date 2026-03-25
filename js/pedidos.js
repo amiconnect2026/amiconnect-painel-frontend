@@ -7,6 +7,9 @@ let tabAtual = 'ativos';
 let pedidosSelecionados = new Set();
 let empresaIdAtual = user.role === 'admin' ? (parseInt(localStorage.getItem('adminEmpresaId')) || null) : user.empresa_id;
 
+// Silencia o repetidor global ao abrir a página de pedidos
+if (typeof silenciarPedidoSom === 'function') silenciarPedidoSom();
+
 // ── Som de pedido ─────────────────────────────────────────────────────────────
 // tocarSomPedido() e registrarNovoPedidoSom() definidos em alertas.js (carrega em todas as páginas)
 
@@ -101,10 +104,10 @@ async function loadPedidos() {
         if (novosPendentes.length > 0) {
             novosPendentes.forEach(p => _pedidosSomJaDisparado.add(p.id));
             if (!_primeiraCarregaPedidos) {
-                // Só toca para pedidos que chegaram depois da página abrir
+                // Só toca imediatamente para pedidos que chegaram depois da página abrir
                 tocarSomPedido();
-                _iniciarRepetidorSom();
             }
+            _iniciarRepetidorSom(); // inicia repetidor sempre (inclusive no primeiro carregamento)
         }
         _primeiraCarregaPedidos = false;
 
