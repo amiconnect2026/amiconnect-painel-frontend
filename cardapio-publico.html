@@ -1420,6 +1420,12 @@
 
                 preencherCamposEndereco(place.address_components || [], lat, lng);
 
+                // Garantir que o campo mostra o endereço completo selecionado,
+                // não apenas a rua extraída dos address_components (que pode vir truncada)
+                if (place.formatted_address) {
+                    document.getElementById('placesInput').value = place.formatted_address;
+                }
+
                 // Feedback verde no número se foi preenchido automaticamente
                 const numInput = document.getElementById('endNumero');
                 if (numInput.value) {
