@@ -407,6 +407,7 @@
                             <span id="taxaResumoTotal">R$ 0,00</span>
                         </div>
                         <p id="taxaForaRaio" class="hidden text-red-500 text-xs mt-1 text-center font-semibold">⚠️ Seu endereço está fora da área de entrega.</p>
+                        <a id="taxaForaRaioWhatsApp" href="#" target="_blank" class="hidden block text-center text-xs text-green-700 underline mt-2">Falar com atendente para verificar disponibilidade 💬</a>
                     </div>
 
                     <!-- Forma de pagamento -->
@@ -1080,6 +1081,7 @@
             taxaEl.textContent = '⏳ Calculando...';
             document.getElementById('taxaResumoTotal').textContent = '—';
             foraRaioEl?.classList.add('hidden');
+            document.getElementById('taxaForaRaioWhatsApp')?.classList.add('hidden');
             resumoBloco?.classList.remove('hidden');
             pagamentoSection?.classList.add('hidden');
 
@@ -1093,6 +1095,14 @@
                     document.getElementById('taxaResumoTotal').textContent = '—';
                     foraRaioEl?.classList.remove('hidden');
                     pagamentoSection?.classList.add('hidden');
+                    const endTexto = montarTextoEndereco(_ckEnderecoSelecionado || {});
+                    const msgFora = `Olá! Meu endereço está fora do raio de entrega, mas gostaria de verificar se conseguem me atender. 📍 ${endTexto}`;
+                    const numWpp = (dadosEmpresa?.whatsapp || '').replace(/\D/g, '');
+                    const linkEl = document.getElementById('taxaForaRaioWhatsApp');
+                    if (linkEl && numWpp) {
+                        linkEl.href = `https://api.whatsapp.com/send?phone=${numWpp}&text=${encodeURIComponent(msgFora)}`;
+                        linkEl.classList.remove('hidden');
+                    }
                 } else {
                     _ckTaxaEntrega = parseFloat(data.taxa || 0);
                     _ckDentroRaio = true;
