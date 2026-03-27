@@ -6,7 +6,7 @@
     <title>Cardápio</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCj9rGIQNjyrJCljAKcmB-DpGNGemmJGX4&libraries=places"></script>
+    <!-- Google Maps é carregado dinamicamente via /api/config/maps-key -->
     <style>
         * { font-family: 'Nunito', sans-serif; }
         .categoria-tab.ativa {
@@ -900,7 +900,29 @@
         let _ckTroco = null;               // valor troco (só dinheiro)
         let _ckTaxaEntrega = 0;            // taxa calculada por distância
         let _ckDentroRaio = true;          // cliente dentro do raio de entrega
-        const MAPS_KEY = 'AIzaSyCj9rGIQNjyrJCljAKcmB-DpGNGemmJGX4';
+        let MAPS_KEY = null;
+
+        // Carrega Google Maps dinamicamente (chave vem do backend, não fica no código)
+        window._googleMapsCallback = function() {
+            inicializarPlacesAutocomplete();
+        };
+        async function _carregarGoogleMaps() {
+            try {
+                const resp = await fetch(`${API_BASE}/config/maps-key?secret=cardapio_maps_2026`);
+                if (!resp.ok) return;
+                const data = await resp.json();
+                if (!data.key) return;
+                MAPS_KEY = data.key;
+                const s = document.createElement('script');
+                s.src = `https://maps.googleapis.com/maps/api/js?key=${MAPS_KEY}&libraries=places&callback=_googleMapsCallback`;
+                s.async = true;
+                s.defer = true;
+                document.head.appendChild(s);
+            } catch (e) {
+                console.warn('[Maps] Erro ao carregar chave:', e);
+            }
+        }
+        _carregarGoogleMaps();
 
         function abrirModalPedido() {
             if (carrinho.length === 0) return;
