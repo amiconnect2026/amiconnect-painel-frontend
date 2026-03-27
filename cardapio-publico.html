@@ -908,7 +908,7 @@
         };
         async function _carregarGoogleMaps() {
             try {
-                const resp = await fetch(`${API_BASE}/config/maps-key?secret=cardapio_maps_2026`);
+                const resp = await fetch(`${API_BASE}/config/maps-key`);
                 if (!resp.ok) return;
                 const data = await resp.json();
                 if (!data.key) return;
