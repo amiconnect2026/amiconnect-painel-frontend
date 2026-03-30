@@ -154,6 +154,7 @@ function renderProdutos() {
                                         <h4 class="font-semibold text-gray-900">${p.nome}</h4>
                                         <span class="text-lg font-bold text-indigo-600">R$ ${parseFloat(p.preco).toFixed(2)}</span>
                                         ${p.promocao_ativa && p.desconto_percent > 0 ? `<span class="text-sm text-green-600 font-medium line-through opacity-60">R$ ${parseFloat(p.preco).toFixed(2)}</span><span class="text-sm font-bold text-green-600">R$ ${(parseFloat(p.preco) * (1 - p.desconto_percent / 100)).toFixed(2)}</span>` : ''}
+                                        ${p.has_grupos ? `<span class="text-xs bg-purple-100 text-purple-700 font-semibold px-2 py-0.5 rounded-full">🧩 Tem complementos</span>` : ''}
                                     </div>
                                     ${p.descricao ? `<p class="text-sm text-gray-600 mt-1">${p.descricao}</p>` : ''}
                                 </div>
@@ -165,9 +166,7 @@ function renderProdutos() {
                                         ${p.disponivel ? '✅ Disponível' : '❌ Indisponível'}
                                     </button>
                                     <button onclick="editProduto(${p.id})" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Editar">✏️</button>
-                                    ${p.tipo && p.tipo !== 'simples' ? `
-                                        <button onclick="abrirComplementos(${p.id}, '${p.nome.replace(/'/g, "\\'")}')" class="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition" title="Gerenciar Complementos">🧩</button>
-                                    ` : ''}
+                                    <button onclick="abrirComplementos(${p.id}, '${p.nome.replace(/'/g, "\\'")}')" class="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition" title="Gerenciar Complementos">🧩</button>
                                     ${p.tipo === 'pizza' ? `
                                         <button onclick="abrirConfigPizza(${p.id}, '${p.nome.replace(/'/g, "\\'")}')" class="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition" title="Config Pizza">⚙️</button>
                                     ` : ''}

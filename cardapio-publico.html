@@ -739,7 +739,8 @@
         // ===== CARRINHO =====
 
         async function adicionarAoCarrinho(id, nome, preco, tipo) {
-            tipo = tipo || (todosProdutos.find(p => p.id === id)?.tipo) || 'simples';
+            const produto = todosProdutos.find(p => p.id === id);
+            tipo = tipo || produto?.tipo || 'simples';
             if (tipo === 'pizza') {
                 // Produto pizza = tamanho; encontra o tamanho correspondente via produto_pizza_id
                 if (!pizzaData?.tamanhos?.length) {
@@ -753,7 +754,7 @@
                 return;
             }
             if (tipo === 'combo') { abrirComboModal(id, nome, preco); return; }
-            if (tipo !== 'simples') {
+            if (produto?.has_grupos) {
                 // Verificar se há grupos habilitados antes de abrir o modal
                 try {
                     const data = await fetch(`https://painel.amiconnect.com.br/api/produtos/publico/${id}/complementos`).then(r => r.json());
@@ -772,7 +773,7 @@
                 }
                 return;
             }
-            // Produto simples: empilha por id
+            // Produto sem complementos: empilha por id
             const existente = carrinho.find(i => i.id === id && !i.complementos?.length);
             if (existente) {
                 existente.quantidade++;
