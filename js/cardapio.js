@@ -594,7 +594,15 @@ function renderComplementosModal() {
     <div>
         <div class="flex items-center justify-between mb-3">
             <h4 class="font-bold text-gray-800">📋 Grupos de complementos</h4>
-            <button onclick="adicionarGrupo()" class="text-sm bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-3 py-1.5 rounded-lg transition">+ Novo grupo</button>
+            <div class="flex items-center gap-2">
+                <div class="relative">
+                    <button onclick="abrirPainelCopiarGrupo()" class="text-sm bg-purple-50 hover:bg-purple-100 text-purple-700 font-semibold px-3 py-1.5 rounded-lg transition">📋 Copiar grupo</button>
+                    <div id="painelCopiarGrupo" class="hidden absolute right-0 top-full mt-1 z-50 bg-white border border-gray-200 rounded-xl shadow-xl w-80 max-h-72 overflow-y-auto">
+                        <div id="painelCopiarGrupoBody" class="p-3 text-sm text-gray-500">Carregando...</div>
+                    </div>
+                </div>
+                <button onclick="adicionarGrupo()" class="text-sm bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-3 py-1.5 rounded-lg transition">+ Novo grupo</button>
+            </div>
         </div>
         <div id="compGruposList" class="space-y-4">
             ${grupos.length === 0 ? '<p class="text-sm text-gray-400">Nenhum grupo cadastrado.</p>' : grupos.map(g => renderGrupoBlock(g)).join('')}
@@ -639,6 +647,77 @@ function renderOpcaoRow(o) {
         <button onclick="salvarOpcao(${o.id})" class="text-sm bg-green-100 hover:bg-green-200 text-green-700 font-semibold px-2 py-1.5 rounded-lg transition">💾</button>
         <button onclick="excluirOpcao(${o.id})" class="text-sm bg-red-100 hover:bg-red-200 text-red-700 font-semibold px-2 py-1.5 rounded-lg transition">🗑️</button>
     </div>`;
+}
+
+async function abrirPainelCopiarGrupo() {
+    const painel = document.getElementById('painelCopiarGrupo');
+    const body = document.getElementById('painelCopiarGrupoBody');
+    if (!painel.classList.contains('hidden')) {
+        painel.classList.add('hidden');
+        return;
+    }
+    painel.classList.remove('hidden');
+    body.innerHTML = 'Carregando...';
+
+    // Fechar ao clicar fora
+    setTimeout(() => {
+        document.addEventListener('click', function fecharFora(e) {
+            if (!painel.contains(e.target) && e.target.getAttribute('onclick') !== 'abrirPainelCopiarGrupo()') {
+                painel.classList.add('hidden');
+                document.removeEventListener('click', fecharFora);
+            }
+        });
+    }, 0);
+
+    try {
+        const { grupos } = await API.getGruposEmpresa(empresaSelecionadaId);
+        if (!grupos.length) {
+            body.innerHTML = '<p class="text-gray-400 text-sm p-2">Nenhum grupo cadastrado em outros produtos.</p>';
+            return;
+        }
+        body.innerHTML = grupos.map(g => `
+            <button onclick="selecionarGrupoCopiar(${JSON.stringify(g).replace(/"/g, '&quot;')})"
+                class="w-full text-left px-3 py-2 hover:bg-purple-50 rounded-lg transition border-b border-gray-100 last:border-0">
+                <div class="font-semibold text-gray-800">${g.nome}</div>
+                <div class="text-xs text-gray-500">${g.tipo === 'obrigatorio' ? 'Obrigatório' : 'Adicional'} · Mín ${g.min_escolhas} Máx ${g.max_escolhas} · ${g.opcoes.length} opção(ões)</div>
+            </button>
+        `).join('');
+    } catch(e) {
+        body.innerHTML = `<p class="text-red-500 text-sm p-2">Erro: ${e.message}</p>`;
+    }
+}
+
+async function selecionarGrupoCopiar(g) {
+    document.getElementById('painelCopiarGrupo').classList.add('hidden');
+    try {
+        const res = await API.createGrupo(_compProdutoId, {
+            nome: g.nome,
+            tipo: g.tipo,
+            min_escolhas: g.min_escolhas,
+            max_escolhas: g.max_escolhas
+        });
+        const novoGrupo = res.grupo;
+        novoGrupo.opcoes = [];
+
+        // Copiar todas as opções
+        for (const op of g.opcoes) {
+            const opRes = await API.createOpcao(novoGrupo.id, {
+                nome: op.nome,
+                preco_adicional: op.preco_adicional,
+                disponivel: op.disponivel ?? true,
+                ordem: 0
+            });
+            novoGrupo.opcoes.push(opRes.opcao);
+        }
+
+        _compData.grupos.push(novoGrupo);
+        const list = document.getElementById('compGruposList');
+        if (list) {
+            const tmp = document.createElement('div');
+            tmp.innerHTML = renderGrupoBlock(novoGrupo);
+            list.appendChild(tmp.firstChild);
+        }
+    } catch(e) { alert('Erro ao copiar grupo: ' + e.message); }
 }
 
 async function adicionarGrupo() {

@@ -191,6 +191,10 @@ const API = {
         });
     },
     // Complementos
+    async getGruposEmpresa(empresaId = null) {
+        const query = empresaId ? `?empresa_id=${empresaId}` : '';
+        return await apiRequest(`/produtos/grupos/empresa${query}`);
+    },
     async getComplementos(produtoId) {
         return await apiRequest(`/produtos/${produtoId}/complementos`);
     },
