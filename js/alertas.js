@@ -304,16 +304,31 @@ async function _pollPedidosPendentesGlobal() {
         }
         setPedidosPendentesCount(count);
 
-        // Iniciar som se houver pendentes não visitados
-        if (count > 0) {
-            const vistos = _getPedidosSomVistosGlobal();
-            pendentes.forEach(p => {
-                if (!vistos.has(p.id) && !_pedidosSomJaDisparadoGlobal.has(p.id)) {
-                    _pedidosSomJaDisparadoGlobal.add(p.id);
-                }
-            });
-            if (_pedidosSomJaDisparadoGlobal.size > 0) _iniciarRepetidorPedidoGlobal();
+        // Sincronizar set com a realidade: remover IDs que não são mais pendentes
+        if (_pedidosSomJaDisparadoGlobal.size > 0) {
+            const pendentesIds = new Set(pendentes.map(p => p.id));
+            for (const id of [..._pedidosSomJaDisparadoGlobal]) {
+                if (!pendentesIds.has(id)) _pedidosSomJaDisparadoGlobal.delete(id);
+            }
         }
+
+        if (count === 0) {
+            // Nenhum pendente: garantir que repetidor pare
+            if (_intervalRepetidorPedidoGlobal) {
+                clearInterval(_intervalRepetidorPedidoGlobal);
+                _intervalRepetidorPedidoGlobal = null;
+            }
+            return;
+        }
+
+        // Adicionar novos pendentes não visitados
+        const vistos = _getPedidosSomVistosGlobal();
+        pendentes.forEach(p => {
+            if (!vistos.has(p.id) && !_pedidosSomJaDisparadoGlobal.has(p.id)) {
+                _pedidosSomJaDisparadoGlobal.add(p.id);
+            }
+        });
+        if (_pedidosSomJaDisparadoGlobal.size > 0) _iniciarRepetidorPedidoGlobal();
     } catch(e) { console.warn('Poll pedidos pendentes:', e); }
 }
 
