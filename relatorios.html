@@ -46,17 +46,23 @@
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-        <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div class="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
                 <h2 class="text-3xl font-bold text-gray-900">Relatórios</h2>
                 <p class="text-gray-600 mt-1">Análise de desempenho do seu negócio</p>
             </div>
-            <div class="flex gap-2">
+            <div id="periodoBtns" class="flex gap-2">
                 <button class="btn-periodo px-4 py-2 rounded-lg text-sm font-semibold bg-white border border-gray-300 text-gray-600 hover:border-indigo-400 hover:text-indigo-600 transition" data-periodo="diario" onclick="setPeriodo('diario')">Diário</button>
                 <button class="btn-periodo px-4 py-2 rounded-lg text-sm font-semibold bg-white border border-gray-300 text-gray-600 hover:border-indigo-400 hover:text-indigo-600 transition" data-periodo="semanal" onclick="setPeriodo('semanal')">Semanal</button>
                 <button class="btn-periodo px-4 py-2 rounded-lg text-sm font-semibold bg-indigo-600 text-white transition" data-periodo="mensal" onclick="setPeriodo('mensal')">Mensal</button>
                 <button class="btn-periodo px-4 py-2 rounded-lg text-sm font-semibold bg-white border border-gray-300 text-gray-600 hover:border-indigo-400 hover:text-indigo-600 transition" data-periodo="anual" onclick="setPeriodo('anual')">Anual</button>
             </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="flex gap-1 mb-6 border-b border-gray-200">
+            <button id="tabBtnRelatorios" onclick="setTab('relatorios')" class="px-5 py-2.5 text-sm font-semibold border-b-2 border-indigo-600 text-indigo-600 -mb-px bg-transparent transition">📊 Relatórios</button>
+            <button id="tabBtnPosVenda" onclick="setTab('pos_venda')" class="px-5 py-2.5 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800 -mb-px bg-transparent transition">❤️ Pós Venda</button>
         </div>
 
         <!-- Loading overlay -->
@@ -179,7 +185,82 @@
             </div>
 
         </div>
+
+        <!-- Pós Venda -->
+        <div id="posVendaContent" class="hidden space-y-6">
+
+            <!-- Métricas -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500 text-sm font-medium">Clientes Inativos</p>
+                            <p class="text-3xl font-bold text-gray-900 mt-2" id="pvTotalInativos">-</p>
+                        </div>
+                        <div class="bg-orange-100 p-3 rounded-lg"><span class="text-3xl">😴</span></div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500 text-sm font-medium">Valor Potencial Parado</p>
+                            <p class="text-3xl font-bold text-red-500 mt-2" id="pvValorPotencial">-</p>
+                        </div>
+                        <div class="bg-red-100 p-3 rounded-lg"><span class="text-3xl">💸</span></div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500 text-sm font-medium">Contatados Hoje</p>
+                            <p class="text-3xl font-bold text-green-600 mt-2" id="pvContatadosHoje">-</p>
+                        </div>
+                        <div class="bg-green-100 p-3 rounded-lg"><span class="text-3xl">✅</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filtros -->
+            <div class="flex items-center gap-3">
+                <span class="text-sm text-gray-600 font-medium">Inativos há mais de:</span>
+                <button onclick="setPvDias(15)" id="pvBtn15" class="pv-dias-btn px-4 py-2 rounded-lg text-sm font-semibold bg-indigo-600 text-white transition">15 dias</button>
+                <button onclick="setPvDias(30)" id="pvBtn30" class="pv-dias-btn px-4 py-2 rounded-lg text-sm font-semibold bg-white border border-gray-300 text-gray-600 hover:border-indigo-400 hover:text-indigo-600 transition">30 dias</button>
+                <button onclick="setPvDias(60)" id="pvBtn60" class="pv-dias-btn px-4 py-2 rounded-lg text-sm font-semibold bg-white border border-gray-300 text-gray-600 hover:border-indigo-400 hover:text-indigo-600 transition">60 dias</button>
+            </div>
+
+            <!-- Lista de clientes -->
+            <div id="pvLista" class="space-y-3">
+                <div class="text-center py-10 text-gray-400">Selecione um filtro para carregar.</div>
+            </div>
+
+        </div>
+
     </main>
+
+    <!-- Modal Contatar -->
+    <div id="modalContatar" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-gray-900">📱 Contatar Cliente</h3>
+                <button onclick="fecharModalContatar()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+            </div>
+            <p class="text-sm text-gray-500 mb-4">Para: <span id="modalContatarNome" class="font-semibold text-gray-800"></span></p>
+
+            <label class="block text-sm font-medium text-gray-700 mb-1">Desconto (%) — deixe 0 para não mencionar cupom</label>
+            <input type="number" id="pvDesconto" min="0" max="100" value="0"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                oninput="atualizarMsgPv()">
+
+            <label class="block text-sm font-medium text-gray-700 mb-1">Mensagem</label>
+            <textarea id="pvMensagem" rows="5"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-5 focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none"></textarea>
+
+            <button onclick="abrirWhatsAppPv()"
+                class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-xl transition flex items-center justify-center gap-2">
+                <span class="text-lg">💬</span> Abrir WhatsApp
+            </button>
+        </div>
+    </div>
 
     <!-- Modal senha gerente -->
     <div id="senhaGerenteModal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-60 p-4">

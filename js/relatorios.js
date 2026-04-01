@@ -185,6 +185,159 @@ function renderFormas(formas) {
     `).join('');
 }
 
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+
+let _tabAtual = 'relatorios';
+
+function setTab(tab) {
+    _tabAtual = tab;
+    const isRel = tab === 'relatorios';
+
+    document.getElementById('relatoriosContent').classList.toggle('hidden', !isRel);
+    document.getElementById('posVendaContent').classList.toggle('hidden', isRel);
+    document.getElementById('periodoBtns').classList.toggle('hidden', !isRel);
+
+    document.getElementById('tabBtnRelatorios').className = isRel
+        ? 'px-5 py-2.5 text-sm font-semibold border-b-2 border-indigo-600 text-indigo-600 -mb-px bg-transparent transition'
+        : 'px-5 py-2.5 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800 -mb-px bg-transparent transition';
+    document.getElementById('tabBtnPosVenda').className = !isRel
+        ? 'px-5 py-2.5 text-sm font-semibold border-b-2 border-indigo-600 text-indigo-600 -mb-px bg-transparent transition'
+        : 'px-5 py-2.5 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800 -mb-px bg-transparent transition';
+
+    if (!isRel && _pvDiasAtual) carregarPosVenda(_pvDiasAtual);
+    else if (!isRel) setPvDias(15);
+}
+
+// ── Pós Venda ─────────────────────────────────────────────────────────────────
+
+let _pvDiasAtual = null;
+let _pvClienteAtual = null;
+
+function setPvDias(dias) {
+    _pvDiasAtual = dias;
+    document.querySelectorAll('.pv-dias-btn').forEach(btn => {
+        btn.className = 'pv-dias-btn px-4 py-2 rounded-lg text-sm font-semibold bg-white border border-gray-300 text-gray-600 hover:border-indigo-400 hover:text-indigo-600 transition';
+    });
+    const active = document.getElementById(`pvBtn${dias}`);
+    if (active) active.className = 'pv-dias-btn px-4 py-2 rounded-lg text-sm font-semibold bg-indigo-600 text-white transition';
+    carregarPosVenda(dias);
+}
+
+async function carregarPosVenda(dias) {
+    const empresaId = getEmpresaIdAtual();
+    if (!empresaId) return;
+    const lista = document.getElementById('pvLista');
+    lista.innerHTML = '<div class="text-center py-10 text-gray-400 animate-pulse">Carregando...</div>';
+
+    try {
+        const data = await API.getPosVenda(empresaId, dias);
+        document.getElementById('pvTotalInativos').textContent = data.totalInativos ?? '-';
+        document.getElementById('pvValorPotencial').textContent = formatCurrency(data.valorPotencial);
+        document.getElementById('pvContatadosHoje').textContent = data.contatadosHoje ?? '-';
+        renderPosVenda(data.clientes || []);
+    } catch(e) {
+        lista.innerHTML = `<div class="text-center py-10 text-red-500">Erro ao carregar: ${e.message}</div>`;
+    }
+}
+
+function renderPosVenda(clientes) {
+    const lista = document.getElementById('pvLista');
+    if (!clientes.length) {
+        lista.innerHTML = '<div class="text-center py-10 text-gray-400">Nenhum cliente inativo neste período. 🎉</div>';
+        return;
+    }
+    lista.innerHTML = clientes.map(c => {
+        const ultimoPedido = c.ultimo_pedido_data
+            ? new Date(c.ultimo_pedido_data).toLocaleDateString('pt-BR')
+            : '-';
+        const badge = c.contatado_hoje
+            ? '<span class="text-xs bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full">✅ Contatado hoje</span>'
+            : '';
+        return `
+        <div class="bg-white border border-gray-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div class="flex-1 space-y-1">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="font-semibold text-gray-900">${c.cliente_nome || 'Sem nome'}</span>
+                    ${badge}
+                </div>
+                <div class="text-sm text-gray-500">${c.cliente_telefone || '-'}</div>
+                <div class="flex flex-wrap gap-4 text-xs text-gray-500 mt-1">
+                    <span>📅 Último pedido: <strong>${ultimoPedido}</strong></span>
+                    <span>😴 <strong>${c.dias_inativo} dias</strong> sem comprar</span>
+                    <span>💰 Total: <strong>${formatCurrency(c.total_gasto)}</strong></span>
+                    <span>🎯 Ticket médio: <strong>${formatCurrency(c.ticket_medio)}</strong></span>
+                </div>
+            </div>
+            <button onclick='abrirModalContatar(${JSON.stringify(c).replace(/'/g, "&#39;")})'
+                class="flex-shrink-0 bg-green-50 hover:bg-green-100 text-green-700 font-semibold px-4 py-2 rounded-xl text-sm transition flex items-center gap-1">
+                💬 Contatar
+            </button>
+        </div>`;
+    }).join('');
+}
+
+// ── Modal Contatar ─────────────────────────────────────────────────────────────
+
+function abrirModalContatar(cliente) {
+    _pvClienteAtual = cliente;
+    document.getElementById('modalContatarNome').textContent = cliente.cliente_nome || cliente.cliente_telefone;
+    document.getElementById('pvDesconto').value = '0';
+    atualizarMsgPv();
+    document.getElementById('modalContatar').classList.remove('hidden');
+}
+
+function fecharModalContatar() {
+    document.getElementById('modalContatar').classList.add('hidden');
+    _pvClienteAtual = null;
+}
+
+function _linkCardapio() {
+    const empresaId = getEmpresaIdAtual();
+    return `${window.location.origin}/cardapio-publico.html?empresa=${empresaId}`;
+}
+
+function atualizarMsgPv() {
+    if (!_pvClienteAtual) return;
+    const nome = (_pvClienteAtual.cliente_nome || '').split(' ')[0] || 'você';
+    const desconto = parseInt(document.getElementById('pvDesconto').value) || 0;
+    const link = _linkCardapio();
+    let msg;
+    if (desconto > 0) {
+        msg = `Oi ${nome}! 😊 Sentimos sua falta! Hoje temos um cupom especial para você: ${desconto}% de desconto no seu próximo pedido! 🎁 Acesse nosso cardápio: ${link}`;
+    } else {
+        msg = `Oi ${nome}! 😊 Sentimos sua falta! Que tal pedir hoje? Acesse nosso cardápio: ${link}`;
+    }
+    document.getElementById('pvMensagem').value = msg;
+}
+
+async function abrirWhatsAppPv() {
+    if (!_pvClienteAtual) return;
+    const telefone = (_pvClienteAtual.cliente_telefone || '').replace(/\D/g, '');
+    const mensagem = document.getElementById('pvMensagem').value;
+    const url = `https://wa.me/55${telefone}?text=${encodeURIComponent(mensagem)}`;
+    window.open(url, '_blank');
+
+    // Pausar sessão no modo humano (pós venda)
+    try {
+        const empresaId = getEmpresaIdAtual();
+        await API.pausarSessaoCliente({
+            empresa_id: empresaId,
+            cliente_telefone: _pvClienteAtual.cliente_telefone,
+            horas: 10,
+            origem_pausa: 'pos_venda'
+        });
+        // Atualizar badge localmente
+        _pvClienteAtual.contatado_hoje = true;
+        if (_pvDiasAtual) carregarPosVenda(_pvDiasAtual);
+    } catch(e) {
+        console.warn('Não foi possível registrar pausa:', e.message);
+    }
+
+    fecharModalContatar();
+}
+
+// ── Fim Pós Venda ─────────────────────────────────────────────────────────────
+
 function renderClientes(clientes) {
     const tbody = document.getElementById('tbodyClientes');
     if (clientes.length === 0) {

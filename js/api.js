@@ -303,5 +303,15 @@ const API = {
     },
     async updatePizzaConfig(produtoId, data) {
         return await apiRequest(`/pizzas/config/${produtoId}`, { method: 'PUT', body: JSON.stringify(data) });
+    },
+    // Pós Venda
+    async getPosVenda(empresaId, dias = 30) {
+        return await apiRequest(`/pos-venda?empresa_id=${empresaId}&dias=${dias}`);
+    },
+    async pausarSessaoCliente(data) {
+        return await apiRequest('/sessions/pausar', { method: 'POST', body: JSON.stringify(data) });
+    },
+    async verificarPausa(empresaId) {
+        return await apiRequest('/sessions/verificar-pausa', { method: 'POST', body: JSON.stringify({ empresa_id: empresaId }) });
     }
 };
