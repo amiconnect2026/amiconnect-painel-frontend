@@ -110,8 +110,17 @@ function silenciarPedidoSom() {
 }
 
 // Chamado pelo socket em qualquer página
-function registrarNovoPedidoSom(pedidoId) {
-    if (_pedidosSomJaDisparadoGlobal.has(pedidoId)) return;
+function registrarNovoPedidoSom(pedidoId, origem) {
+    if (_pedidosSomJaDisparadoGlobal.has(pedidoId)) {
+        console.warn(`[Som Pedido] ⚠️ Já no set em memória — ignorando #${pedidoId} (origem: ${origem})`);
+        return;
+    }
+    const vistos = _getPedidosSomVistosGlobal();
+    if (vistos.has(pedidoId)) {
+        console.warn(`[Som Pedido] ⚠️ Já visto no localStorage — ignorando #${pedidoId} (origem: ${origem})`);
+        return;
+    }
+    console.log(`[Som Pedido] ▶️ Disparando som — pedido #${pedidoId} (origem: ${origem})`);
     _pedidosSomJaDisparadoGlobal.add(pedidoId);
     // Sincroniza com o set do pedidos.js para evitar double-play no polling
     if (typeof _pedidosSomJaDisparado !== 'undefined') _pedidosSomJaDisparado.add(pedidoId);
@@ -325,6 +334,7 @@ async function _pollPedidosPendentesGlobal() {
         const vistos = _getPedidosSomVistosGlobal();
         pendentes.forEach(p => {
             if (!vistos.has(p.id) && !_pedidosSomJaDisparadoGlobal.has(p.id)) {
+                console.log(`[Som Pedido] 🔄 Causa 3 — polling detectou pedido pendente não visto #${p.id}`);
                 _pedidosSomJaDisparadoGlobal.add(p.id);
             }
         });

@@ -2,6 +2,9 @@ const SOCKET_URL = 'https://painel.amiconnect.com.br';
 let socket = null;
 let pedidosPendentes = 0;
 
+// Deduplicação de eventos novo_pedido — evita duplo disparo por evento duplicado ou reconexão (Causas 1 e 2)
+const _socketPedidosProcessados = new Set();
+
 function iniciarSocket() {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   if (!user.id) return;
@@ -30,10 +33,17 @@ function iniciarSocket() {
   });
   socket.on('novo_pedido', (data) => {
     console.log('🧾 Novo pedido:', data);
-    if (typeof registrarNovoPedidoSom === 'function') registrarNovoPedidoSom(data.pedido_id);
+    const pedidoId = data.pedido_id;
+    if (_socketPedidosProcessados.has(pedidoId)) {
+      console.warn(`[Som Pedido] ⚠️ Causa 1/2 — evento socket duplicado/reconexão para pedido #${pedidoId}. Ignorando.`);
+    } else {
+      _socketPedidosProcessados.add(pedidoId);
+      console.log(`[Som Pedido] 🧾 Causa socket: novo pedido #${pedidoId}`);
+      if (typeof registrarNovoPedidoSom === 'function') registrarNovoPedidoSom(pedidoId, 'socket');
+      pedidosPendentes++;
+      atualizarBadgePedidos();
+    }
     if (typeof loadPedidos === 'function') loadPedidos();
-    pedidosPendentes++;
-    atualizarBadgePedidos();
   });
 }
 
