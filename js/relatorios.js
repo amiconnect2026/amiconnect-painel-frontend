@@ -313,6 +313,8 @@ function atualizarMsgPv() {
 async function abrirWhatsAppPv() {
     if (!_pvClienteAtual) return;
     const telefone = (_pvClienteAtual.cliente_telefone || '').replace(/\D/g, '');
+    // Garantir que o desconto atual está refletido na mensagem antes de enviar
+    atualizarMsgPv();
     const mensagem = document.getElementById('pvMensagem').value;
     const url = `https://wa.me/55${telefone}?text=${encodeURIComponent(mensagem)}`;
     window.open(url, '_blank');
