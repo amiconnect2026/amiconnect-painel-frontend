@@ -1,6 +1,7 @@
 const SOCKET_URL = 'https://painel.amiconnect.com.br';
 let socket = null;
 let pedidosPendentes = 0;
+let socketConectadoEm = null;
 
 // Deduplicação de eventos novo_pedido — evita duplo disparo por evento duplicado ou reconexão (Causas 1 e 2)
 const _socketPedidosProcessados = new Set();
@@ -15,6 +16,7 @@ function iniciarSocket() {
   socket = io(SOCKET_URL, { transports: ['websocket', 'polling'] });
   socket.on('connect', () => {
     console.log('🔌 Socket conectado:', socket.id);
+    socketConectadoEm = Date.now();
     socket.emit('join_empresa', empresaId);
   });
   socket.on('disconnect', () => console.log('🔌 Socket desconectado'));
@@ -33,6 +35,11 @@ function iniciarSocket() {
   });
   socket.on('novo_pedido', (data) => {
     console.log('🧾 Novo pedido:', data);
+    if (socketConectadoEm && Date.now() - socketConectadoEm < 3000) {
+      console.warn(`[Som Pedido] ⚠️ Ignorado — evento chegou nos primeiros 3s após conexão (reconexão)`);
+      if (typeof loadPedidos === 'function') loadPedidos();
+      return;
+    }
     const pedidoId = data.pedido_id;
     if (_socketPedidosProcessados.has(pedidoId)) {
       console.warn(`[Som Pedido] ⚠️ Causa 1/2 — evento socket duplicado/reconexão para pedido #${pedidoId}. Ignorando.`);
