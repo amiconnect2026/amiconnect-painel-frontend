@@ -2,9 +2,7 @@ const SOCKET_URL = 'https://painel.amiconnect.com.br';
 let socket = null;
 let pedidosPendentes = 0;
 let socketConectadoEm = null;
-
-// Deduplicação de eventos novo_pedido — evita duplo disparo por evento duplicado ou reconexão (Causas 1 e 2)
-const _socketPedidosProcessados = new Set();
+const pedidosSomDisparado = new Set();
 
 function iniciarSocket() {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -22,7 +20,6 @@ function iniciarSocket() {
   socket.on('disconnect', () => console.log('🔌 Socket desconectado'));
   socket.on('novo_alerta', (data) => {
     console.log('🔔 Novo alerta:', data);
-    // carregarAlertas() detecta o novo ID e toca o som via alertas.js
     if (typeof carregarAlertas === 'function') carregarAlertas().then(() => atualizarBadge());
   });
   socket.on('nova_mensagem', (data) => {
@@ -35,22 +32,25 @@ function iniciarSocket() {
   });
   socket.on('novo_pedido', (data) => {
     console.log('🧾 Novo pedido:', data);
+
+    // Ignorar se chegou nos primeiros 3s após conexão
     if (socketConectadoEm && Date.now() - socketConectadoEm < 3000) {
-      console.warn(`[Som Pedido] ⚠️ Ignorado — evento chegou nos primeiros 3s após conexão (reconexão)`);
-      if (typeof loadPedidos === 'function') loadPedidos();
+      console.log('[Audio Pedido] Ignorado — reconexão recente');
       return;
     }
-    const pedidoId = data.pedido_id;
-    if (_socketPedidosProcessados.has(pedidoId)) {
-      console.warn(`[Som Pedido] ⚠️ Causa 1/2 — evento socket duplicado/reconexão para pedido #${pedidoId}. Ignorando.`);
-    } else {
-      _socketPedidosProcessados.add(pedidoId);
-      console.log(`[Som Pedido] 🧾 Causa socket: novo pedido #${pedidoId}`);
-      if (typeof registrarNovoPedidoSom === 'function') registrarNovoPedidoSom(pedidoId, 'socket');
-      pedidosPendentes++;
-      atualizarBadgePedidos();
+
+    // Ignorar duplicata pelo pedido_id
+    if (data.pedido_id && pedidosSomDisparado.has(data.pedido_id)) {
+      console.log('[Audio Pedido] Ignorado — duplicata');
+      return;
     }
+    if (data.pedido_id) pedidosSomDisparado.add(data.pedido_id);
+
     if (typeof loadPedidos === 'function') loadPedidos();
+    if (typeof atualizarBadgeAlertas === 'function') atualizarBadgeAlertas();
+    pedidosPendentes++;
+    atualizarBadgePedidos();
+    tocarSomPedido();
   });
 }
 
