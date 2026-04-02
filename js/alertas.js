@@ -321,8 +321,8 @@ async function _pollPedidosPendentesGlobal() {
             }
         }
 
-        if (count === 0) {
-            // Nenhum pendente: garantir que repetidor pare
+        if (count === 0 || _pedidosSomJaDisparadoGlobal.size === 0) {
+            // Nenhum pendente ou todos já foram notificados: parar repetidor
             if (_intervalRepetidorPedidoGlobal) {
                 clearInterval(_intervalRepetidorPedidoGlobal);
                 _intervalRepetidorPedidoGlobal = null;

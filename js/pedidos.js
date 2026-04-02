@@ -34,7 +34,7 @@ function _temPendentesNaoOuvidos() {
     // e o atendente ainda não abriu (não está no localStorage)
     const vistos = _getPedidosSomVistos();
     return pedidos.some(p =>
-        (p.status === 'pendente' || p.status === 'confirmado') &&
+        p.status === 'pendente' &&
         _pedidosSomJaDisparado.has(p.id) &&
         !vistos.has(p.id)
     );
@@ -414,6 +414,11 @@ async function verDetalhes(id) {
 async function mudarStatus(id, novoStatus) {
     try {
         await API.atualizarStatusPedido(id, novoStatus, getEmpresaId());
+        if (novoStatus !== 'pendente') {
+            _salvarPedidoSomVisto(id);
+            _pedidosSomJaDisparado.add(id);
+            if (!_temPendentesNaoOuvidos()) { clearInterval(_intervalSomPedido); _intervalSomPedido = null; }
+        }
         const badge = document.getElementById('statusBadge');
         if (badge) {
             badge.className = 'px-4 py-2 rounded-full font-medium ' + getStatusColor(novoStatus);
@@ -494,6 +499,9 @@ ${pedido.observacoes ? '<p><b>Obs:</b> ' + ascii(pedido.observacoes) + '</p>' : 
         janela.document.close();
         await API.marcarPedidoImpresso(id, getEmpresaId());
         await API.atualizarStatusPedido(id, 'confirmado', getEmpresaId());
+        _salvarPedidoSomVisto(id);
+        _pedidosSomJaDisparado.add(id);
+        if (!_temPendentesNaoOuvidos()) { clearInterval(_intervalSomPedido); _intervalSomPedido = null; }
         const badge = document.getElementById('statusBadge');
         if (badge) {
             badge.className = 'px-4 py-2 rounded-full font-medium bg-blue-100 text-blue-700';
