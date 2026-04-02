@@ -50,7 +50,8 @@ function iniciarSocket() {
     if (typeof atualizarBadgeAlertas === 'function') atualizarBadgeAlertas();
     pedidosPendentes++;
     atualizarBadgePedidos();
-    tocarSomPedido();
+    if (typeof registrarNovoPedidoSom === 'function') registrarNovoPedidoSom(data.pedido_id, 'socket');
+    else tocarSomPedido();
   });
 }
 
