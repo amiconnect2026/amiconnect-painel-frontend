@@ -278,26 +278,12 @@ function renderPosVenda(clientes) {
 
 // ── Modal Contatar ─────────────────────────────────────────────────────────────
 
-async function abrirModalContatar(cliente) {
+function abrirModalContatar(cliente) {
     _pvClienteAtual = cliente;
     document.getElementById('modalContatarNome').textContent = cliente.cliente_nome || cliente.cliente_telefone;
     document.getElementById('pvDesconto').value = '0';
     atualizarMsgPv();
     document.getElementById('modalContatar').classList.remove('hidden');
-    // Pausar sessão ao abrir o modal
-    try {
-        const empresaId = getEmpresaIdAtual();
-        await API.pausarSessaoCliente({
-            empresa_id: empresaId,
-            cliente_telefone: cliente.cliente_telefone,
-            horas: 10,
-            origem_pausa: 'pos_venda'
-        });
-        _pvClienteAtual.contatado_hoje = true;
-        if (_pvDiasAtual) carregarPosVenda(_pvDiasAtual);
-    } catch(e) {
-        console.warn('Não foi possível registrar pausa:', e.message);
-    }
 }
 
 function fecharModalContatar() {
@@ -324,13 +310,27 @@ function atualizarMsgPv() {
     document.getElementById('pvMensagem').value = msg;
 }
 
-function abrirWhatsAppPv() {
+async function abrirWhatsAppPv() {
     if (!_pvClienteAtual) return;
     const telefone = (_pvClienteAtual.cliente_telefone || '').replace(/\D/g, '');
     atualizarMsgPv();
     const mensagem = document.getElementById('pvMensagem').value;
     const url = `https://wa.me/55${telefone}?text=${encodeURIComponent(mensagem)}`;
     window.open(url, '_blank');
+    // Pausar sessão ao confirmar contato via WhatsApp
+    try {
+        const empresaId = getEmpresaIdAtual();
+        await API.pausarSessaoCliente({
+            empresa_id: empresaId,
+            cliente_telefone: _pvClienteAtual.cliente_telefone,
+            horas: 10,
+            origem_pausa: 'pos_venda'
+        });
+        _pvClienteAtual.contatado_hoje = true;
+        if (_pvDiasAtual) carregarPosVenda(_pvDiasAtual);
+    } catch(e) {
+        console.warn('Não foi possível registrar pausa:', e.message);
+    }
     fecharModalContatar();
 }
 
