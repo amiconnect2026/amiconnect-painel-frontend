@@ -278,12 +278,26 @@ function renderPosVenda(clientes) {
 
 // ── Modal Contatar ─────────────────────────────────────────────────────────────
 
-function abrirModalContatar(cliente) {
+async function abrirModalContatar(cliente) {
     _pvClienteAtual = cliente;
     document.getElementById('modalContatarNome').textContent = cliente.cliente_nome || cliente.cliente_telefone;
     document.getElementById('pvDesconto').value = '0';
     atualizarMsgPv();
     document.getElementById('modalContatar').classList.remove('hidden');
+    // Pausar sessão ao abrir o modal
+    try {
+        const empresaId = getEmpresaIdAtual();
+        await API.pausarSessaoCliente({
+            empresa_id: empresaId,
+            cliente_telefone: cliente.cliente_telefone,
+            horas: 10,
+            origem_pausa: 'pos_venda'
+        });
+        _pvClienteAtual.contatado_hoje = true;
+        if (_pvDiasAtual) carregarPosVenda(_pvDiasAtual);
+    } catch(e) {
+        console.warn('Não foi possível registrar pausa:', e.message);
+    }
 }
 
 function fecharModalContatar() {
@@ -310,31 +324,13 @@ function atualizarMsgPv() {
     document.getElementById('pvMensagem').value = msg;
 }
 
-async function abrirWhatsAppPv() {
+function abrirWhatsAppPv() {
     if (!_pvClienteAtual) return;
     const telefone = (_pvClienteAtual.cliente_telefone || '').replace(/\D/g, '');
-    // Garantir que o desconto atual está refletido na mensagem antes de enviar
     atualizarMsgPv();
     const mensagem = document.getElementById('pvMensagem').value;
     const url = `https://wa.me/55${telefone}?text=${encodeURIComponent(mensagem)}`;
     window.open(url, '_blank');
-
-    // Pausar sessão no modo humano (pós venda)
-    try {
-        const empresaId = getEmpresaIdAtual();
-        await API.pausarSessaoCliente({
-            empresa_id: empresaId,
-            cliente_telefone: _pvClienteAtual.cliente_telefone,
-            horas: 10,
-            origem_pausa: 'pos_venda'
-        });
-        // Atualizar badge localmente
-        _pvClienteAtual.contatado_hoje = true;
-        if (_pvDiasAtual) carregarPosVenda(_pvDiasAtual);
-    } catch(e) {
-        console.warn('Não foi possível registrar pausa:', e.message);
-    }
-
     fecharModalContatar();
 }
 
