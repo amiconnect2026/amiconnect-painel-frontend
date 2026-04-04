@@ -83,18 +83,26 @@ function renderConversas() {
                     </div>
                 </div>
                 <div class="flex items-center gap-3">
-                    <div class="px-4 py-2 rounded-lg font-medium ${
-                        conv.session_status === 'humano' && conv.session_origem_pausa === 'pos_venda'
-                            ? 'bg-purple-100 text-purple-700'
-                            : conv.modo === 'bot'
-                                ? 'bg-green-100 text-green-700'
-                                : 'bg-orange-100 text-orange-700'
-                    }">
+                    <div class="text-right">
+                        <div class="px-4 py-2 rounded-lg font-medium ${
+                            conv.session_status === 'humano' && conv.session_origem_pausa === 'pos_venda'
+                                ? 'bg-purple-100 text-purple-700'
+                                : conv.modo === 'bot'
+                                    ? 'bg-green-100 text-green-700'
+                                    : 'bg-orange-100 text-orange-700'
+                        }">
+                            ${conv.session_status === 'humano' && conv.session_origem_pausa === 'pos_venda'
+                                ? '💜 Pós Venda'
+                                : conv.modo === 'bot' ? '🤖 Bot' : '👤 Manual'}
+                        </div>
                         ${conv.session_status === 'humano' && conv.session_origem_pausa === 'pos_venda'
-                            ? '💜 Pós Venda'
-                            : conv.modo === 'bot' ? '🤖 Bot' : '👤 Manual'}
+                            ? `<p class="text-purple-500 text-xs mt-1">Bot pausado. Você está atendendo este cliente diretamente.</p>`
+                            : ''}
                     </div>
-                    ${conv.modo === 'bot' ? `
+                    ${conv.session_status === 'humano' && conv.session_origem_pausa === 'pos_venda' ? `
+                        <button onclick="abrirChat('${conv.cliente_telefone}')" class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition">💬 Abrir Chat</button>
+                        <button onclick="liberarConversa('${conv.cliente_telefone}')" class="px-6 py-2 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg transition">Liberar pro Bot</button>
+                    ` : conv.modo === 'bot' ? `
                         <button onclick="verConversa('${conv.cliente_telefone}')" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg transition text-sm">👁 Ver</button>
                         <button onclick="assumirConversa('${conv.cliente_telefone}')" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition">Assumir</button>
                     ` : `
