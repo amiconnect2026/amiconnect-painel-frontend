@@ -83,8 +83,16 @@ function renderConversas() {
                     </div>
                 </div>
                 <div class="flex items-center gap-3">
-                    <div class="px-4 py-2 rounded-lg font-medium ${conv.modo === 'bot' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}">
-                        ${conv.modo === 'bot' ? '🤖 Bot' : '👤 Manual'}
+                    <div class="px-4 py-2 rounded-lg font-medium ${
+                        conv.session_status === 'humano' && conv.session_origem_pausa === 'pos_venda'
+                            ? 'bg-purple-100 text-purple-700'
+                            : conv.modo === 'bot'
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-orange-100 text-orange-700'
+                    }">
+                        ${conv.session_status === 'humano' && conv.session_origem_pausa === 'pos_venda'
+                            ? '💜 Pós Venda'
+                            : conv.modo === 'bot' ? '🤖 Bot' : '👤 Manual'}
                     </div>
                     ${conv.modo === 'bot' ? `
                         <button onclick="verConversa('${conv.cliente_telefone}')" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg transition text-sm">👁 Ver</button>
@@ -139,6 +147,8 @@ async function verConversa(telefone) {
     document.getElementById('chatBtnAssumir').classList.remove('hidden');
     document.getElementById('chatBadgeLeitura').classList.remove('hidden');
     document.getElementById('chatInputArea').classList.add('hidden');
+    const isPosVenda = conv?.session_status === 'humano' && conv?.session_origem_pausa === 'pos_venda';
+    document.getElementById('chatBannerPosVenda').classList.toggle('hidden', !isPosVenda);
     document.getElementById('chatModal').classList.remove('hidden');
     await carregarMensagens();
     chatIntervalId = setInterval(carregarMensagens, 5000);
@@ -165,6 +175,8 @@ async function abrirChat(telefone) {
     document.getElementById('chatBtnAssumir').classList.add('hidden');
     document.getElementById('chatBadgeLeitura').classList.add('hidden');
     document.getElementById('chatInputArea').classList.remove('hidden');
+    const isPosVenda = conv?.session_status === 'humano' && conv?.session_origem_pausa === 'pos_venda';
+    document.getElementById('chatBannerPosVenda').classList.toggle('hidden', !isPosVenda);
     document.getElementById('chatModal').classList.remove('hidden');
     await carregarMensagens();
     chatIntervalId = setInterval(carregarMensagens, 5000);
