@@ -1,5 +1,11 @@
 const user = checkAuth();
 if (!user) { window.location.href = 'index.html'; }
+
+function _formatarNomeItem(nome) {
+    const match = (nome || '').match(/^(.+?)\s*\((.+)\)$/);
+    if (!match) return { base: nome || '', adicional: null };
+    return { base: match[1].trim(), adicional: match[2].trim() };
+}
 document.getElementById('userName').textContent = user.nome;
 let pedidos = [];
 let filtroAtual = 'todos';
@@ -391,7 +397,7 @@ async function verDetalhes(id) {
                 <div>
                     <p class="text-xs font-medium text-gray-500 mb-1">Itens do Pedido</p>
                     <div class="bg-gray-50 rounded-lg p-3 space-y-1">
-                        ${itens.map(item => '<div class="flex justify-between text-sm"><span>' + item.quantidade + 'x ' + item.nome + '</span><span class="font-semibold">R$ ' + (item.quantidade * item.preco).toFixed(2) + '</span></div>').join('')}
+                        ${itens.map(item => { const _f = _formatarNomeItem(item.nome); return '<div class="flex justify-between text-sm"><span>' + item.quantidade + 'x ' + _f.base + (_f.adicional ? '<br><span class="text-xs text-indigo-500 ml-4">+ Adicional: ' + _f.adicional + '</span>' : '') + '</span><span class="font-semibold self-start">R$ ' + (item.quantidade * item.preco).toFixed(2) + '</span></div>'; }).join('')}
                     </div>
                 </div>
                 <div class="border-t pt-2">
@@ -450,7 +456,7 @@ async function imprimirPedido(id) {
         const enderecoExibir = enderecoTexto || 'RETIRADA NO LOCAL';
         const itensHtml = pedido.itens.map(item =>
             '<tr>' +
-            '<td style="font-size:22px;font-weight:bold;padding:4px 0;">' + item.quantidade + 'x ' + ascii(item.nome) + '</td>' +
+            '<td style="font-size:22px;font-weight:bold;padding:4px 0;">' + (function(){ const _f = _formatarNomeItem(item.nome); return item.quantidade + 'x ' + ascii(_f.base) + (_f.adicional ? '<br><span style="font-size:16px;font-weight:normal;">+ Adic: ' + ascii(_f.adicional) + '</span>' : ''); })() + '</td>' +
             '<td style="font-size:16px;text-align:right;vertical-align:middle;white-space:nowrap;">R$ ' + (item.quantidade * item.preco).toFixed(2) + '</td>' +
             '</tr>'
         ).join('');
